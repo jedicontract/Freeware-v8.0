@@ -1,0 +1,57 @@
+
+
+			TapeDump Quick Reference Card			TapeDump Quick Reference Card
+			-----------------------------
+
+Commands to control the tape drive:
+-----------------------------------
+
+USE		<tapedrive>
+BACKSPACE	[ n | BOF | BOT ]				 1
+FIND		BOT | BOF | EOF | EOV | EOT			no default
+SKIP		[ n | EOF | EOV | EOT ]				 1
+REWIND
+UNLOAD
+EXIT
+
+Commands to examine the data on the tape:
+-----------------------------------------
+
+DUMP		[ n | EOF | EOV | EOT ]				 1
+SET DUMP	[ ASCII | HEXADECIMAL | BOTH | SHORT | FULL ]	ASCII
+DISABLE		[ CONVERT | DEBUG | SENSECHAR ]			DEBUG
+ENABLE		[ CONVERT | DEBUG | SENSECHAR ]			DEBUG
+SHOW		[ DUMP | DEBUG ]				ALL
+
+Commands to control data transfers to disk:
+-------------------------------------------
+
+CREATE		<filespec>					no default
+SET COPY	[ LOG | NOLOG ]					NOLOG
+SET RECORDSIZE	[ n ]
+COPY		[ n | EOF | EOV | EOT ]				 1
+CLOSE
+
+Commands to examine the current environment:
+--------------------------------------------
+
+SHOW		[ ALL | VERSION					ALL
+		 | DEVICE | TAPE
+		 | COPY | OUTPUT
+		 | DUMP | DISPLAY | DEBUG ]
+
+Notes:
+------
+
+<tapedrive> is either a physical device name or a logical name that
+translates to a physical device name.
+
+<filespec> is the name of the file you want to create to accept the data
+from COPY commands.  The file will default to your current directory and
+a file type of ".DUMP" unless otherwise specified.
+
+DISPLAY can be used as a synonym for DUMP.
+
+OPEN can be used as a synonym for CREATE.
+
+The current CONVERT setting is available in the SHOW COPY display.

@@ -1,0 +1,75 @@
+
+                                DBS-NETUTILS V1.0
+
+This package contains four utilities that can be used to monitor the ethernet
+to isolate problems or just to see what is going on.  The only documentation
+available at present, is the NETWORK_UTILITIES.CARD which gives a summary of
+the valid qualifiers for each utility.
+
+Each utility should be invoked via a foreign command - MCR will not work.
+The file DBSSYSRTL.EXE is a run-time library used by all of the utilities and
+should either be put in SYS$SHARE or have a logical defined to point to the
+file.
+
+ETHERWATCH and LATWATCH will use a file ETHERWATCHER:NODELIST.DAT (if it
+exists) which maps node names to addresses (a sample is included).
+
+When specifying /FROM and /TO addresses, you can use a name as defined in
+NODELIST.DAT (no wildcards) or you can use an address format which can include
+wildcards.  If you use the UNKNOWN option, you must spell it out in full.
+
+When specifying /PROTOCOL values, wildcards are allowed.
+
+The images included were built on a VMS V5.5-2 system.
+
+Contents:
+---------
+   File                          Description
+------------------------------------------------------------------------------
+AAAREADME.1ST                 This file.
+
+The executables:
+	ETHERWATCH.EXE
+	FRAME_COUNTER.EXE
+	LATWATCH.EXE
+	PROTOCOL_COUNTER.EXE
+
+ETHERWATCH.OBJ                Just link the matching objects against
+ETHERWATCH_CLD.OBJ            DBSSYSRTL to produce the image.
+FRAME_COUNTER.OBJ
+FRAME_COUNTER_CLD.OBJ
+LATWATCH.OBJ
+LATWATCH_CLD.OBJ
+PROTOCOL_COUNTER.OBJ
+PROTOCOL_COUNTER_CLD.OBJ
+
+DBSSYSRTL.EXE                 Used by all of the utilities.  Either define a
+                              logical or dump this in SYS$SHARE.
+DBSSYSRTL.OLB
+SYS_OBJECTS.OLB               Non-sharable version of DBSSYSRTL.
+
+NODELIST.DAT                  "Sample" nodelist.
+
+NETWORK_UTILITIES.CARD        "Quick Reference" Card for these utilities.
+
+BUILD_IMAGE.COM               Used to build images from the included source.
+                              Make sure LNK$LIBRARY points to DBSSYSRTL.
+NMADEF.INC                    Include file used by all the utilities.
+STRUCTURES.INC                Include file used by all the utilities.
+
+Source code is include in the following ZIP files:
+
+ETHERWATCH-X4-002.ZIP
+FRAME_COUNTER-X1-008.ZIP
+LATWATCH-X4-004.ZIP
+PROTOCOL_COUNTER-X1-006.ZIP
+
+
+Any bug reports (or fixes), comments, suggestions etc. should be directed
+to me at the address below.
+
+---------------------------------------------------------------------------
+David B Sneddon   (dbs)                       David.Sneddon@Woodside.otc.au
+VAX Systems Administrator  Woodside Offshore Petroleum  Perth, Australia
+Phone +61 9 224 5218       Fax +61 9 325 8178           Home +61 9 390 4283
+---------------------------------------------------------------------------

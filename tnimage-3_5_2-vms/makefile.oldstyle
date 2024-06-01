@@ -1,0 +1,204 @@
+#-----------------------------------------------------------------------------
+# Old-style makefile for Unix version of tnimage
+# Check to make sure config.h matches your system before typing 'make'.
+#-----------------------------------------------------------------------------
+
+RM = rm -f
+
+# Add    -static    to end of the CFLAGS line to get a statically-linked version.
+# Remove -Wall      if your compiler complains about complex.h (This occurs with
+#                   some older versions of gcc).
+
+# Remove lex.yy.o and y.tab.o here, remove -ll below, and remove the line
+# #define HAVE_LEX from xmtnimage.h if you don't have flex or lex.
+
+OBJS = xmtnimage*.o lex.yy.o y.tab.o
+LDFLAGS=-s 
+
+# Uncomment one of the following sections and
+# change the location of libjpeg.a to match your system. If libjpeg.a and the libjpeg
+# include files are not installed on your system, change INCLUDES
+# and LIBS to reflect their location.
+# If compiling with Xbae spreadsheet, add -lXbae to LIBS option immediately before "-lXm".
+# If libXbae has been compiled without Xpm, the -lXpm entry can be removed.
+# Otherwise, you will have to add -lXpm after -lXm manually.
+
+# Linux - to make static version, '-static' must be first item in CFLAGS
+# CC=gcc
+# LIBS=  -L/usr/X11/lib -ll -lm -lXbae -lXm -lXpm -lXext -lXt -lX11 /usr/lib/libjpeg.a
+# INCLUDES = -I. -I/usr/include -I/usr/include/X11 -I/usr/X11R6/include -I/usr/include/gr
+# CFLAGS= -O3 -Wall
+# CFLAGS= -static -O3 -Wall
+
+# Linux-for-no-motif - Link Mootif statically, everything else is shared 
+# CC=gcc
+# LIBS=  -L/usr/X11/lib  -ll -lm -lXbae /usr/lib/libXm.a -lXpm -lXext -lXt -lX11 /usr/lib/libjpeg.a
+# INCLUDES = -I. -I/usr/include -I/usr/include/X11 -I/usr/X11R6/include -I/usr/include/gr
+# CFLAGS= -O3 -Wall
+
+# Linux-lesstif - Link dynamically to lesstif. HAVE_XBAE and MOTIF2 must be undefined
+# It will ignore the $HOME directives if these libraries exist in the path. For example
+# Moo-tiff puts a libXm.so.1 in /usr/X11R6/lib which is actually a libXm.so.2.
+# You must also have a libXm.so that points to libXm.so.1.
+CC=gcc
+LIBS= -L$(HOME)/lesstif/lib/libXm.so $(HOME)/lesstif/lib/libXm.so  -lXpm -L/usr/X11/lib -ll -lm -lXext -lXt -lX11 /usr/lib/libjpeg.a
+INCLUDES = -I. -I/usr/include -I$(HOME)/lesstif/include/Xm -I/usr/include/X11 -I/usr/X11R6/include -I/usr/include/gr
+CFLAGS= -O2 -Wall
+
+# Irix (SGI)
+# CC=gcc
+# LIBS= ./Xbae/libXbae.a -L/usr/X11/lib  -ll -lm -lXm -lXt -lX11 $(HOME)/jpeg-6a/libjpeg-sgi.a
+# INCLUDES = -I. -I/usr/include -I/usr/include/X11 -I/usr/X11/include -I$(HOME)/jpeg-6a
+# CFLAGS=-O2 -fsigned-char
+  
+# Mipspro (SGI)
+# CC=gcc
+# LIBS= ./Xbae/libXbae.a -L/usr/X11/lib -ll -lm -lXm -lXt -lX11 $(HOME)/jpeg-6a/libjpeg-sgi.a
+# INCLUDES = -I. -I/usr/include -I/usr/include/X11 -I/usr/X11/include -I$(HOME)/jpeg-6a
+# CFLAGS=-O2 -fsigned-char -n32
+  
+# ConvexOS
+# CC=gcc
+# LIBS= -L/usr/X11/lib -ll -lm -lXm -lXt -lX11 -lXbae $(HOME)/jpeg-6a/libjpeg-convex.a
+# INCLUDES = -I. -I/usr/include -I/usr/include/X11 -I/usr/X11/include -I$(HOME)/jpeg-6a 
+# CFLAGS=-O3 -fsigned-char
+
+# SunOS (untested)
+# CC=/usr/lang/acc
+# CFLAGS=-O3 -DSUNOS -DUSE_LPR_PRINT_CMD
+# LIBS= -Bstatic -lXm -lXt -lX11 -lXbae /usr/lib/libjpeg.a
+# INCLUDES = -I. -I/usr/include -I/usr/include/X11 -I/usr/X11/include  
+
+# Solaris
+# CC=gcc
+# CFLAGS=-O3 -I/usr/openwin/include -I/usr/dt/include
+# LIBS=  -L/usr/dt/lib -L/usr/openwin/lib  -ll -lm -lXm -lXt -lX11 -lXbae -L/usr/lib /usr/lib/libjpeg.a /usr/lib/libsocket.so  -R /usr/openwin/lib -R /usr/dt/lib
+# INCLUDES= -I. -I/usr/include -I/usr/include/X11 -I/usr/X11/include -I/usr/include/sys/scsi
+  
+#-----------------------------------------------------------------------------
+# Nothing to change beyond this point
+#-----------------------------------------------------------------------------
+
+
+# Can't use a 'rule' to make .o files because not all make's handle it.
+# If flex is used on calculator.l, lex.yy.c must be edited manually. See
+# comments in calculator.y.
+
+all:: tnimage plugin
+xmtnimage.o:  xmtnimage.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage.cc
+xmtnimage1.o: xmtnimage1.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage1.cc
+xmtnimage2.o: xmtnimage2.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage2.cc
+xmtnimage3.o: xmtnimage3.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage3.cc
+xmtnimage4.o: xmtnimage4.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage4.cc
+xmtnimage5.o: xmtnimage5.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage5.cc
+xmtnimage6.o: xmtnimage6.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage6.cc
+xmtnimage7.o: xmtnimage7.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage7.cc
+xmtnimage8.o: xmtnimage8.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage8.cc
+xmtnimage9.o: xmtnimage9.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage9.cc
+xmtnimage10.o: xmtnimage10.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage10.cc
+xmtnimage11.o: xmtnimage11.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage11.cc
+xmtnimage12.o: xmtnimage12.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage12.cc
+xmtnimage13.o: xmtnimage13.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage13.cc
+xmtnimage14.o: xmtnimage14.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage14.cc
+xmtnimage15.o: xmtnimage15.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage15.cc
+xmtnimage16.o: xmtnimage16.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage16.cc
+xmtnimage17.o: xmtnimage17.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage17.cc
+xmtnimage18.o: xmtnimage18.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage18.cc
+xmtnimage19.o: xmtnimage19.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage19.cc
+xmtnimage20.o: xmtnimage20.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage20.cc
+xmtnimage21.o: xmtnimage21.cc 
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage21.cc
+xmtnimage22.o: xmtnimage22.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage22.cc
+xmtnimage23.o: xmtnimage23.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage23.cc
+xmtnimage24.o: xmtnimage24.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage24.cc
+xmtnimage25.o: xmtnimage25.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage25.cc
+xmtnimage26.o: xmtnimage26.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage26.cc
+xmtnimage27.o: xmtnimage27.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage27.cc
+xmtnimage28.o: xmtnimage28.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage28.cc
+xmtnimage29.o: xmtnimage29.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage29.cc
+xmtnimage30.o: xmtnimage30.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage30.cc
+xmtnimage31.o: xmtnimage31.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage31.cc
+xmtnimage32.o: xmtnimage32.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage32.cc
+xmtnimage33.o: xmtnimage33.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage33.cc
+xmtnimage34.o: xmtnimage34.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage34.cc
+xmtnimage35.o: xmtnimage35.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage35.cc
+xmtnimage36.o: xmtnimage36.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage36.cc
+xmtnimage37.o: xmtnimage37.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage37.cc
+xmtnimage38.o: xmtnimage38.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage38.cc
+xmtnimage39.o: xmtnimage39.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage39.cc
+xmtnimage40.o: xmtnimage40.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage40.cc
+xmtnimage41.o: xmtnimage41.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage41.cc
+xmtnimage42.o: xmtnimage42.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage42.cc
+y.tab.o: y.tab.c
+	$(CC) -c -x c++ $(CFLAGS) $(INCLUDES) y.tab.c
+y.tab.c: calculator.y
+	yacc -d calculator.y  
+lex.yy.o: lex.yy.c
+	$(CC) -c -x c++ $(CFLAGS) $(INCLUDES) lex.yy.c
+
+
+# Each line here after the .o's must start with a tab.
+tnimage: xmtnimage.o   xmtnimage1.o  xmtnimage2.o  xmtnimage3.o  xmtnimage4.o \
+	xmtnimage5.o   xmtnimage6.o  xmtnimage7.o  xmtnimage8.o  xmtnimage9.o \
+	xmtnimage10.o  xmtnimage11.o xmtnimage12.o xmtnimage13.o xmtnimage14.o \
+	xmtnimage15.o  xmtnimage16.o xmtnimage17.o xmtnimage18.o xmtnimage19.o \
+	xmtnimage20.o  xmtnimage21.o xmtnimage22.o xmtnimage23.o xmtnimage24.o \
+	xmtnimage25.o  xmtnimage26.o xmtnimage27.o xmtnimage28.o xmtnimage29.o \
+	xmtnimage30.o  xmtnimage31.o xmtnimage32.o xmtnimage33.o xmtnimage34.o \
+	xmtnimage35.o  xmtnimage36.o xmtnimage37.o xmtnimage38.o xmtnimage39.o \
+	xmtnimage40.o  xmtnimage41.o xmtnimage42.o\
+	lex.yy.o       y.tab.o
+	$(RM) $@ 
+	$(CC) -o $@ $(CFLAGS) $(OBJS) $(LIBS) $(LDFLAGS)
+
+plugin.o:  plugin.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) plugin.cc
+plugin: plugin.o
+	$(RM) $@ 
+	$(CC) -o $@ $(CFLAGS) plugin.o $(LIBS) $(LDFLAGS)
+
+
+
+

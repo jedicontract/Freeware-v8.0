@@ -1,0 +1,62 @@
+.macro	_odsmdef, global
+
+	$defini odsm, global
+$equ	odsm_s_device			64
+$equ	odsm_t_device		0
+$equ	odsm_k_keylength	64
+$equ	odsm_s_volnam			12
+$equ	odsm_t_volnam		64
+$equ	odsm_b_minimum		76
+$equ	odsm_b_maximum		77
+$equ	odsm_s_host			8
+$equ	odsm_t_host		78
+$equ	odsm_l_spare1		86
+$equ	odsm_l_spare2		90
+$equ	odsm_l_spare3		94
+$equ	odsm_k_length		98
+$equ	odsm_s_odsmdef			98
+	$defend odsm, global def
+
+.endm	_odsmdef
+
+.macro	display_error status=r0, ?next
+
+	blbs	status, next
+	movl	status, odsm_msgsts
+	$putmsg_s msgvec=odsm_msgvec
+	movl	odsm_msgsts, status
+next:
+
+.endm	display_error
+
+.macro	signal_error status=r0, ?next
+
+	blbs	status, next
+	pushl	status
+	calls	#1, g^lib$stop
+next:
+
+.endm	signal_error
+
+.macro	brdcst message, where=console, ?ok
+
+	pushaq	message
+	pushaq	odsm_version
+	calls	#2, g^send_operator
+	blbs	r0, ok
+	pushaq	where
+	pushaq	message
+	pushaq	odsm_version
+	calls	#3, g^sys_broadcast
+ok:
+
+.endm	brdcst
+
+.macro	s_brdcst message, where=console
+
+	pushaq	where
+	pushaq	message
+	pushaq	odsm_version
+	calls	#3, g^sys_broadcast
+
+.endm	s_brdcst

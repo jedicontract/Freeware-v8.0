@@ -1,0 +1,670 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	ODSM - Online Disk Space Monitor Utility Manual
+
+
+
+
+
+
+	February 1993
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	Revision/Update Information:		ODSM Version X2-006
+
+	Operating System Software Version:	VMS Version 5.5-2
+						CRONIC Version 8.1
+
+
+
+
+
+
+
+
+
+
+								dbs-94054-1
+
+
+
+______________________________________________________________________________
+
+Contents
+
+______________________________________________________________________________
+
+
+1   Online Disk Space Monitor (ODSM) Description
+
+1.1	Overview  . . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-1
+1.2	ODSM Components . . . . . . . . . . . . . . . . . . . . . .   ODSM-1
+
+
+2   The Monitor Program
+
+2.1	Overview  . . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-2
+2.2	Communicating with the Monitor  . . . . . . . . . . . . . .   ODSM-2
+2.3	Monitor interrupt commands  . . . . . . . . . . . . . . . .   ODSM-2
+2.3.1	    SHOW STATUS . . . . . . . . . . . . . . . . . . . . . .   ODSM-2
+2.3.2	    ENABLE  . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-3
+2.3.3	    DISABLE . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-3
+2.3.4	    STOP  . . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-4
+2.3.5	    START . . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-4
+2.3.6	    RESTART . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-4
+2.3.7	    EXIT  . . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-4
+
+
+3   The Maintenance Program
+
+3.1	Overview  . . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-5
+3.2	Maintenance Commands  . . . . . . . . . . . . . . . . . . .   ODSM-5
+3.2.1	    ADD DISK  . . . . . . . . . . . . . . . . . . . . . . .   ODSM-5
+3.2.2	    SET DISK  . . . . . . . . . . . . . . . . . . . . . . .   ODSM-5
+3.2.3	    DELETE DISK . . . . . . . . . . . . . . . . . . . . . .   ODSM-6
+3.2.4	    SHOW DISK   . . . . . . . . . . . . . . . . . . . . . .   ODSM-6
+3.2.5	    SHOW BY DEVICE | VOLUME . . . . . . . . . . . . . . . .   ODSM-7
+
+
+4   Guidelines for Shadow Sets
+
+4.1	Overview  . . . . . . . . . . . . . . . . . . . . . . . . .   ODSM-8
+4.2	Recommendations . . . . . . . . . . . . . . . . . . . . . .   ODSM-8
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+______________________________________________________________________________
+									     i
+
+______________________________________________________________________________
+
+1  Online Disk Space Monitor (ODSM) Description
+
+	______________________________________________________________________
+1.1	Overview
+
+	The main function of the ODSM is to generate warnings when disks have
+	exceeded a pre-defined usage limit, thereby enabling timely
+	investigation of the event to determine if the growth in usage is
+	likely to be a problem and possibly cause production tasks to abort
+	due to a lack of disk space.
+
+	For situations where disks are dual-ported, the ODSM also has the
+	ability to detect disks that are found on the wrong host (HSC) and
+	can attempt to force the disk back to its preferred host.
+
+	The ODSM will also report on any disks that exist in its database but
+	do not exist on the system, possibly due to a disk failure, or a disk
+	incorrectly being dismounted.
+
+	The ODSM can also verify the labels on the disks against those in its
+	database.
+
+	In a VAXcluster environment, the ODSM should only be run on one node.
+
+	______________________________________________________________________
+1.2	ODSM Components
+
+	The ODSM consists of two programs: a monitor, which runs as a detached
+	process; and a maintenance program, to maintain the database.
+
+	The programs reside in the ODSM_EXE area and the database can be found
+	in the ODSM_DATA area:
+
+		Monitor		ODSM_EXE:ODSM_MONITOR.EXE
+
+		Maintenance	ODSM_EXE:ODSM_MAINTAIN.EXE
+
+		Database	ODSM_DATA:ODSM_DISKS.DATA
+	
+	Communication with the detached monitor process is achieved by using
+	the INTERRUPT program.  See Chapter 2 for details of how to
+	communicate with the monitor process.
+
+	The location of the database file can be changed by using the logical
+	ODSM_DISKS which should be defined system wide before invoking the
+	monitor and maintenance programs.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+______________________________________________________________________________
+									ODSM-1
+
+______________________________________________________________________________
+
+2  The Monitor Program
+
+	______________________________________________________________________
+2.1	Overview
+
+	The monitor program runs as a detached process and is usually started
+	during normal system startup.  This process checks the usage on each
+	of the disks in its database every 5 minutes and broadcasts a message
+	to the operator console (OPA0:) if it detects any event that requires
+	action.  Currently the events that will generate a message are:
+
+	    o	a disk has exceeded the maximum threshold set for the disk
+
+	    o	a disk is below the minimum threshold set for the disk
+
+	    o	a disk exists in the database but was not found on the system
+
+	    o	a disk exists in the database but is not mounted
+
+	    o	a disk was found on a host other than that defined in the
+		database
+
+	    o	a disk has a label different to that defined in the database
+
+	______________________________________________________________________
+2.2	Communicating with the Monitor
+
+	Communicating with the detached process is via a permanent mailbox
+	which has the logical ODSM_MAILBOX assigned.  The INTERRUPT program
+	should be used to send messages to the mailbox.  Attempting to use any
+	other means to write messages to the mailbox will simply mean that the
+	messages are ignored.  The following discussion assumes that the
+	symbol TELL has been defined to be "$wherever:INTERRUPT".
+
+	______________________________________________________________________
+2.3	Monitor interrupt commands
+
+	The general format of the commands is:
+
+	    $ TELL ODSM <command>
+
+	All commands sent to the ODSM will result in a response being sent to
+	the originator of the command, if done from an interactive session, or
+	to the operator console (OPA0:) if the command was generated by a
+	non-interactive process.
+
+	Commands are parsed from left to right until the end of the command is
+	reached or an error occurs.  If an error is found, all commands prior
+	to the error can be assumed to have been processed and acted upon.
+
+	______________________________________________________________________
+2.3.1	SHOW STATUS
+
+	The SHOW STATUS command will result in a message being displayed on
+	the terminal of the sender showing the current status of the action
+	flags.
+
+	Format:
+
+	    $ TELL ODSM SHOW STATUS
+
+
+______________________________________________________________________________
+ODSM-2
+
+______________________________________________________________________________
+
+2  The Monitor Program (cont.)
+
+	______________________________________________________________________
+2.3.1	SHOW STATUS (cont.)
+
+	Example:
+
+	$ TELL ODSM SHOW STATUS
+	%INTERRUPT-S-SUCCESS, message delivered to ODSM_MAILBOX
+	##########  ODSM_Monitor X2-006  23-FEB-1994 13:08:37.11  ##########
+	  Maximum checking is ENABLED, Minimum checking is ENABLED
+	  Missing checking is ENABLED, Host checking is ENABLED
+	  Path forcing is ENABLED, Label checking is ENABLED
+
+	______________________________________________________________________
+2.3.2	ENABLE
+
+	The ENABLE (and DISABLE) commands determine what action, if any, the
+	monitor process takes when it encounters an event as described
+	earlier.  Regardless of the settings of the flags, the monitor will
+	always check for events.  For all events except path forcing, the flag
+	setting simply determines whether or not a message is broadcast.  The
+	state of the path forcing flag will determine whether the monitor
+	actually attempts to force a disk to a preferred path.  Multiple flags
+	can be enabled or disabled in the one command, and on the completion
+	of command processing a SHOW STATUS is executed to show you the
+	current flag settings.
+
+	Valid action keywords are:
+
+	    MINIMUM, MAXIMUM, MISSING, HOST, PATH and LABEL
+
+	Format:
+
+	    $ TELL ODSM ENABLE action [ action ... ]
+
+	Examples:
+
+	$TELL ODSM ENABLE ALL DISABLE PATH
+	%INTERRUPT-S-SUCCESS, message delivered to ODSM_MAILBOX
+	##########  ODSM_Monitor X2-006  23-FEB-1994 13:08:37.11  ##########
+	  Maximum checking is ENABLED, Minimum checking is ENABLED
+	  Missing checking is ENABLED, Host checking is ENABLED
+	  Path forcing is DISABLED, Label checking is ENABLED
+
+	The same result could have been achieved by the following command;
+
+	$TELL ODSM ENABLE MINIMUM MAXIMUM MISSING HOST LABEL DISABLE PATH
+
+	______________________________________________________________________
+2.3.3	DISABLE
+
+	See the discussion on the ENABLE command for details of what can be
+	disabled.
+
+	Format:
+
+	    $ TELL ODSM DISABLE action [ action ... ]
+
+
+
+
+______________________________________________________________________________
+									ODSM-3
+
+______________________________________________________________________________
+
+2  The Monitor Program (cont.)
+
+	______________________________________________________________________
+2.3.4	STOP
+
+	The STOP command is equivalent to performing a DISABLE ALL command.
+
+	Format:
+
+	    $ TELL ODSM STOP
+
+	______________________________________________________________________
+2.3.5	START
+
+	The START command is equivalent to performing an ENABLE ALL command.
+
+	Format:
+
+	    $ TELL ODSM START
+
+	______________________________________________________________________
+2.3.6	RESTART
+
+	The RESTART command is used to tell the monitor process to exit and
+	re-run the monitor program.  This would normally only be used to start
+	a new version of the monitor process without having to exit the
+	current process and then execute the startup procedure again.
+	A message is broadcast to the originator of the request, and also to
+	the operator console, advising that the command has been received and
+	that the monitor is restarting.  This will also reset all action flags
+	to the default setting i.e. ENABLE ALL.
+
+	Format:
+
+	    $ TELL ODSM RESTART
+
+	Example:
+
+	$ TELL ODSM RESTART
+	%INTERRUPT-S-SUCCESS, message delivered to ODSM_MAILBOX
+	##########  ODSM_Monitor X2-006  23-FEB-1994 13:08:47.72  ##########
+	  Restarting, as requested by SNEDDON_D [DBS_00CF1, pid=20E099CF]
+
+	______________________________________________________________________
+2.3.7	EXIT
+
+	The EXIT command is used to tell the monitor process to terminate and
+	is normally only used during system shutdown.  A message is broadcast
+	to the originator of the request, and also to the operator console,
+	advising that the command has been received and that the monitor is
+	exiting.
+
+	Format:
+
+	    $ TELL ODSM EXIT
+
+	Example:
+
+	$ TELL ODSM EXIT
+	%INTERRUPT-S-SUCCESS, message delivered to ODSM_MAILBOX
+	##########  ODSM_Monitor X2-006  23-FEB-1994 13:08:47.72  ##########
+	  Exiting, as requested by SNEDDON_D [DBS_00CF1, pid=20E099CF]
+______________________________________________________________________________
+ODSM-4
+
+______________________________________________________________________________
+
+3  The Maintenance Program
+
+	______________________________________________________________________
+3.1	Overview
+
+	The maintenance program is used to add disks to, and delete disks from
+	the database used by the monitor, and to change threshold values and
+	host information as usage patterns change or load balancing requires
+	disks to be moved from one host to another.  All changes take effect
+	immediately and are used the next time the monitor process scans the
+	database.
+
+	The following discussion assumes that the symbol ODSM has been defined
+	to be "$ODSM_EXE:ODSM_MAINTAIN".
+
+	Whenever the maintenance program is run, it displays a header which
+	includes the program version, and the name of the file being updated.
+
+	______________________________________________________________________
+3.2	Maintenance Commands
+
+	                           ____________________________	In the following examples, all user input is underlined.  The word
+	DEVICE can be used as a synonym for the word DISK, and the words
+	LABEL, NAME and VOLUME are synonymous.  The commands ADD and SET
+	perform the same function i.e. if the disk named does not exist, then
+	a new recorded is added to the database, if it does exist, then it
+	will be modified.  In all cases except when specifying the device, the
+	keyword NONE can be used to remove any existing value.  Note that
+	specifying NONE for a minimum is the same as specifying 0, and that
+	specifying NONE for a maximum is the same as specifying 100.
+
+	Consult the section on Shadow Sets for recommendations on settings for
+	shadow set virtual units and physical members.
+
+	______________________________________________________________________
+3.2.1	ADD DISK
+
+	The ADD DISK command is used to include new disks in the database. See
+	the description of SET DISK for a full explanation.
+
+	Format:
+
+	    ADD DISK device[:] [LABEL volumename] [HOST hostname]
+				[MINIMUM min] [MAXIMUM max]
+
+	______________________________________________________________________
+3.2.2	SET DISK
+
+	The SET DISK command is used to change the current information defined
+	for a disk.  This command will also ADD a disk if the disk you have
+	specified does not already exist in the database.  If you specify one
+	of the keywords shown below, you must also supply a value or an error
+	message will be generated.  If you omit all the optional keywords, the
+	program will display the current settings for that device.
+	No checking is performed at this stage to determine if "device:" is
+	valid, any problems will be picked up the next time the monitor runs.
+
+	Format:
+
+	    SET DISK device[:] [LABEL volumename] [HOST hostname]
+				[MINIMUM min] [MAXIMUM max]
+
+______________________________________________________________________________
+									ODSM-5
+
+______________________________________________________________________________
+
+3  The Maintenance Program (cont.)
+
+	______________________________________________________________________
+3.2.2	SET DISK (cont.)
+
+	Example:
+
+	  ____	$ odsm
+	ODSM_Maintain X2-005
+	Updating SYS$SYSDEVICE:[SYS.STARTUP.WEST]ODSM_DISKS.DATA;
+	         _____________________________________________________	Maintain set disk $1$dua28 label disk_28 minimum 20 maximum 60
+	Modified  $1$DUA28:          DISK_28                  20% - 60%
+	         _____________________________	Maintain set disk $1$dua28 host hsc002
+	Modified  $1$DUA28:          DISK_28      HSC002      20% - 60%
+	         ______________________________	Maintain set disk $1$dua28 minimum none
+	Modified  $1$DUA28:          DISK_28      HSC002       0% - 60%
+	         ____	Maintain exit
+
+	______________________________________________________________________
+3.2.3	DELETE DISK
+
+	The DELETE DISK command is used to remove disks from the database.
+
+	Format:
+
+	   DELETE DISK device[:]
+
+	Example:
+
+	  ____	$ odsm
+	ODSM_Maintain X2-005
+	Updating SYS$SYSDEVICE:[SYS.STARTUP.WEST]ODSM_DISKS.DATA;
+	         ____________________	Maintain delete disk $1$dua28
+	Deleted   $1$DUA28:          DISK_28      HSC002       0% - 60%
+	         ____	Maintain exit
+
+	______________________________________________________________________
+3.2.4	SHOW DISK
+
+	The SHOW DISK command will produce a display of ALL disks in the
+	database, showing device, disk label, host name, minimum and maximum
+	threshold values.  To see an individual disk, use the SET DISK command
+	and omit all the optional keywords.
+
+	Format:
+
+	    SHOW DISK
+
+	Example:
+
+	  ____	$ odsm
+	ODSM_Maintain X2-005
+	Updating SYS$SYSDEVICE:[SYS.STARTUP.WEST]ODSM_DISKS.DATA;
+	         _________	Maintain show disk
+	  $1$DUA0:              SYSTEM        HSC001    50% - 60%
+	  $1$DUA14:             NOVEL         HSC004   100% - 100%
+	  $1$DUA17:             PROSYS        HSC001     0% - 35%
+	  $1$DUA2:              ALLIN1        HSC003     0% - 50%
+	  $1$DUA28:             DISK_28       HSC002    20% - 60%
+	  $1$DUA34:             BOOK          HSC003   100% - 100%
+	  $1$DUA38:             USER          HSC001     0% - 92%
+	         ____	Maintain exit
+______________________________________________________________________________
+ODSM-6
+
+______________________________________________________________________________
+
+3  The Maintenance Program (cont.)
+
+	______________________________________________________________________
+3.2.5	SHOW BY DEVICE | VOLUME
+
+	The SHOW command will display the disks using the device name as the
+	sort key by default.  By using the SHOW BY VOLUME command, the disks
+	will be displayed using the volume name as the sort key.  A SHOW
+	command without specifying the sort key will use the last choice as
+	the default until a new sort key is chosen.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+______________________________________________________________________________
+ODSM-8
+
+______________________________________________________________________________
+
+4  Guidelines for Shadow Sets
+
+	______________________________________________________________________
+4.1	Overview
+
+	Shadow sets consist of a virtual unit (a $alloc$DUS device for Phase I
+	shadow sets or a DSA device for Phase II shadow sets) and one or more
+	physical devices.  Information such as the number of free blocks is
+	only maintained for the virtual unit and is not available for the
+	physical units.  Other information such as the host name is not
+	available for Phase II shadow set virtual units but is available for
+	the physical units.  On encountering a shadow set virtual unit, the
+	monitor program will not attempt to use any host information in the
+	database and will therefore not attempt to perform any path forcing.
+	Path forcing is not supported for shadow set virtual units.  When a
+	shadow set member is encountered, the monitor program will always set
+	the preferred path for the disk but will only perform path forcing on
+	Phase II shadow set members since this function is not supported for
+	Phase I shadow set members.
+
+	______________________________________________________________________
+4.2	Recommendations
+
+	When setting up shadow set virtual units in the ODSM database, you
+	should specify the volume label, minimum and maximum values.  Either
+	use HOST NONE or omit it from the command.
+
+	When setting up shadow set members in the ODSM database, you should
+	specify the volume label (for ease of maintenance, it lets you see
+	which physical devices belong to which virtual units), the host name
+	and either MINIMUM NONE MAXIMUM NONE or omit these from the command.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+______________________________________________________________________________
+ODSM-8

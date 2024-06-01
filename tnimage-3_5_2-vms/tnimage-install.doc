@@ -1,0 +1,53 @@
+tnimage installation procedure
+
+1. Make sure you have the correct version. If you don't have Motif, it is
+necessary to use a statically-linked version (e.g., tnimagexxx-linux-static.tar.gz).
+Motif is required for Solaris, Irix, and ConvexOS versions. For other 
+operating systems, it is necessary to edit "xmtnimage.h" and "makefile",
+and compile on your system.
+
+2. Unzip and detar the files. If an older version of tnimage is present, it
+must be completely removed from the directory in which you detar the new 
+version. 
+
+3. Edit the files "quickcam" and "umax" if you wish to use these 
+devices.
+
+
+Compiling:
+
+7. Type "configure"
+
+8. Type "make".
+   If this doesn't work, tnimage can be compiled by copying ``makefile.oldstyle''
+   to ``makefile''. Check the makefile to be sure it matches your operating
+   system and configuration before typing ``make''.
+   
+
+Binary versions:
+
+9. Type "Install" as root. If this doesn't work for some reason, tnimage
+can be installed manually as follows:
+
+  a. Copy the man page tnimage.1.gz to /usr/man/man1.
+  b. Create a directory in $HOME/.tnimage.
+  c. Copy these files to the desired locations:
+          tnimage       /usr/local/bin
+          tnimage.hlp   /usr/local/lib/tnimage
+          tnimage.1.gz  /usr/man/man1
+          formats/*     $HOME/.tnimage/formats/
+          plugins       $HOME/.tnimage/
+          scanners      $HOME/.tnimage/
+          umax          $HOME/.tnimage/
+          cameras       $HOME/.tnimage/
+          quickcam      $HOME/.tnimage/
+    
+
+10. If you don't have write permission in your home directory, the message
+"Can't save settings"  will be printed when you quit, indicating that any
+configuration changes were not saved.
+
+11. See Manual for details in customizing tnimage using
+app-defaults or .Xdefaults files.
+
+

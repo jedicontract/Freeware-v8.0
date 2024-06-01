@@ -1,0 +1,176 @@
+1 A2PS
+
+ NAME
+      a2ps - formats an ascii file for printing on a postscript printer
+
+ SYNOPSIS
+      a2ps [ -#num ] [ -? ] [ -b ] [ -c ] [ -d ] [ -Fnum ] [ -f ] [ -Hstr ] [
+      -h ] [ -Ifile ] [ -i ] [ -lnum ] [ -m ] [ -n ] [ -n{bcdfHinPprsvw} ]
+      [ -ofile ] [ -p ] [ -r ] [ -s ] [ -tnum ] [ -v ] [ -w ] 
+      [ file1 [ [ -Hstr ] file2 ... ]
+
+2 DESCRIPTION
+      a2ps formats each named file for printing in a postscript printer; if
+      no file is given, a2ps reads from the standard input. The output is
+      sent to lpr or to stdout.  The format used is nice and compact:
+      normally two pages on each physical page, borders surrounding pages,
+      headers with useful information (page number, printing date, file name
+      or supplied header), line numbering, etc.  This is very useful for
+      making archive listings of programs.
+
+2 Options
+      Options offered by a2ps are the following:
+
+      -?    Print usage information.
+
+      -#num To get multiple copies of output, where num is the number of
+            copies desired of each file named. By default, you get only one
+	    copy.
+
+      -b    Force printing binary files. By default, binary files printing
+	    is stopped before second page (see -nb option).
+
+      -c    Compact mode for a sequence of files. This option allows the
+	    printing of two files in the same sheet: last page of the first
+	    file in the left side and first page of the second file in the
+	    right side. This option is valid only for landscape mode (two
+	    pages per sheet).
+
+      -d    Print the current date and time at the bottom of the page
+	    (default option). This option is affected by the no surrounding
+	    border and the no header options.
+
+      -Fnum Changes font size to this value. Default values for font size
+	    are 6.8 in landscape mode and 9.0 in portrait mode. Try other
+	    sizes if you think that these values are too small (or big).
+
+      -f    Fold lines too large to be printed inside the borders (default
+	    option).  Max line size depends on format and font size used and
+	    whether line numbering has been suppressed.
+
+      -Htext
+	    Use this text instead of the file name in the page headers for
+	    printing subsequent files.	Additional -H directives can be
+	    mixed in with the filenames.  Warning: multiple files printed
+	    between -H directives will all have the same heading (but will
+	    still be printed with independent page numbers).
+
+      -h    Print usage information.
+
+      -Ifile
+	    Use the specified file as the postscript prologue for a2ps.
+
+      -i    Interpret TAB, BS and FF characters (default option). TAB is
+	    replaced by enough spaces to reach next tab stop while BS and FF
+	    have their meanings.
+
+      -lnum Set the lines per page for printing. The font size is
+	    automatically scaled up to fill in the whole page. This is
+	    useful for printing preformatted documents which have a fixed
+	    number of lines per page. The scaling of the font size will be
+	    suppressed if this option is used with option -fnum.  The
+	    minimum number of lines per page is set at 40 and maximum is at
+	    160. If a number less than 40 is supplied, scaling will be
+	    turned off and a warning message is printed on the terminal.
+
+      -m    Understand UNIX manual output ie: 66 lines per page, no line
+	    numbering and possible bolding and underlining sequences. The
+	    understanding of bolding and underlining is there by default
+	    even if -m is not specified.
+
+      -n    Output lines are preceded by line numbers, numbered sequentially
+	    from 1.
+
+      -nb   Don't print binary files (default option). To detect such a file
+	    we make use of a very simple heuristic: if the first page of the
+	    file contains at less 75% of non-printing characters, it's a
+	    binary file.  First page is always printed.
+
+      -nc   Don't use compact mode for a sequence of files. The beginning of
+	    each file will be printed in a new sheet.
+
+      -nd   Don't print the current date and time in the footer.
+
+      -nf   Truncate lines too large (don't fold).
+
+      -nH   Don't print page headers.
+
+      -ni   Don't interpret TAB, BS and FF characters. They will be printed
+	    according to -v option.
+
+      -nn   Don't number output lines (default option).
+
+      -np   Don't print pages in portrait mode (see -p option) but in
+	    landscape mode.
+
+      -nr   Sheet numbering (see -r option) must be continue for all files
+	    (don't reset on new file).
+
+      -ns   Don't print page surrounding borders.
+
+      -nv   Replace non-printing characters by a space.
+
+      -nw   Don't use wide format (see -w option).
+
+      -ofile
+            Send output to named file.
+
+      -p    Print files in portrait mode, one page per physical sheet.	The
+	    default option is to use landscape mode and print two pages on a
+	    physical sheet. This option may not be used with the -w option.
+
+      -r    Reset sheet numbering for each new file (default option).  Sheet
+	    numbering is used to number physical pages (sheets) as they are
+	    printed.  Page numbering numbers the logical pages, of which
+	    there are usually two per physical page (i.e. unless -p or -w is
+	    specified).
+
+      -s    Print page surrounding borders (default option).
+
+      -tnum Set TAB size to num (default 8).  This option is ignored if -ni
+	    is specified (see below).
+
+      -v    Replace non-printing characters so that they are visible and
+	    easy to identify (default option). Control characters (ascii
+	    codes lower than 0x20) are printed like ^X for ctrl-x; the
+	    delete character (hex 0x3f) is printed as ^?. Non ascii
+	    characters (with the high bit set) are printed as M- (for meta)
+	    followed by the character of the low 7 bits. TAB, BS and FF are
+	    handled like non-printing characters if -ni option was taken.
+
+      -w    Use wide format pages. This will result in only one page per
+	    physical sheet but in landscape mode. This option may not be
+	    used with the -p option.
+
+2 USAGE
+      a2ps generates postcript to its standard output. The user could
+      redirect this output to a file, pipe it directly to a print command
+      (like lpr), or to another filter for further processing. 
+
+	   a2ps -nP -ofile2 file1
+
+	   pipe a2ps -nP -p file1 | psnup -n4 | lpr -l -Pps
+
+      Don't forget -l option in lpr , if you want that lpr interprets your
+      postscript program rather than merely printing it as ascii text.
+
+      This filter must be used only with text files. Avoid specially output
+      from TeX, troff or any other such text formatters.
+
+2 SEE ALSO
+      tgrind(1) lpr(1)
+
+2 AUTHORS
+      Evan Kirshenbaum (evan@csli) for the initial version.
+      Miguel Santana (miguel@imag.imag.fr) for versions 1.0, 2.0, 3.0 and
+      4.0.
+
+2 CONTRIBUTORS
+      Oscar Nierstrasz (oscar@cui.uucp)
+      Tim Clark (T.Clark@warwick.ac.uk)
+      Henk Tullemans (tullemans@apolloway.prl.philips.nl)
+      Johan Vromans (jv@mh.nl)
+      Craig Stevenson (craig.r.stevenson@att.com)
+      John Macdonald (jmm@eci386.uucp)
+      Huub van de Wetering (wstahw@lso.win.tue.nl)
+      Michael Lemke (ai26@a400.sternwarte.uni-erlangen.de)

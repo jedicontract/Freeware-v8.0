@@ -1,0 +1,8 @@
+# 5.macro - demonstration of nested for loops in macro
+for(j=0; j<5; j++)
+{  print("\n");
+   for ( k = 0 ;  k < 4 ; k++ )
+   { 
+      print("j is ",j," k is ",k,"\n"); 
+   }
+} 

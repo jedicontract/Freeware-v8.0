@@ -1,0 +1,12 @@
+# macro for bilinear interpolation - Written by Dietmar Kunz
+loop
+{   x0=x-( x & 3); 
+    y0=y-( y & 3 );
+    if(x<( XSIZE-4 ) && y < ( YSIZE-4) )
+    {    dx = x-x0;
+         dy = y-y0;
+         i = (image[1][0][x0][y0] * (4-dx) * ( 4-dy) + image[1][0][x0+4][y0] * dx * (4-dy)
+            + image[1][0][x0][y0+4] *(4-dx)*dy + image[1][0][x0+4][y0+4]*dx*dy)/16;
+     }
+}
+

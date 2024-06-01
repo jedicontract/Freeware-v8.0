@@ -1,0 +1,15 @@
+# ucla4
+# "Wavelet Filter Evaluation for Image Compression", JD Villasenor, 
+#  B Belzer and J Liao, IEEE Trans. Image Proc.,  August 1995. 
+#  UCLA Evaluated Wavelet
+
+  -2 2
+ -0.176777
+  0.353553
+  1.060660
+  0.353553
+ -0.176777
+-1 1
+  0.353553
+  0.707107
+  0.353553

@@ -1,0 +1,16 @@
+(load "emacs-lisp/regexp-opt")
+(load "tooltip")
+(load "image")
+(load "font-lock")
+(load "toolbar/tool-bar")
+(load "view")
+; (load "p4")
+; (setq p4-default-depot-completion-prefix "//depot/online/makefds/mainline/")
+; (setq p4-default-diff-options "")
+; (setq p4-exec-arg-len-max 4096)
+; (setq p4-executable "mcr build_root:[build_tools.perforce]perforce.exe")
+; (setq p4-sendmail-program "mcr axpa:[ttn.emacs.build.lib-src]vmssendmail.exe")
+; (setq p4-use-p4config-exclusively t)
+; (setq p4-do-find-file nil)
+
+

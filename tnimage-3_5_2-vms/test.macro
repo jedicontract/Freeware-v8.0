@@ -1,0 +1,15 @@
+# This macro demonstrates the most efficient way to mix
+# iterative commands and macro commands.
+open(gray);
+
+# Select a region (otherwise it operates on entire image)
+select(20,20,120,130);
+
+# Loop to perform image math on all selected pixels
+loop
+{
+  #comment inside loop, not recommended
+  if(x>0) i+=27;
+}
+flipvert;
+close(gray);

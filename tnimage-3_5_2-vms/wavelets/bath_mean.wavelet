@@ -1,0 +1,26 @@
+# bath mean wavelet
+# "Space-frequency balance in biorthogonal wavelets",
+# DM Monro and BG Sherlock,
+# IEEE International Conference on Image Processing, 1997, Vol.1, pp.624-627. 
+-4 5
+  0.011534965
+  0.016675933
+ -0.105948358
+  0.070679818
+  0.714164424
+  0.714164424
+  0.070679818
+ -0.105948358
+  0.016675933
+  0.011534965
+-4 5
+  0.000367208
+ -0.00053087
+ -0.08794428
+  0.120013751
+  0.675200974  
+  0.675200974  
+  0.120013751
+ -0.08794428
+ -0.00053087
+  0.000367208

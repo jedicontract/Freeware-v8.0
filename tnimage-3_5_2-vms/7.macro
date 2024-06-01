@@ -1,0 +1,12 @@
+# 7.macro
+# Demonstration of drawing boxes, labels, etc.
+set(a="gray");
+whatis(a);
+open(a);
+setforegroundcolor(255,255,255);
+select(50,50,75,75);
+invertregion;
+image(1);
+drawlabel("Box",30, 95,1,0);
+drawbox(50,50,75,75);
+message("My work here is done!");

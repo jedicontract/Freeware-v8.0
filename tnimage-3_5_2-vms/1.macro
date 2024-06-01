@@ -1,0 +1,4 @@
+fopen("data");
+write("data", "The answer was", image[1][0][x][y], "\n");
+fclose("data");
+ 

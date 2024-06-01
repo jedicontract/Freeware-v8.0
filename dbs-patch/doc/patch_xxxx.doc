@@ -1,0 +1,53 @@
++---------------------------------------------------------------------+
+|								      |
+|								      |
+|						PatchDisk/File X1-009 |
+|								      |
+|								      |
+|		Command					Default	      |
+|	--------------------------------------------------------------|
+|								      |
+|	SET DISPLAY [ ASCII | HEX | BOTH ]		BOTH	      |
+|								      |
+|	SHOW [ ALL | DEVICE | DISPLAY | WRITE		ALL except    |
+|		| CURRENT | DIFFERENCES			DIFFERENCES   |
+|		| MODIFICATIONS ]				      |
+|								      |
+|	READ <block_number>					      |
+|								      |
+|	DISPLAY [ ORIGINAL | COPY | MODIFIED ]		MODIFIED      |
+|								      |
+|	PATCH							      |
+|								      |
+|	EDIT							      |
+|								      |
+|	ENABLE WRITE						      |
+|								      |
+|	DISABLE WRITE						      |
+|								      |
+|	WRITE							      |
+|								      |
+|	EVALUATE <expression>					      |
+|								      |
+|	CALCULATE CHECKSUM AT <offset>				      |
+|								      |
+|	CALCULATE { HOMEBLOCK | FILEHEADER | HEADER } CHECKSUM	      |
+|								      |
+|	FORMAT [ ORIGINAL | COPY | MODIFIED ]		MODIFIED      |
+|		[ HOMEBLOCK | BUCKET | FILEHEADER ]	HOMEBLOCK     |
+|								      |
+|	LIST [ MODULE | MACRO ] <module_name>			      |
+|		[ FROM ] <library_name>				      |
+|								      |
+|	SPAWN <command>						      |
+|								      |
+|	DO <command>						      |
+|								      |
+|	EXIT							      |
+|								      |
+|								      |
+|								      |
+|								      |
+|								      |
+|								      |
++---------------------------------------------------------------------+

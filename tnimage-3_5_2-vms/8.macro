@@ -1,0 +1,16 @@
+# 8.macro
+# demonstration of image algebra
+unloadall;
+setcolor(0,255,255);
+drawlabel("asdf",30,30);
+drawcircle(300,300,200);
+drawbox(200,200,400,400);
+select(250,250,350,350);
+i=image[0][0][x-250][y-250];
+invertregion;
+open("gray");
+select(250,250,350,350);
+b=3*green[1][0][140-x+230][y+5*rand(2)-230];
+select(250,250,350,350);
+g=3*blue[1][0][x-230][y-230];
+if(r<130) r=255-3*red[1][0][x-230][y-230]; else r=0;

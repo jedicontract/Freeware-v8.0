@@ -1,0 +1,41 @@
+          .Title        MAILSHR - Foreign mail protocol interface for VMS 5.x
+	  .IDENT	/V0.001/
+
+;
+;++
+; Written by Kevin Carosso @ Hughes Aircraft Co., SCG/CTC, January 11, 1985
+; Modified by Ned Freed, 16-Nov-1986, to use proper global symbols.
+; Modified by Kevin Carosso, 10-MAR-1988, to allow easy DEBUG invocation.
+; Modified by Ned Freed, 23-Mar-1989, for CC line and attribute support.
+; Modified by Dick Munroe (munroe@dmc.com), 07-Sep-1992, to allow easy access
+;       to trace information.
+; Modified by Wayne Sewell (wayne@tachyon.com, 11-Nov-1994, to move dispatcher
+;       from macro to Pascal where it belongs
+;
+;
+; Modification History
+;
+;   0.001 Dick Munroe 05-Jun-92
+;	Add linkage to image initialization to enable/disable debugging at run
+;	time.
+; 
+;   0.002 Wayne Sewell 11-Nov-94
+;	Move all dispatcher related code to Pascal module, leaving only 
+;	transfer vector.
+; 
+;
+; Written by Kevin Carosso @ Hughes Aircraft Co., SCG/CTC, January 11, 1985
+;
+;---------------------------------------------------------------------------
+;---------------------------------------------------------------------------
+;
+;
+; Shareable image transfer vector
+;
+        .psect   $$$transfer_vector,nowrt,exe,pic,quad,shr,con
+        .Transfer       MAIL$PROTOCOL
+        .Mask           MAIL$PROTOCOL
+        jmp     L^MAIL$PROTOCOL + 2
+
+
+        .end

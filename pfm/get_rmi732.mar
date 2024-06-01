@@ -1,0 +1,2541 @@
+	.TITLE	GET_RMI 
+	.IDENT /V01-001/
+;++
+;1 GET_RMI 
+; Program to monitor resource usage on the cluster it is executed on. In a 
+; cycle, $GETRMI is executed gathering system related items.
+;  The returns are processed through CNTRPRC (which see) 
+;2 Inputs
+;	Logical name GET_RMI_CYCLE (System table) is translated. If present
+;	(and correct) it is the number of seconds to wait between cycles.
+;	If not present or not correct (not a number) default = 3600
+;	Logical name GET_RMI_ALERT_THRESH (System table). If present
+;	(and correct) it is the number compared to any alert priority
+;	and if the alert priority is lower than this number, an opcom
+;	is not generated. 
+;	If not present or not correct (not a number) default = 10 Range is 1-255
+;	Logical name GET_RMI_MIN_THRESH (System table). If present
+;	(and correct) it is the number compared to any value calculated
+;	and if the value is lower than this number, an opcom is generated. 
+;	If not present or not correct (not a number) default = 10 Range is 1-255
+;
+;	The translation is performed at the end of each cycle so is dynamic.
+;2 Outputs
+;	Each result is validated and passed to CNTRPR. See this file
+;	for detail.
+;2 Modifications
+; 001  PB  Oct 2001		CREATION 
+;--
+; Definitions
+	.library	/CNTPRC.MLB/
+			CNTRPRCDEF
+	$ACCDEF
+	$RMIDEF
+	$JPIDEF
+	$LcKDEF
+	$LNMDEF
+
+; Local symbols
+; Array offsets
+; Following are the RMI items collected. as each is a .long, the data 
+; is collected into an array with the following offsets.
+RMI_ACCESS		= 0
+RMI_ACCLCK		= 4
+RMI_ALLOC		= 8
+RMI_ARRLOCPK		= 12
+RMI_ARRTRAPK		= 16
+RMI_BADFLTS		= 20
+RMI_BLKIN		= 24
+RMI_BLKLOC		= 28
+RMI_BLKOUT		= 32
+RMI_BLKAST		= 36
+RMI_BUFIO		= 40
+RMI_BUFOBJPAG		= 44
+RMI_BUFOBJPAGPEAK	= 48
+RMI_BUFOBJPAGS01	= 52
+RMI_BUFOBJPAGS2		= 56
+RMI_BUFOBJPAGMAXS01	= 60
+RMI_BUFOBJPAGMAXS2	= 64
+RMI_BUFOBJPAGPEAKS01	= 68
+RMI_BUFOBJPAGPEAKS2	= 72
+RMI_BUFOBJPGLTMAXS01	= 76
+RMI_BUFOBJPGLTMAXS2	= 80
+RMI_CEF			= 84
+RMI_COLPG		= 88
+RMI_COM			= 92
+RMI_COMO		= 96
+RMI_CPUEXEC		= 100
+RMI_CPUID		= 104
+RMI_CPUIDLE		= 108
+RMI_CPUINTSTK		= 112
+RMI_CPUKERNEL		= 116
+RMI_CPUMPSYNCH		= 120
+RMI_CPUSUPER		= 124
+RMI_CPUUSER		= 128
+RMI_CUR			= 132
+RMI_CWPSBYTESIN		= 136
+RMI_CWPSBYTESOUT	= 140
+RMI_CWPSJPISIN		= 144
+RMI_CWPSJPISOUT		= 148
+RMI_CWPSMSGSIN		= 152
+RMI_CWPSMSGSOUT		= 156
+RMI_CWPSPCNTRLIN	= 160
+RMI_CWPSPCNTRLOUT	= 164
+RMI_CWPSRSRCIN		= 168
+RMI_CWPSRSRCOUT		= 172
+RMI_DDTM_ABORTS		= 176
+RMI_DDTM_ADDS		= 180
+RMI_DDTM_BAD_LINKS	= 184
+RMI_DDTM_BAD_PARTS	= 188
+RMI_DDTM_BAD_TYPECODE	= 192
+RMI_DDTM_BRANCHS	= 196
+RMI_DDTM_BUCKETS1	= 200
+RMI_DDTM_BUCKETS2	= 204
+RMI_DDTM_BUCKETS3	= 208
+RMI_DDTM_BUCKETS4	= 212
+RMI_DDTM_BUCKETS5	= 216
+RMI_DDTM_BUCKETS6	= 220
+RMI_DDTM_DECLARES	= 224
+RMI_DDTM_DISC_COMP	= 228
+RMI_DDTM_ENDS		= 232
+RMI_DDTM_FOR_UNLINKS	= 236
+RMI_DDTM_FORGETS	= 240
+RMI_DDTM_JOINS		= 244
+RMI_DDTM_LOG_COMMITS	= 248
+RMI_DDTM_LOG_FORGETS	= 252
+RMI_DDTM_LOG_PREPARES	= 256
+RMI_DDTM_ONE_PHASE	= 260
+RMI_DDTM_PREPARES	= 264
+RMI_DDTM_SEQNO		= 268
+RMI_DDTM_STARTS		= 272
+RMI_DDTM_TWOPHASE_ACKRCV	= 276
+RMI_DDTM_TWOPHASE_ACKSNT	= 280
+RMI_DDTM_TWOPHASE_CANRCV	= 284
+RMI_DDTM_TWOPHASE_CANSNT	= 288
+RMI_DDTM_TWOPHASE_COMMITS	= 292
+RMI_DDTM_TWOPHASE_RDYRCV	= 296
+RMI_DDTM_TWOPHASE_RDYSNT	= 300
+RMI_DDTM_TWOPHASE_REQRCV	= 304
+RMI_DDTM_TWOPHASE_REQSNT	= 308
+RMI_DDTM_VOL_UNLINKS	= 312
+RMI_DDTM_WRITES_FORKED	= 316
+RMI_DDTM_WRITES_STARTED	= 320
+RMI_DEPLOCPK		= 324
+RMI_DEQ			= 328
+RMI_DEQIN		= 332
+RMI_DEQLOC		= 336
+RMI_DEQOUT		= 340
+RMI_DIRDATA_HIT		= 344
+RMI_DIRDATA_MISS	= 348
+RMI_DIRFCB_HIT		= 352
+RMI_DIRFCB_MISS		= 356
+RMI_DIRIN		= 360
+RMI_DIROUT		= 364
+RMI_DIRIO		= 368
+RMI_DLCK_INCMPLT	= 372
+RMI_DLCKFND		= 380
+RMI_DLCKMSGS_IN		= 384
+RMI_DLCKMSGS_OUT	= 388
+RMI_DLCKSRCH		= 392
+RMI_DZROFLTS		= 396
+RMI_ENQCVT		= 400
+RMI_ENQCVTIN		= 404
+RMI_ENQCVTLOC		= 408
+RMI_ENQCVTOUT		= 412
+RMI_ENQNEW		= 416
+RMI_ENQNEWIN		= 420
+RMI_ENQNEWLOC		= 424
+RMI_ENQNEWOUT		= 428
+RMI_ENQNOTQD		= 432
+RMI_ENQWAIT		= 436
+RMI_EXEFAULTS		= 440
+RMI_EXTHIT		= 444
+RMI_EXTMISS		= 448
+RMI_FAULTS		= 452
+RMI_FCPCACHE		= 456
+RMI_FCPCALLS		= 460
+RMI_FCPCPU		= 464
+RMI_FCPCREATE		= 468
+RMI_FCPERASE		= 472
+RMI_FCPFAULT		= 476
+RMI_FCPHIT		= 480
+RMI_FCPREAD		= 484
+RMI_FCPSPLIT		= 488
+RMI_FCPTURN		= 492
+RMI_FCPWRITE		= 496
+RMI_FIDHIT		= 500
+RMI_FIDMISS		= 504
+RMI_FILHDR_HIT		= 508
+RMI_FILHDR_MISS		= 512
+RMI_FPG			= 516
+RMI_FREFLTS		= 520
+RMI_FRLIST		= 524
+RMI_GBP_CURMAP		= 528
+RMI_GBP_CURMAP_GRP	= 532
+RMI_GBP_CURMAP_GRPWRT	= 536
+RMI_GBP_CURMAP_SYS	= 540
+RMI_GBP_CURMAP_SYSWRT	= 544
+RMI_GBP_MAXMAP		= 548
+RMI_GBS_CURMAP		= 552
+RMI_GBS_CURMAP_GRP	= 556
+RMI_GBS_CURMAP_GRPWRT	= 560
+RMI_GBS_CURMAP_SYS	= 564
+RMI_GBS_CURMAP_SYSWRT	= 568
+RMI_GBS_MAXMAP		= 572
+RMI_GBS_NOREF		= 580
+RMI_GVALFLTS		= 584
+RMI_HDRINSWAPS		= 588
+RMI_HDROUTSWAPS		= 592
+RMI_HIB			= 596
+RMI_HIBO		= 600
+RMI_IOPAGCNT		= 604
+RMI_ISWPCNT		= 608
+RMI_ISWPCNTPG		= 612
+RMI_LCKMGR_CPU		= 616
+RMI_LCKMGR_PID		= 620
+RMI_LCKMGR_REQCNT	= 624
+RMI_LCKMGR_REQTIME	= 628
+RMI_LCKMGR_SPINCNT	= 632
+RMI_LCKMGR_SPINTIME	= 636
+RMI_LEF			= 640
+RMI_LEFO		= 644
+RMI_LOCK_MAX		= 648
+RMI_LOGNAM		= 652
+RMI_LPZ_ALLOC2		= 656
+RMI_LPZ_ALLOCF		= 660
+RMI_LPZ_EMPTY		= 664
+RMI_LPZ_EXPCNT		= 668
+RMI_LPZ_HITS		= 672
+RMI_LPZ_MAXPAG		= 676
+RMI_LPZ_MISSES		= 680
+RMI_LPZ_PAGCNT		= 684
+RMI_LPZ_PAKSIZ		= 688
+RMI_MBREADS		= 692
+RMI_MBWRITES		= 696
+RMI_MCHKERRS		= 700
+RMI_MEMERRS		= 704
+RMI_MODLIST		= 708
+RMI_MSCP_EVERYTHING	= 712
+;-------- MSCP Includes -----------------
+MSCP_BUFAVL		= 712
+MSCP_BUFSMALL           = 716
+MSCP_BUFWAITCUR         = 720
+MSCP_BUFWAITPEAK        = 724
+MSCP_DSKSRV             = 728
+MSCP_HSTSRV             = 732
+MSCP_LB_FAILCNT         = 736
+MSCP_LB_INITCNT         = 740
+MSCP_LB_LMLOAD1         = 744
+MSCP_LB_LMLOAD2         = 748
+MSCP_LB_LMLOAD3         = 752
+MSCP_LB_LMLOAD4         = 756
+MSCP_LB_LOAD            = 760
+MSCP_LB_LOAD_AVAIL      = 764
+MSCP_LB_LOAD_CAP        = 768
+MSCP_LB_MONINT          = 772
+MSCP_LB_MONTIME         = 776
+MSCP_LB_REQCNT          = 780
+MSCP_LB_REQTIME         = 784
+MSCP_LB_RESPCNT         = 788
+MSCP_LB_RESP            = 792
+MSCP_OPCOUNT            = 796
+MSCP_VCFAIL             = 800
+MSCP_READ               = 804
+MSCP_WRITE              = 808
+MSCP_FRAGMENT           = 812
+MSCP_SPLITXFER          = 816
+MSCP_BUFWAIT            = 820
+MSCP_SIZE1              = 824
+MSCP_SIZE2              = 828
+MSCP_SIZE3              = 832
+MSCP_SIZE4              = 836
+MSCP_SIZE5              = 840
+MSCP_SIZE6              = 844
+MSCP_SIZE7              = 848
+; ---------------
+RMI_MWAIT		= 852
+RMI_NP_POOL_ALLOC	= 856
+RMI_NP_POOL_ALLOCF	= 860
+RMI_NP_POOL_EXP		= 864
+RMI_NP_POOL_EXPF	= 868
+RMI_NUMLOCKS		= 872
+RMI_NUMRES		= 876
+RMI_OPENS		= 880
+RMI_OSWPCNT		= 884
+RMI_OSWPCNTPG		= 888
+RMI_PFW			= 892
+RMI_PG_POOL_ALLOC	= 896
+RMI_PG_POOL_ALLOCF	= 900
+RMI_PG_POOL_EXPF	= 904
+RMI_PREADIO		= 908
+RMI_PREADS		= 912
+RMI_PROCBALSETCNT	= 916
+RMI_PROCBATCNT		= 920
+RMI_PROCCNTMAX		= 924
+RMI_PROCINTCNT		= 928
+RMI_PROCLOADCNT		= 932
+RMI_PROCNETCNT		= 936
+RMI_PROCS		= 940
+RMI_PROCSWITCHCNT	= 944
+RMI_PWRITES		= 948
+RMI_PWRITIO		= 952
+RMI_QUOHIT		= 956
+RMI_QUOMISS		= 960
+RMI_RCVBUFFL		= 964
+RMI_RDFAULTS		= 968
+RMI_RML_ACQUIRE		= 972
+RMI_RML_BETTER		= 976
+RMI_RML_MORE_ACT	= 980
+RMI_RML_MSGRCV		= 984
+RMI_RML_MSGSENT		= 988
+RMI_RML_NOQUOTA		= 992
+RMI_RML_NOTAKER		= 996
+RMI_RML_OPCNT		= 1000
+RMI_RML_RBLDMSGRCV	= 1004
+RMI_RML_RBLDMSGSENT	= 1008
+RMI_RML_SINGLE		= 1012
+RMI_RML_UNLOAD		= 1016
+RMI_SMP_CURMAP		= 1020
+RMI_SMP_CURMAP_GRP	= 1024
+RMI_SMP_CURMAP_GRPWRT 	= 1028
+RMI_SMP_CURMAP_SYS 	= 1032
+RMI_SMP_CURMAP_SYSWRT 	= 1036
+RMI_SMS_CURMAP 		= 1040
+RMI_SMS_CURMAP_GRP 	= 1044
+RMI_SMS_CURMAP_GRPWRT 	= 1048
+RMI_SMS_CURMAP_SYS 	= 1052
+RMI_SMS_CURMAP_SYSWRT 	= 1056
+RMI_SMS_NOREF 		= 1060
+RMI_STORAGMAP_HIT	= 1064
+RMI_STORAGMAP_MISS	= 1068
+RMI_SUSP		= 1072
+RMI_SUSPO		= 1076
+RMI_SYNCHLCK		= 1080
+RMI_SYNCHWAIT		= 1084
+RMI_SYSFAULTS		= 1088
+RMI_TMSCP_EVERYTHING	= 1092
+; TMSCP Includes -----------------------
+TMSCP_BUFWAIT		= 1092
+TMSCP_HSTSRV            = 1096
+TMSCP_TAPSRV            = 1100
+TMSCP_OPCOUNT           = 1104
+TMSCP_ABORTCNT          = 1108
+TMSCP_BUFAVAIL          = 1112
+TMSCP_ONLINCNT          = 1116
+TMSCP_ACCESSCNT         = 1120
+TMSCP_FLUSHCNT          = 1124
+TMSCP_RDCOUNT           = 1128
+TMSCP_WRCOUNT           = 1132
+TMSCP_VCFAIL            = 1136
+TMSCP_FRAGMENT          = 1140
+TMSCP_SIZE1             = 1144
+TMSCP_SIZE2             = 1148
+TMSCP_SIZE3             = 1152
+TMSCP_SIZE4             = 1156
+TMSCP_SIZE5             = 1160
+TMSCP_SIZE6             = 1164
+TMSCP_SIZE7             = 1168
+; --------------------------------------
+RMI_TQESYSUB		= 1172
+RMI_TQETOTAL		= 1180
+RMI_TQEUSRTIMR		= 1188
+RMI_TQEUSRWAKE		= 1196
+RMI_TRANSFLTS		= 1204
+RMI_TRCNGLOS		= 1208
+RMI_TTREADCNT		= 1212
+RMI_TTREADS		= 1216
+RMI_TTWRITECNT		= 1220
+RMI_TTWRITES		= 1224
+RMI_USERPAGES		= 1228
+RMI_VMSPAGES		= 1236
+RMI_VOLLCK		= 1240
+RMI_VOLWAIT		= 1244
+RMI_WRTFAULTS		= 1252
+RMI_WRTINPROG		= 1256
+RMI_XQPCACHEWAIT	= 1260
+RMI_MSCP_EVERYTHING     = 1264
+; TMSCP items
+TMSCP_ITMLST:
+RMI_TMSCP_BUFWAIT:	    .WORD 1092
+RMI_TMSCP_HSTSRV:            .WORD 1096
+RMI_TMSCP_TAPSRV:            .WORD 1100
+RMI_TMSCP_OPCOUNT:           .WORD 1104
+RMI_TMSCP_ABORTCNT:          .WORD 1108
+RMI_TMSCP_BUFAVAIL:          .WORD 1112
+RMI_TMSCP_ONLINCNT:          .WORD 1116
+RMI_TMSCP_ACCESSCNT:         .WORD 1120
+RMI_TMSCP_FLUSHCNT:          .WORD 1124
+RMI_TMSCP_RDCOUNT:           .WORD 1128
+RMI_TMSCP_WRCOUNT:           .WORD 1132
+RMI_TMSCP_VCFAIL:            .WORD 1136
+RMI_TMSCP_FRAGMENT:          .WORD 1140
+RMI_TMSCP_SIZE1:             .WORD 1144
+RMI_TMSCP_SIZE2:             .WORD 1148
+RMI_TMSCP_SIZE3:             .WORD 1152
+RMI_TMSCP_SIZE4:             .WORD 1156
+RMI_TMSCP_SIZE5:             .WORD 1160
+RMI_TMSCP_SIZE6:             .WORD 1164
+RMI_TMSCP_SIZE7:             .WORD 1168
+TMSCP_ITMCNT = .-TMSCP_ITMLST/2
+
+MSCP_ITMLST:
+RMI_MSCP_BUFAVL:		.WORD 712
+RMI_MSCP_BUFSMALL:           .WORD 716
+RMI_MSCP_BUFWAITCUR:         .WORD 720
+RMI_MSCP_BUFWAITPEAK:        .WORD 724
+RMI_MSCP_DSKSRV:             .WORD 728
+RMI_MSCP_HSTSRV:             .WORD 732
+RMI_MSCP_LB_FAILCNT:         .WORD 736
+RMI_MSCP_LB_INITCNT:         .WORD 740
+RMI_MSCP_LB_LMLOAD1:         .WORD 744
+RMI_MSCP_LB_LMLOAD2:         .WORD 748
+RMI_MSCP_LB_LMLOAD3:         .WORD 752
+RMI_MSCP_LB_LMLOAD4:         .WORD 756
+RMI_MSCP_LB_LOAD:            .WORD 760
+RMI_MSCP_LB_LOAD_AVAIL:      .WORD 764
+RMI_MSCP_LB_LOAD_CAP:        .WORD 768
+RMI_MSCP_LB_MONINT:          .WORD 772
+RMI_MSCP_LB_MONTIME:         .WORD 776
+RMI_MSCP_LB_REQCNT:          .WORD 780
+RMI_MSCP_LB_REQTIME:         .WORD 784
+RMI_MSCP_LB_RESPCNT:         .WORD 788
+RMI_MSCP_LB_RESP:            .WORD 792
+RMI_MSCP_OPCOUNT:            .WORD 796
+RMI_MSCP_VCFAIL:             .WORD 800
+RMI_MSCP_READ:               .WORD 804
+RMI_MSCP_WRITE:              .WORD 808
+RMI_MSCP_FRAGMENT:           .WORD 812
+RMI_MSCP_SPLITXFER:          .WORD 816
+RMI_MSCP_BUFWAIT:           .WORD 820
+RMI_MSCP_SIZE1:              .WORD 824
+RMI_MSCP_SIZE2:              .WORD 828
+RMI_MSCP_SIZE3:              .WORD 832
+RMI_MSCP_SIZE4:              .WORD 836
+RMI_MSCP_SIZE5:              .WORD 840
+RMI_MSCP_SIZE6:              .WORD 844
+RMI_MSCP_SIZE7:              .WORD 848
+MSCP_ITMCNT = .- MSCP_ITMLST/2
+;
+	.PSECT	RW_DATA, NOEXE, RD, WRT, QUAD, PIC, NOSHR	
+
+DAT_ARRAY:	.BLKB	1264
+LEN_ARRAY:	.BLKB	1264
+CNTRES:			.QUAD
+JPILST:		.WORD	8
+		.WORD	JPI$_NODENAME
+		.ADDRESS NODENAME
+		.ADDRESS  NODENAME_DESC
+		.LONG	0
+NODENAME:	.BLKB	8
+NODENAME_DESC:	.LONG	.-NODENAME
+		.ADDRESS  NODENAME
+		.LONG	0
+RMIITMLST:
+; Array containing items required for the GETRMI call and the subsequent
+; processing through CNTRPRC. Combining these avoids problems in processing
+; two seperate arrays when they get out of sync.
+; Each entry is composed of:
+;	.word	len of rec buffer	
+;	.word	RMI code
+;	.long	address of rec buffer
+;	.long	address where GETRMI writes the return length
+;	.long	DataType	(CTP processing flags)
+; The call to GETRMI is constructed from this list as is the subsequent call 
+; to CNTRPRC.
+
+RMIITMLEN = 16
+
+
+;Returns the count of file name lookup operations in file directories. 
+	.WORD	4
+	.WORD	RMI$_ACCESS
+        .ADDRESS	DAT_ARRAY
+	.ADDRESS	LEN_ARRAY
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of access locks. 
+	.WORD	4
+	.WORD	RMI$_ACCLCK
+	.ADDRESS	DAT_ARRAY+RMI_ACCLCK
+	.ADDRESS	LEN_ARRAY+RMI_ACCLCK
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of QIO requests that caused allocation of disk space. 
+	.WORD	4
+	.WORD	RMI$_ALLOC
+	.ADDRESS	DAT_ARRAY+RMI_ALLOC   	;8
+	.ADDRESS	LEN_ARRAY+RMI_ALLOC 	;8
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of arriving local DECnet packets. 
+	.WORD	4
+	.WORD	RMI$_ARRLOCPK
+	.ADDRESS	DAT_ARRAY+RMI_ARRLOCPK	;12
+	.ADDRESS	LEN_ARRAY+RMI_ARRLOCPK	;12
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of arriving transit DECnet packets. 
+	.WORD	4
+	.WORD	RMI$_ARRTRAPK
+	.ADDRESS	DAT_ARRAY+RMI_ARRTRAPK	;16
+	.ADDRESS	LEN_ARRAY+RMI_ARRTRAPK	;16
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of bad-list faults. 
+	.WORD	4
+	.WORD	RMI$_BADFLTS
+	.ADDRESS	DAT_ARRAY+RMI_BADFLTS	;20
+	.ADDRESS	LEN_ARRAY+RMI_BADFLTS	;20
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of blocking ASTs queued that
+	.WORD	4
+	.WORD	RMI$_BLKIN
+	.ADDRESS	DAT_ARRAY+RMI_BLKIN	;24
+	.ADDRESS	LEN_ARRAY+RMI_BLKIN	;24
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;;originated and were processed on the local system.
+	.WORD	4
+	.WORD	RMI$_BLKLOC
+	.ADDRESS	DAT_ARRAY+RMI_BLKLOC	;28
+	.ADDRESS	LEN_ARRAY+RMI_BLKLOC	;28
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of blocking ASTs queued that
+       .WORD   4
+       .WORD   RMI$_BLKOUT
+       .ADDRESS        DAT_ARRAY+RMI_BLKOUT    ;32
+       .ADDRESS        LEN_ARRAY+RMI_BLKOUT    ;32
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of blocking ASTs.
+       .WORD   4
+       .WORD   RMI$_BLKAST
+       .ADDRESS        DAT_ARRAY+RMI_BLKAST    ;36
+       .ADDRESS        LEN_ARRAY+RMI_BLKAST    ;36
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of buffered I/Os.
+       .WORD   4
+       .WORD   RMI$_BUFIO
+       .ADDRESS        DAT_ARRAY+RMI_BUFIO     ;40
+       .ADDRESS        LEN_ARRAY+RMI_BUFIO     ;40
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of buffer object physical pages currently allocated.
+       .WORD   4
+       .WORD   RMI$_BUFOBJPAG
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPAG ;44
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPAG ;44
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the maximum number of buffer object physical pages currently allocate
+       .WORD   4
+       .WORD   RMI$_BUFOBJPAGPEAK
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPAGPEAK     ;48
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPAGPEAK     ;48
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of buffer object pages currently allocated in S0 and S1
+       .WORD   4
+       .WORD   RMI$_BUFOBJPAGS01
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPAGS01      ;52
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPAGS01      ;52
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of buffer object physical pages currently allocated in S2
+;space.
+       .WORD   4
+       .WORD   RMI$_BUFOBJPAGS2
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPAGS2       ;56
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPAGS2       ;56
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the available number of buffer object pages in S0 and S1 space.
+       .WORD   4
+       .WORD   RMI$_BUFOBJPAGMAXS01
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPAGMAXS01   ;60
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPAGMAXS01   ;60
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the available number of buffer object pages in S2 space.
+       .WORD   4
+       .WORD   RMI$_BUFOBJPAGMAXS2
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPAGMAXS2    ;64
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPAGMAXS2    ;64
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the maximum number of buffer object pages currently allocated in S0 and
+       .WORD   4
+       .WORD   RMI$_BUFOBJPAGPEAKS01
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPAGPEAKS01  ;68
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPAGPEAKS01  ;68
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the maximum number of buffer object pages currently allocated in S2
+       .WORD   4
+       .WORD   RMI$_BUFOBJPAGPEAKS2
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPAGPEAKS2   ;72
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPAGPEAKS2   ;72
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the available number of buffer object pagelets in S0 and S1 space.
+       .WORD   4
+       .WORD   RMI$_BUFOBJPGLTMAXS01
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPGLTMAXS01  ;76
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPGLTMAXS01  ;76
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the available number of buffer object pagelets in S2 space.
+       .WORD   4
+       .WORD   RMI$_BUFOBJPGLTMAXS2
+       .ADDRESS        DAT_ARRAY+RMI_BUFOBJPGLTMAXS2   ;80
+       .ADDRESS        LEN_ARRAY+RMI_BUFOBJPGLTMAXS2   ;80
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of processes in the common event flag wait state.
+       .WORD   4
+       .WORD   RMI$_CEF
+       .ADDRESS        DAT_ARRAY+RMI_CEF       ;84
+       .ADDRESS        LEN_ARRAY+RMI_CEF       ;84
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of processes in the collided page wait state.
+       .WORD   4
+       .WORD   RMI$_COLPG
+       .ADDRESS        DAT_ARRAY+RMI_COLPG     ;88
+       .ADDRESS        LEN_ARRAY+RMI_COLPG     ;88
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of processes in the computable state.
+       .WORD   4
+       .WORD   RMI$_COM
+       .ADDRESS        DAT_ARRAY+RMI_COM       ;92
+       .ADDRESS        LEN_ARRAY+RMI_COM       ;92
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of outswapped processes in the computable state.
+       .WORD   4
+       .WORD   RMI$_COMO
+       .ADDRESS        DAT_ARRAY+RMI_COMO      ;96
+       .ADDRESS        LEN_ARRAY+RMI_COMO      ;96
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the amount of time, in 10-millisecond units, spent by all CPUs in
+;       .WORD   4
+;       .WORD   RMI$_CPUEXEC
+;       .ADDRESS        DAT_ARRAY+RMI_CPUEXEC   ;100
+;       .ADDRESS        LEN_ARRAY+RMI_CPUEXEC   ;100
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the primary CPU ID.
+       .WORD   4
+       .WORD   RMI$_CPUID
+       .ADDRESS        DAT_ARRAY+RMI_CPUID     ;104
+       .ADDRESS        LEN_ARRAY+RMI_CPUID     ;104
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the amount of time, in 10-millisecond units, spent by all CPUs in idle
+;       .WORD   4
+;       .WORD   RMI$_CPUIDLE
+;       .ADDRESS        DAT_ARRAY+RMI_CPUIDLE   ;108
+;       .ADDRESS        LEN_ARRAY+RMI_CPUIDLE   ;108
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the amount of time, in 10-millisecond units, spent by all CPUs in
+;       .WORD   4
+;       .WORD   RMI$_CPUINTSTK
+;       .ADDRESS        DAT_ARRAY+RMI_CPUINTSTK ;112
+;       .ADDRESS        LEN_ARRAY+RMI_CPUINTSTK ;112
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the amount of time, in 10-millisecond units, spent by all CPUs in
+;       .WORD   4
+;       .WORD   RMI$_CPUKERNEL
+;       .ADDRESS        DAT_ARRAY+RMI_CPUKERNEL ;116
+;       .ADDRESS        LEN_ARRAY+RMI_CPUKERNEL ;116
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the amount of time, in 10-millisecond units, spent by the primary CPU
+;in synchronization mode.
+;       .WORD   4
+;       .WORD   RMI$_CPUMPSYNCH
+;       .ADDRESS        DAT_ARRAY+RMI_CPUMPSYNCH        ;120
+;       .ADDRESS        LEN_ARRAY+RMI_CPUMPSYNCH        ;120
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the amount of time, in 10-millisecond units, spent by all CPUs in
+;supervisor mode.
+;       .WORD   4
+;       .WORD   RMI$_CPUSUPER
+;       .ADDRESS        DAT_ARRAY+RMI_CPUSUPER  ;124
+;       .ADDRESS        LEN_ARRAY+RMI_CPUSUPER  ;124
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the amount of time, in 10-millisecond units, spent by all CPUs in user
+;mode.
+;       .WORD   4
+;       .WORD   RMI$_CPUUSER
+;       .ADDRESS        DAT_ARRAY+RMI_CPUUSER   ;128
+;       .ADDRESS        LEN_ARRAY+RMI_CPUUSER   ;128
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;;*SS Returns the number of currently-executing processes.
+       .WORD   4
+       .WORD   RMI$_CUR
+       .ADDRESS        DAT_ARRAY+RMI_CUR       ;132
+       .ADDRESS        LEN_ARRAY+RMI_CUR       ;132
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of clusterwide process services (CWPS) message bytes
+;received by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSBYTESIN
+       .ADDRESS        DAT_ARRAY+RMI_CWPSBYTESIN       ;136
+       .ADDRESS        LEN_ARRAY+RMI_CWPSBYTESIN       ;136
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of CWPS message bytes sent by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSBYTESOUT
+       .ADDRESS        DAT_ARRAY+RMI_CWPSBYTESOUT      ;140
+       .ADDRESS        LEN_ARRAY+RMI_CWPSBYTESOUT      ;140
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of CWPS $GETJPI requests received by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSJPISIN
+       .ADDRESS        DAT_ARRAY+RMI_CWPSJPISIN        ;144
+       .ADDRESS        LEN_ARRAY+RMI_CWPSJPISIN        ;144
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;;Returns the number of CWPS $GETJPI requests sent by the system.
+	.WORD	4
+	.WORD	RMI$_CWPSJPISOUT
+	.ADDRESS	DAT_ARRAY+RMI_CWPSJPISOUT	;148
+	.ADDRESS	LEN_ARRAY+RMI_CWPSJPISOUT	;148
+	.LONG	<CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of CWPS messages received by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSMSGSIN
+       .ADDRESS        DAT_ARRAY+RMI_CWPSMSGSIN        ;152
+       .ADDRESS        LEN_ARRAY+RMI_CWPSMSGSIN        ;152
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of CWPS messages sent by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSMSGSOUT
+       .ADDRESS        DAT_ARRAY+RMI_CWPSMSGSOUT       ;156
+       .ADDRESS        LEN_ARRAY+RMI_CWPSMSGSOUT       ;156
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of CWPS PCNTRL requests received by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSPCNTRLIN
+       .ADDRESS        DAT_ARRAY+RMI_CWPSPCNTRLIN      ;160
+       .ADDRESS        LEN_ARRAY+RMI_CWPSPCNTRLIN      ;160
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of CWPS PCNTRL requests sent by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSPCNTRLOUT
+       .ADDRESS        DAT_ARRAY+RMI_CWPSPCNTRLOUT     ;164
+       .ADDRESS        LEN_ARRAY+RMI_CWPSPCNTRLOUT     ;164
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of CWPS resource-fail messages received by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSRSRCIN
+       .ADDRESS        DAT_ARRAY+RMI_CWPSRSRCIN        ;168
+       .ADDRESS        LEN_ARRAY+RMI_CWPSRSRCIN        ;168
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of CWPS resource-fail messages sent by the system.
+       .WORD   4
+       .WORD   RMI$_CWPSRSRCOUT
+       .ADDRESS        DAT_ARRAY+RMI_CWPSRSRCOUT       ;172
+       .ADDRESS        LEN_ARRAY+RMI_CWPSRSRCOUT       ;172
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of transactions aborted (planned and
+;unplanned).
+       .WORD   4
+       .WORD   RMI$_DDTM_ABORTS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_ABORTS       ;176
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_ABORTS       ;176
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of transaction branches added on the
+;local node.
+       .WORD   4
+       .WORD   RMI$_DDTM_ADDS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_ADDS ;180
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_ADDS ;180
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of bad message links received.
+       .WORD   4
+       .WORD   RMI$_DDTM_BAD_LINKS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BAD_LINKS    ;184
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BAD_LINKS    ;184
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of invalid part IDs found.
+       .WORD   4
+       .WORD   RMI$_DDTM_BAD_PARTS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BAD_PARTS    ;188
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BAD_PARTS    ;188
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of bad message type codes received.
+       .WORD   4
+       .WORD   RMI$_DDTM_BAD_TYPECODE
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BAD_TYPECODE ;192
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BAD_TYPECODE ;192
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of transaction branches started on the
+;local node.
+       .WORD   4
+       .WORD   RMI$_DDTM_BRANCHS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BRANCHS      ;196
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BRANCHS      ;196
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of transactions with a duration of
+;less than 1 second.
+       .WORD   4
+       .WORD   RMI$_DDTM_BUCKETS1
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BUCKETS1     ;200
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BUCKETS1     ;200
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of transactions with a duration of 1
+;to 2 (1.
+       .WORD   4
+       .WORD   RMI$_DDTM_BUCKETS2
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BUCKETS2     ;204
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BUCKETS2     ;204
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of transactions with a duration of 2
+;to 3 (2.
+       .WORD   4
+       .WORD   RMI$_DDTM_BUCKETS3
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BUCKETS3     ;208
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BUCKETS3     ;208
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of transactions with a duration of 3
+;to 4 (3.
+       .WORD   4
+       .WORD   RMI$_DDTM_BUCKETS4
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BUCKETS4     ;212
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BUCKETS4     ;212
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of transactions with a duration of 4
+;to 5 (4.
+       .WORD   4
+       .WORD   RMI$_DDTM_BUCKETS5
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BUCKETS5     ;216
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BUCKETS5     ;216
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of transactions with a duration of at
+;least 5 seconds.
+       .WORD   4
+       .WORD   RMI$_DDTM_BUCKETS6
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_BUCKETS6     ;220
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_BUCKETS6     ;220
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of $DECLARE_RMs.
+       .WORD   4
+       .WORD   RMI$_DDTM_DECLARES
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_DECLARES     ;224
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_DECLARES     ;224
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of disconnected complete events.
+       .WORD   4
+       .WORD   RMI$_DDTM_DISC_COMP
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_DISC_COMP    ;228
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_DISC_COMP    ;228
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of transactions ended.
+       .WORD   4
+       .WORD   RMI$_DDTM_ENDS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_ENDS ;232
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_ENDS ;232
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of forced unlinks.
+       .WORD   4
+       .WORD   RMI$_DDTM_FOR_UNLINKS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_FOR_UNLINKS  ;236
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_FOR_UNLINKS  ;236
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of $FORGET_RMs.
+       .WORD   4
+       .WORD   RMI$_DDTM_FORGETS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_FORGETS      ;240
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_FORGETS      ;240
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of $JOIN_RMs.
+       .WORD   4
+       .WORD   RMI$_DDTM_JOINS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_JOINS        ;244
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_JOINS        ;244
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of commit records written.
+       .WORD   4
+       .WORD   RMI$_DDTM_LOG_COMMITS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_LOG_COMMITS  ;248
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_LOG_COMMITS  ;248
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of forget records written.
+       .WORD   4
+       .WORD   RMI$_DDTM_LOG_FORGETS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_LOG_FORGETS  ;252
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_LOG_FORGETS  ;252
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of prepare records written.
+       .WORD   4
+       .WORD   RMI$_DDTM_LOG_PREPARES
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_LOG_PREPARES ;256
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_LOG_PREPARES ;256
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of 1-phase commit events initiated.
+       .WORD   4
+       .WORD   RMI$_DDTM_ONE_PHASE
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_ONE_PHASE    ;260
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_ONE_PHASE    ;260
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of transactions that have been
+;prepared.
+       .WORD   4
+       .WORD   RMI$_DDTM_PREPARES
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_PREPARES     ;264
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_PREPARES     ;264
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of XCBs created.
+       .WORD   4
+       .WORD   RMI$_DDTM_SEQNO
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_SEQNO        ;268
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_SEQNO        ;268
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of transactions successfully started. 
+       .WORD   4
+       .WORD   RMI$_DDTM_STARTS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_STARTS       ;272
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_STARTS       ;272
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of 2-phase commit ACK messages
+;received.
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_ACKRCV
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_ACKRCV      ;276
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_ACKRCV      ;276
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;;; Returns the accumulated systemwide count of 2-phase commit ACK messages sent.
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_ACKSNT
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_ACKSNT      ;280
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_ACKSNT      ;280
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of 2-phase commit cancel messages
+;received.
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_CANRCV
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_CANRCV      ;284
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_CANRCV      ;284
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of 2-phase commit cancel messages
+;sent.
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_CANSNT
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_CANSNT      ;288
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_CANSNT      ;288
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of 2-phase commit events initiated.
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_COMMITS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_COMMITS     ;292
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_COMMITS     ;292
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of 2-phase commit ready messages
+;received.
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_RDYRCV
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_RDYRCV      ;296
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_RDYRCV      ;296
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of 2-phase commit ready messages sen
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_RDYSNT
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_RDYSNT      ;300
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_RDYSNT      ;300
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of 2-phase commit requests received.
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_REQRCV
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_REQRCV      ;304
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_REQRCV      ;304
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;;Returns the accumulated systemwide count of 2-phase commit requests sent.
+       .WORD   4
+       .WORD   RMI$_DDTM_TWOPHASE_REQSNT
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_TWOPHASE_REQSNT      ;308
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_TWOPHASE_REQSNT      ;308
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of voluntary unlinks.
+       .WORD   4
+       .WORD   RMI$_DDTM_VOL_UNLINKS
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_VOL_UNLINKS  ;312
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_VOL_UNLINKS  ;312
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of forked writes.
+       .WORD   4
+       .WORD   RMI$_DDTM_WRITES_FORKED
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_WRITES_FORKED        ;316
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_WRITES_FORKED        ;316
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of writes started.
+       .WORD   4
+       .WORD   RMI$_DDTM_WRITES_STARTED
+       .ADDRESS        DAT_ARRAY+RMI_DDTM_WRITES_STARTED       ;320
+       .ADDRESS        LEN_ARRAY+RMI_DDTM_WRITES_STARTED       ;320
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of departing local DECnet packets.
+       .WORD   4
+       .WORD   RMI$_DEPLOCPK
+       .ADDRESS        DAT_ARRAY+RMI_DEPLOCPK  ;324
+       .ADDRESS        LEN_ARRAY+RMI_DEPLOCPK  ;324
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of DEQ operations.
+       .WORD   4
+       .WORD   RMI$_DEQ
+       .ADDRESS        DAT_ARRAY+RMI_DEQ       ;328
+       .ADDRESS        LEN_ARRAY+RMI_DEQ       ;328
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of unlock (dequeue) lock requests that
+;originated on a remote system and were processed on the local system.
+       .WORD   4
+       .WORD   RMI$_DEQIN
+       .ADDRESS        DAT_ARRAY+RMI_DEQIN     ;332
+       .ADDRESS        LEN_ARRAY+RMI_DEQIN     ;332
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of unlock (dequeue) requests that
+;originated and were processed on the local system.
+       .WORD   4
+       .WORD   RMI$_DEQLOC
+       .ADDRESS        DAT_ARRAY+RMI_DEQLOC    ;336
+       .ADDRESS        LEN_ARRAY+RMI_DEQLOC    ;336
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of unlock (dequeue) requests that
+;originated on the local system and were processed on a remote system.
+       .WORD   4
+       .WORD   RMI$_DEQOUT
+       .ADDRESS        DAT_ARRAY+RMI_DEQOUT    ;340
+       .ADDRESS        LEN_ARRAY+RMI_DEQOUT    ;340
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of directory data cache hits.
+       .WORD   4
+       .WORD   RMI$_DIRDATA_HIT
+       .ADDRESS        DAT_ARRAY+RMI_DIRDATA_HIT       ;344
+       .ADDRESS        LEN_ARRAY+RMI_DIRDATA_HIT       ;344
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of directory data cache misses.
+       .WORD   4
+       .WORD   RMI$_DIRDATA_MISS
+       .ADDRESS        DAT_ARRAY+RMI_DIRDATA_MISS      ;348
+       .ADDRESS        LEN_ARRAY+RMI_DIRDATA_MISS      ;348
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the systemwide count of directory FCB cache hits.
+       .WORD   4
+       .WORD   RMI$_DIRFCB_HIT
+       .ADDRESS        DAT_ARRAY+RMI_DIRFCB_HIT        ;352
+       .ADDRESS        LEN_ARRAY+RMI_DIRFCB_HIT        ;352
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of directory FCB cache misses.
+       .WORD   4
+       .WORD   RMI$_DIRFCB_MISS
+       .ADDRESS        DAT_ARRAY+RMI_DIRFCB_MISS       ;356
+       .ADDRESS        LEN_ARRAY+RMI_DIRFCB_MISS       ;356
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of directory operations serviced by
+;the local system that originated on remote systems.
+       .WORD   4
+       .WORD   RMI$_DIRIN
+       .ADDRESS        DAT_ARRAY+RMI_DIRIN     ;360
+       .ADDRESS        LEN_ARRAY+RMI_DIRIN     ;360
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;Returns the accumulated systemwide count of directory operations that
+;originated on the local system and were serviced by remote systems.
+       .WORD   4
+       .WORD   RMI$_DIROUT
+       .ADDRESS        DAT_ARRAY+RMI_DIROUT    ;364
+       .ADDRESS        LEN_ARRAY+RMI_DIROUT    ;364
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of direct I/Os.
+       .WORD   4
+       .WORD   RMI$_DIRIO
+       .ADDRESS        DAT_ARRAY+RMI_DIRIO     ;368
+       .ADDRESS        LEN_ARRAY+RMI_DIRIO     ;368
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of incomplete deadlock searches.
+       .WORD   4
+       .WORD   RMI$_DLCK_INCMPLT
+       .ADDRESS        DAT_ARRAY+RMI_DLCK_INCMPLT      ;372
+       .ADDRESS        LEN_ARRAY+RMI_DLCK_INCMPLT      ;372
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of deadlocks found.
+       .WORD   4
+       .WORD   RMI$_DLCKFND
+       .ADDRESS        DAT_ARRAY+RMI_DLCKFND   ;380
+       .ADDRESS        LEN_ARRAY+RMI_DLCKFND   ;380
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of incoming deadlock detection messages.
+       .WORD   4
+       .WORD   RMI$_DLCKMSGS_IN
+       .ADDRESS        DAT_ARRAY+RMI_DLCKMSGS_IN       ;384
+       .ADDRESS        LEN_ARRAY+RMI_DLCKMSGS_IN       ;384
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of outgoing deadlock detection
+;messages.
+       .WORD   4
+       .WORD   RMI$_DLCKMSGS_OUT
+       .ADDRESS        DAT_ARRAY+RMI_DLCKMSGS_OUT      ;388
+       .ADDRESS        LEN_ARRAY+RMI_DLCKMSGS_OUT      ;388
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of deadlock searches.
+       .WORD   4
+       .WORD   RMI$_DLCKSRCH
+       .ADDRESS        DAT_ARRAY+RMI_DLCKSRCH  ;392
+       .ADDRESS        LEN_ARRAY+RMI_DLCKSRCH  ;392
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of demand zero page faults.
+       .WORD   4
+       .WORD   RMI$_DZROFLTS
+       .ADDRESS        DAT_ARRAY+RMI_DZROFLTS  ;396
+       .ADDRESS        LEN_ARRAY+RMI_DZROFLTS  ;396
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of ENQ conversion operations.
+       .WORD   4
+       .WORD   RMI$_ENQCVT
+       .ADDRESS        DAT_ARRAY+RMI_ENQCVT    ;400
+       .ADDRESS        LEN_ARRAY+RMI_ENQCVT    ;400
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of lock conversion requests that
+;originated on a remote system and were processed on the local system.
+       .WORD   4
+       .WORD   RMI$_ENQCVTIN
+       .ADDRESS        DAT_ARRAY+RMI_ENQCVTIN  ;404
+       .ADDRESS        LEN_ARRAY+RMI_ENQCVTIN  ;404
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of lock conversion requests that
+;originated and were processed on the local system.
+       .WORD   4
+       .WORD   RMI$_ENQCVTLOC
+       .ADDRESS        DAT_ARRAY+RMI_ENQCVTLOC ;408
+       .ADDRESS        LEN_ARRAY+RMI_ENQCVTLOC ;408
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of lock conversion requests that
+;;originated on the local system and were processed on a remote system.
+       .WORD   4
+       .WORD   RMI$_ENQCVTOUT
+       .ADDRESS        DAT_ARRAY+RMI_ENQCVTOUT ;412
+       .ADDRESS        LEN_ARRAY+RMI_ENQCVTOUT ;412
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of new ENQ operations.
+       .WORD   4
+       .WORD   RMI$_ENQNEW
+       .ADDRESS        DAT_ARRAY+RMI_ENQNEW    ;416
+       .ADDRESS        LEN_ARRAY+RMI_ENQNEW    ;416
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of new lock requests that originated
+;on a remote system and were processed on the local system.
+       .WORD   4
+       .WORD   RMI$_ENQNEWIN
+       .ADDRESS        DAT_ARRAY+RMI_ENQNEWIN  ;420
+       .ADDRESS        LEN_ARRAY+RMI_ENQNEWIN  ;420
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of new lock requests that originated
+;and were processed on the local system.
+       .WORD   4
+       .WORD   RMI$_ENQNEWLOC
+       .ADDRESS        DAT_ARRAY+RMI_ENQNEWLOC ;424
+       .ADDRESS        LEN_ARRAY+RMI_ENQNEWLOC ;424
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of new lock requests that originated
+;on the local system and were processed on a remote system.
+       .WORD   4
+       .WORD   RMI$_ENQNEWOUT
+       .ADDRESS        DAT_ARRAY+RMI_ENQNEWOUT ;428
+       .ADDRESS        LEN_ARRAY+RMI_ENQNEWOUT ;428
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of ENQ operations not queued.
+       .WORD   4
+       .WORD   RMI$_ENQNOTQD
+       .ADDRESS        DAT_ARRAY+RMI_ENQNOTQD  ;432
+       .ADDRESS        LEN_ARRAY+RMI_ENQNOTQD  ;432
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of ENQ operations forced to wait.
+       .WORD   4
+       .WORD   RMI$_ENQWAIT
+       .ADDRESS        DAT_ARRAY+RMI_ENQWAIT   ;436
+       .ADDRESS        LEN_ARRAY+RMI_ENQWAIT   ;436
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of execute page faults.
+       .WORD   4
+       .WORD   RMI$_EXEFAULTS
+       .ADDRESS        DAT_ARRAY+RMI_EXEFAULTS ;440
+       .ADDRESS        LEN_ARRAY+RMI_EXEFAULTS ;440
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the systemwide count of extent cache hits.
+       .WORD   4
+       .WORD   RMI$_EXTHIT
+       .ADDRESS        DAT_ARRAY+RMI_EXTHIT    ;444
+       .ADDRESS        LEN_ARRAY+RMI_EXTHIT    ;444
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of extent cache misses.
+       .WORD   4
+       .WORD   RMI$_EXTMISS
+       .ADDRESS        DAT_ARRAY+RMI_EXTMISS   ;448
+       .ADDRESS        LEN_ARRAY+RMI_EXTMISS   ;448
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of page faults since last system initialization.
+       .WORD   4
+       .WORD   RMI$_FAULTS
+       .ADDRESS        DAT_ARRAY+RMI_FAULTS    ;452
+       .ADDRESS        LEN_ARRAY+RMI_FAULTS    ;452
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of cache hits by the FCP.
+       .WORD   4
+       .WORD   RMI$_FCPCACHE
+       .ADDRESS        DAT_ARRAY+RMI_FCPCACHE  ;456
+       .ADDRESS        LEN_ARRAY+RMI_FCPCACHE  ;456
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of calls to the FCP.
+       .WORD   4
+       .WORD   RMI$_FCPCALLS
+       .ADDRESS        DAT_ARRAY+RMI_FCPCALLS  ;460
+       .ADDRESS        LEN_ARRAY+RMI_FCPCALLS  ;460
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of CPU tics used by the FCP.
+       .WORD   4
+       .WORD   RMI$_FCPCPU
+       .ADDRESS        DAT_ARRAY+RMI_FCPCPU    ;464
+       .ADDRESS        LEN_ARRAY+RMI_FCPCPU    ;464
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of new files created since the system was booted.
+       .WORD   4
+       .WORD   RMI$_FCPCREATE
+       .ADDRESS        DAT_ARRAY+RMI_FCPCREATE ;468
+       .ADDRESS        LEN_ARRAY+RMI_FCPCREATE ;468
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of erase I/O operations issued.
+       .WORD   4
+       .WORD   RMI$_FCPERASE
+       .ADDRESS        DAT_ARRAY+RMI_FCPERASE  ;472
+       .ADDRESS        LEN_ARRAY+RMI_FCPERASE  ;472
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of FCP page faults.
+       .WORD   4
+       .WORD   RMI$_FCPFAULT
+       .ADDRESS        DAT_ARRAY+RMI_FCPFAULT  ;476
+       .ADDRESS        LEN_ARRAY+RMI_FCPFAULT  ;476
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of file I/O transfers for which no disk access was
+;required.
+       .WORD   4
+       .WORD   RMI$_FCPHIT
+       .ADDRESS        DAT_ARRAY+RMI_FCPHIT    ;480
+       .ADDRESS        LEN_ARRAY+RMI_FCPHIT    ;480
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of disk reads by the FCP.
+       .WORD   4
+       .WORD   RMI$_FCPREAD
+       .ADDRESS        DAT_ARRAY+RMI_FCPREAD   ;484
+       .ADDRESS        LEN_ARRAY+RMI_FCPREAD   ;484
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of split transfers performed by the FCP.
+       .WORD   4
+       .WORD   RMI$_FCPSPLIT
+       .ADDRESS        DAT_ARRAY+RMI_FCPSPLIT  ;488
+       .ADDRESS        LEN_ARRAY+RMI_FCPSPLIT  ;488
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of file-map window misses.
+       .WORD   4
+       .WORD   RMI$_FCPTURN
+       .ADDRESS        DAT_ARRAY+RMI_FCPTURN   ;492
+       .ADDRESS        LEN_ARRAY+RMI_FCPTURN   ;492
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of disk writes by the FCP.
+       .WORD   4
+       .WORD   RMI$_FCPWRITE
+       .ADDRESS        DAT_ARRAY+RMI_FCPWRITE  ;496
+       .ADDRESS        LEN_ARRAY+RMI_FCPWRITE  ;496
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of File ID cache hits.
+       .WORD   4
+       .WORD   RMI$_FIDHIT
+       .ADDRESS        DAT_ARRAY+RMI_FIDHIT    ;500
+       .ADDRESS        LEN_ARRAY+RMI_FIDHIT    ;500
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of File ID cache misses.
+       .WORD   4
+       .WORD   RMI$_FIDMISS
+       .ADDRESS        DAT_ARRAY+RMI_FIDMISS   ;504
+       .ADDRESS        LEN_ARRAY+RMI_FIDMISS   ;504
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of file header cache hits.
+       .WORD   4
+       .WORD   RMI$_FILHDR_HIT
+       .ADDRESS        DAT_ARRAY+RMI_FILHDR_HIT        ;508
+       .ADDRESS        LEN_ARRAY+RMI_FILHDR_HIT        ;508
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;Returns the systemwide count of file header cache misses.
+       .WORD   4
+       .WORD   RMI$_FILHDR_MISS
+       .ADDRESS        DAT_ARRAY+RMI_FILHDR_MISS       ;512
+       .ADDRESS        LEN_ARRAY+RMI_FILHDR_MISS       ;512
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of processes in the free page wait state.
+       .WORD   4
+       .WORD   RMI$_FPG
+       .ADDRESS        DAT_ARRAY+RMI_FPG       ;516
+       .ADDRESS        LEN_ARRAY+RMI_FPG       ;516
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of page faults from the free list.
+       .WORD   4
+       .WORD   RMI$_FREFLTS
+       .ADDRESS        DAT_ARRAY+RMI_FREFLTS   ;520
+       .ADDRESS        LEN_ARRAY+RMI_FREFLTS   ;520
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of pages on the free list.
+       .WORD   4
+       .WORD   RMI$_FRLIST
+       .ADDRESS        DAT_ARRAY+RMI_FRLIST    ;524
+       .ADDRESS        LEN_ARRAY+RMI_FRLIST    ;524
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the count of global pages currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBP_CURMAP
+       .ADDRESS        DAT_ARRAY+RMI_GBP_CURMAP        ;528
+       .ADDRESS        LEN_ARRAY+RMI_GBP_CURMAP        ;528
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of group global pages currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBP_CURMAP_GRP
+       .ADDRESS        DAT_ARRAY+RMI_GBP_CURMAP_GRP    ;532
+       .ADDRESS        LEN_ARRAY+RMI_GBP_CURMAP_GRP    ;532
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of writable group global pages currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBP_CURMAP_GRPWRT
+       .ADDRESS        DAT_ARRAY+RMI_GBP_CURMAP_GRPWRT ;536
+       .ADDRESS        LEN_ARRAY+RMI_GBP_CURMAP_GRPWRT ;536
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of system global pages currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBP_CURMAP_SYS
+       .ADDRESS        DAT_ARRAY+RMI_GBP_CURMAP_SYS    ;540
+       .ADDRESS        LEN_ARRAY+RMI_GBP_CURMAP_SYS    ;540
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of writable system global pages currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBP_CURMAP_SYSWRT
+       .ADDRESS        DAT_ARRAY+RMI_GBP_CURMAP_SYSWRT ;544
+       .ADDRESS        LEN_ARRAY+RMI_GBP_CURMAP_SYSWRT ;544
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the maximum count of global pages simultaneously mapped.
+       .WORD   4
+       .WORD   RMI$_GBP_MAXMAP
+       .ADDRESS        DAT_ARRAY+RMI_GBP_MAXMAP        ;548
+       .ADDRESS        LEN_ARRAY+RMI_GBP_MAXMAP        ;548
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of global sections currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBS_CURMAP
+       .ADDRESS        DAT_ARRAY+RMI_GBS_CURMAP        ;552
+       .ADDRESS        LEN_ARRAY+RMI_GBS_CURMAP        ;552
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of group global sections currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBS_CURMAP_GRP
+       .ADDRESS        DAT_ARRAY+RMI_GBS_CURMAP_GRP    ;556
+       .ADDRESS        LEN_ARRAY+RMI_GBS_CURMAP_GRP    ;556
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of writable group global sections currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBS_CURMAP_GRPWRT
+       .ADDRESS        DAT_ARRAY+RMI_GBS_CURMAP_GRPWRT ;560
+       .ADDRESS        LEN_ARRAY+RMI_GBS_CURMAP_GRPWRT ;560
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of system global sections currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBS_CURMAP_SYS
+       .ADDRESS        DAT_ARRAY+RMI_GBS_CURMAP_SYS    ;564
+       .ADDRESS        LEN_ARRAY+RMI_GBS_CURMAP_SYS    ;564
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of writable system global sections currently mapped.
+       .WORD   4
+       .WORD   RMI$_GBS_CURMAP_SYSWRT
+       .ADDRESS        DAT_ARRAY+RMI_GBS_CURMAP_SYSWRT ;568
+       .ADDRESS        LEN_ARRAY+RMI_GBS_CURMAP_SYSWRT ;568
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the maximum count of global sections simultaneously mapped.
+       .WORD   4
+       .WORD   RMI$_GBS_MAXMAP
+       .ADDRESS        DAT_ARRAY+RMI_GBS_MAXMAP        ;572
+       .ADDRESS        LEN_ARRAY+RMI_GBS_MAXMAP        ;572
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the current count of global sections not mapped to a process (reference
+;count is 0).
+       .WORD   4
+       .WORD   RMI$_GBS_NOREF
+       .ADDRESS        DAT_ARRAY+RMI_GBS_NOREF ;580
+       .ADDRESS        LEN_ARRAY+RMI_GBS_NOREF ;580
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of global valid page faults.
+       .WORD   4
+       .WORD   RMI$_GVALFLTS
+       .ADDRESS        DAT_ARRAY+RMI_GVALFLTS  ;584
+       .ADDRESS        LEN_ARRAY+RMI_GVALFLTS  ;584
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of process header inswap operations.
+       .WORD   4
+       .WORD   RMI$_HDRINSWAPS
+       .ADDRESS        DAT_ARRAY+RMI_HDRINSWAPS        ;588
+       .ADDRESS        LEN_ARRAY+RMI_HDRINSWAPS        ;588
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of process header outswap operations. 
+       .WORD   4
+       .WORD   RMI$_HDROUTSWAPS
+       .ADDRESS        DAT_ARRAY+RMI_HDROUTSWAPS       ;592
+       .ADDRESS        LEN_ARRAY+RMI_HDROUTSWAPS       ;592
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of processes in the hibernate state.
+       .WORD   4
+       .WORD   RMI$_HIB
+       .ADDRESS        DAT_ARRAY+RMI_HIB       ;596
+       .ADDRESS        LEN_ARRAY+RMI_HIB       ;596
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of outswapped processes in the hibernate state.
+       .WORD   4
+       .WORD   RMI$_HIBO
+       .ADDRESS        DAT_ARRAY+RMI_HIBO      ;600
+       .ADDRESS        LEN_ARRAY+RMI_HIBO      ;600
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the systemwide count of pages in transit to disk from the modified page
+;;list.
+       .WORD   4
+       .WORD   RMI$_IOPAGCNT
+       .ADDRESS        DAT_ARRAY+RMI_IOPAGCNT  ;604
+       .ADDRESS        LEN_ARRAY+RMI_IOPAGCNT  ;604
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of process inswaps.
+       .WORD   4
+       .WORD   RMI$_ISWPCNT
+       .ADDRESS        DAT_ARRAY+RMI_ISWPCNT   ;608
+       .ADDRESS        LEN_ARRAY+RMI_ISWPCNT   ;608
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of pages inswapped.
+       .WORD   4
+       .WORD   RMI$_ISWPCNTPG
+       .ADDRESS        DAT_ARRAY+RMI_ISWPCNTPG ;612
+       .ADDRESS        LEN_ARRAY+RMI_ISWPCNTPG ;612
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the ID of the CPU on which the lock manager process runs.
+       .WORD   4
+       .WORD   RMI$_LCKMGR_CPU
+       .ADDRESS        DAT_ARRAY+RMI_LCKMGR_CPU        ;616
+       .ADDRESS        LEN_ARRAY+RMI_LCKMGR_CPU        ;616
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the PID of the lock manager process.
+       .WORD   4
+       .WORD   RMI$_LCKMGR_PID
+       .ADDRESS        DAT_ARRAY+RMI_LCKMGR_PID        ;620
+       .ADDRESS        LEN_ARRAY+RMI_LCKMGR_PID        ;620
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;;
+;; Returns the accumulated count of requests handled by the lock manager.
+;       .WORD   4
+;       .WORD   RMI$_LCKMGR_REQCNT
+;       .ADDRESS        DAT_ARRAY+RMI_LCKMGR_REQCNT     ;624
+;       .ADDRESS        LEN_ARRAY+RMI_LCKMGR_REQCNT     ;624
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated time spent by the lock manager servicing requests.
+;       .WORD   4
+;       .WORD   RMI$_LCKMGR_REQTIME
+;       .ADDRESS        DAT_ARRAY+RMI_LCKMGR_REQTIME    ;628
+;       .ADDRESS        LEN_ARRAY+RMI_LCKMGR_REQTIME    ;628
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated count of times the lock manager entered a spin loop.
+;       .WORD   4
+;       .WORD   RMI$_LCKMGR_SPINCNT
+;       .ADDRESS        DAT_ARRAY+RMI_LCKMGR_SPINCNT    ;632
+;       .ADDRESS        LEN_ARRAY+RMI_LCKMGR_SPINCNT    ;632
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated spin time, in cycles, of the lock manager.
+;       .WORD   4
+;       .WORD   RMI$_LCKMGR_SPINTIME
+;       .ADDRESS        DAT_ARRAY+RMI_LCKMGR_SPINTIME   ;636
+;       .ADDRESS        LEN_ARRAY+RMI_LCKMGR_SPINTIME   ;636
+;       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of processes in the local event flag wait state.
+       .WORD   4
+       .WORD   RMI$_LEF
+       .ADDRESS        DAT_ARRAY+RMI_LEF       ;640
+       .ADDRESS        LEN_ARRAY+RMI_LEF       ;640
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of outswapped processes in the local event flag wait state. 
+       .WORD   4
+       .WORD   RMI$_LEFO
+       .ADDRESS        DAT_ARRAY+RMI_LEFO      ;644
+       .ADDRESS        LEN_ARRAY+RMI_LEFO      ;644
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the lock ID table length.
+       .WORD   4
+       .WORD   RMI$_LOCK_MAX
+       .ADDRESS        DAT_ARRAY+RMI_LOCK_MAX  ;648
+       .ADDRESS        LEN_ARRAY+RMI_LOCK_MAX  ;648
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of logical name translations.
+       .WORD   4
+       .WORD   RMI$_LOGNAM
+       .ADDRESS        DAT_ARRAY+RMI_LOGNAM    ;652
+       .ADDRESS        LEN_ARRAY+RMI_LOGNAM    ;652
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of allocations from other than the first page of the lock
+;;manager's pool zone.
+       .WORD   4
+       .WORD   RMI$_LPZ_ALLOC2
+       .ADDRESS        DAT_ARRAY+RMI_LPZ_ALLOC2        ;656
+       .ADDRESS        LEN_ARRAY+RMI_LPZ_ALLOC2        ;656
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of failed allocations from the lock manager's pool zone.
+       .WORD   4
+       .WORD   RMI$_LPZ_ALLOCF
+       .ADDRESS        DAT_ARRAY+RMI_LPZ_ALLOCF        ;660
+       .ADDRESS        LEN_ARRAY+RMI_LPZ_ALLOCF        ;660
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of empty pages in the lock manager's pool zone.
+       .WORD   4
+       .WORD   RMI$_LPZ_EMPTY
+       .ADDRESS        DAT_ARRAY+RMI_LPZ_EMPTY ;664
+       .ADDRESS        LEN_ARRAY+RMI_LPZ_EMPTY ;664
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated number of expansions of the lock manager's pool zone.
+       .WORD   4
+       .WORD   RMI$_LPZ_EXPCNT
+       .ADDRESS        DAT_ARRAY+RMI_LPZ_EXPCNT        ;668
+       .ADDRESS        LEN_ARRAY+RMI_LPZ_EXPCNT        ;668
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of hits for the lock manager's pool zone.
+       .WORD   4
+       .WORD   RMI$_LPZ_HITS
+       .ADDRESS        DAT_ARRAY+RMI_LPZ_HITS  ;672
+       .ADDRESS        LEN_ARRAY+RMI_LPZ_HITS  ;672
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;;**1 Returns the maximum number of pages in the lock manager's pool zone.
+	.WORD	4
+	.WORD	RMI$_LPZ_MAXPAG
+	.ADDRESS	DAT_ARRAY+RMI_LPZ_MAXPAG	;676
+	.ADDRESS	LEN_ARRAY+RMI_LPZ_MAXPAG	;676
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of misses for the lock manager's pool zone.
+       .WORD   4
+       .WORD   RMI$_LPZ_MISSES
+       .ADDRESS        DAT_ARRAY+RMI_LPZ_MISSES        ;680
+       .ADDRESS        LEN_ARRAY+RMI_LPZ_MISSES        ;680
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of pages currently in the lock manager's pool zone.
+       .WORD   4
+       .WORD   RMI$_LPZ_PAGCNT
+       .ADDRESS        DAT_ARRAY+RMI_LPZ_PAGCNT        ;684
+       .ADDRESS        LEN_ARRAY+RMI_LPZ_PAGCNT        ;684
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the packet size for the lock manager's pool zone.
+       .WORD   4
+       .WORD   RMI$_LPZ_PAKSIZ
+       .ADDRESS        DAT_ARRAY+RMI_LPZ_PAKSIZ        ;688
+       .ADDRESS        LEN_ARRAY+RMI_LPZ_PAKSIZ        ;688
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of mailbox reads.
+       .WORD   4
+       .WORD   RMI$_MBREADS
+       .ADDRESS        DAT_ARRAY+RMI_MBREADS   ;692
+       .ADDRESS        LEN_ARRAY+RMI_MBREADS   ;692
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of mailbox writes.
+       .WORD   4
+       .WORD   RMI$_MBWRITES
+       .ADDRESS        DAT_ARRAY+RMI_MBWRITES  ;696
+       .ADDRESS        LEN_ARRAY+RMI_MBWRITES  ;696
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated count of machine checks since the system was booted.
+       .WORD   4
+       .WORD   RMI$_MCHKERRS
+       .ADDRESS        DAT_ARRAY+RMI_MCHKERRS  ;700
+       .ADDRESS        LEN_ARRAY+RMI_MCHKERRS  ;700
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated count of memory errors since the system was booted.
+       .WORD   4
+       .WORD   RMI$_MEMERRS
+       .ADDRESS        DAT_ARRAY+RMI_MEMERRS   ;704
+       .ADDRESS        LEN_ARRAY+RMI_MEMERRS   ;704
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of pages on the modified page list.
+       .WORD   4
+       .WORD   RMI$_MODLIST
+       .ADDRESS        DAT_ARRAY+RMI_MODLIST   ;708
+       .ADDRESS        LEN_ARRAY+RMI_MODLIST   ;708
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;RMI$_MSCP_EVERYTHING:
+
+;Returns all the performance data items in the following order: 
+;
+;MSCP_BUFAVL Current number of free MSCP buffers  
+;
+;MSCP_BUFSMALL  Smallest MSCP buffer size allowed  
+;
+;MSCP_BUFWAITCUR  Number of requests currently queued waiting for MSCP buffer
+;memory  
+;
+;MSCP_BUFWAITPEAK  Maximum number of requests simultaneously queued waiting for
+;MSCP buffer  
+;
+;MSCP_DSKSRV  Number of MSCP served disks  
+;
+;MSCP_HSTSRV  Number of MSCP served hosts  
+;
+;MSCP_LB_FAILCNT  MSCP server's count of failed load-balancing requests  
+;
+;MSCP_LB_INITCNT  MSCP server's count of load-balancing requests sent  
+;
+;MSCP_LB_LMLOAD1  MSCP server's previous interval's load 1 value  
+;
+;MSCP_LB_LMLOAD2  MSCP server's previous interval's load 2 value  
+;
+;MSCP_LB_LMLOAD3  MSCP server's previous interval's load 3 value  
+;
+;MSCP_LB_LMLOAD4  MSCP server's previous interval's load 4 value  
+;
+;MSCP_LB_LOAD  MSCP server's target load for load-balancing requests  
+;
+;MSCP_LB_LOAD_AVAIL  MSCP server's current load available value  
+;
+;MSCP_LB_LOAD_CAP  MSCP server's load capacity value  
+;
+;MSCP_LB_MONINT  MSCP server's load-monitoring interval size  
+;
+;MSCP_LB_MONTIME  The time that the last load-balancing monitor pass was made  
+;
+;MSCP_LB_REQCNT  MSCP server's count of load-balancing requests received from
+;other servers  
+;
+;MSCP_LB_REQTIME  The time that the last load-balancing request was sent  
+;
+;MSCP_LB_RESPCNT  MSCP server's count of load-balancing requests to which it
+;responded  
+;
+;MSCP_LB_RESP  MSCP server's load available from another server  
+;
+;MSCP_OPCOUNT  Count of I/O transfer requests by remote processors  
+;
+;MSCP_VCFAIL  Count of virtual cache failures on MSCP-served requests  
+;
+;MSCP_READ  Count of Read I/O transfer requests by remote processors  
+;
+;MSCP_WRITE  Count of Write I/O transfer requests by remote processors  
+;
+;MSCP_FRAGMENT  Count of extra fragments issued by the MSCP server  
+;
+;MSCP_SPLITXFER  Count of fragmented requests issued by the MSCP server  
+;
+;MSCP_BUFWAIT  Count of requests that had to wait for MSCP buffer memory  
+;
+;MSCP_SIZE1  Count of MSCP-served I/O requests with a length of 1 block  
+;
+;MSCP_SIZE2  Count of MSCP-served I/O requests with a length of 2-3 blocks  
+;
+;MSCP_SIZE3  Count of MSCP-served I/O requests with a length of 4-7 blocks  
+;
+;MSCP_SIZE4  Count of MSCP-served I/O requests with a length of 8-15 blocks  
+;
+;MSCP_SIZE5  Count of MSCP-served I/O requests with a length of 16-31 blocks  
+;
+;MSCP_SIZE6  Count of MSCP-served I/O requests with a length of 32-63 blocks  
+;
+;MSCP_SIZE7  Count of MSCP-served I/O requests with a length of 64 or more
+;blocks  
+;
+       .WORD   140
+       .WORD   RMI$_MSCP_EVERYTHING
+       .ADDRESS        DAT_ARRAY+RMI_MSCP_EVERYTHING   ;712
+       .ADDRESS        LEN_ARRAY+RMI_MSCP_EVERYTHING   ;172
+       .LONG   <CTP_M_INT!CTP_M_ARRAY!CTP_M_GUAGE>
+;;; Returns the number of processes in the miscellaneous resource wait state.
+       .WORD   4
+       .WORD   RMI$_MWAIT
+       .ADDRESS        DAT_ARRAY+RMI_MWAIT     ;852
+       .ADDRESS        LEN_ARRAY+RMI_MWAIT     ;852
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated count of nonpaged pool allocation requests.
+       .WORD   4
+       .WORD   RMI$_NP_POOL_ALLOC
+       .ADDRESS        DAT_ARRAY+RMI_NP_POOL_ALLOC     ;856
+       .ADDRESS        LEN_ARRAY+RMI_NP_POOL_ALLOC     ;856
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated count of unsuccessful nonpaged pool allocation
+;requests.
+       .WORD   4
+       .WORD   RMI$_NP_POOL_ALLOCF
+       .ADDRESS        DAT_ARRAY+RMI_NP_POOL_ALLOCF    ;860
+       .ADDRESS        LEN_ARRAY+RMI_NP_POOL_ALLOCF    ;860
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated count of successful expansions of nonpaged pool.
+       .WORD   4
+       .WORD   RMI$_NP_POOL_EXP
+       .ADDRESS        DAT_ARRAY+RMI_NP_POOL_EXP       ;864
+       .ADDRESS        LEN_ARRAY+RMI_NP_POOL_EXP       ;864
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated count of unsuccessful attempts to expand nonpaged poo
+       .WORD   4
+       .WORD   RMI$_NP_POOL_EXPF
+       .ADDRESS        DAT_ARRAY+RMI_NP_POOL_EXPF      ;868
+       .ADDRESS        LEN_ARRAY+RMI_NP_POOL_EXPF      ;868
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the total number of locks.
+       .WORD   4
+       .WORD   RMI$_NUMLOCKS
+       .ADDRESS        DAT_ARRAY+RMI_NUMLOCKS  ;872
+       .ADDRESS        LEN_ARRAY+RMI_NUMLOCKS  ;872
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the total number of resources.
+       .WORD   4
+       .WORD   RMI$_NUMRES
+       .ADDRESS        DAT_ARRAY+RMI_NUMRES    ;876
+       .ADDRESS        LEN_ARRAY+RMI_NUMRES    ;876
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of files opened.
+       .WORD   4
+       .WORD   RMI$_OPENS
+       .ADDRESS        DAT_ARRAY+RMI_OPENS     ;880
+       .ADDRESS        LEN_ARRAY+RMI_OPENS     ;880
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of process outswap operations.
+       .WORD   4
+       .WORD   RMI$_OSWPCNT
+       .ADDRESS        DAT_ARRAY+RMI_OSWPCNT   ;884
+       .ADDRESS        LEN_ARRAY+RMI_OSWPCNT   ;884
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of pages outswapped.
+       .WORD   4
+       .WORD   RMI$_OSWPCNTPG
+       .ADDRESS        DAT_ARRAY+RMI_OSWPCNTPG ;888
+       .ADDRESS        LEN_ARRAY+RMI_OSWPCNTPG ;888
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of processes in the page fault wait state.
+       .WORD   4
+       .WORD   RMI$_PFW
+       .ADDRESS        DAT_ARRAY+RMI_PFW       ;892
+       .ADDRESS        LEN_ARRAY+RMI_PFW       ;892
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated count of paged pool allocation requests.
+       .WORD   4
+       .WORD   RMI$_PG_POOL_ALLOC
+       .ADDRESS        DAT_ARRAY+RMI_PG_POOL_ALLOC     ;896
+       .ADDRESS        LEN_ARRAY+RMI_PG_POOL_ALLOC     ;896
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated count of unsuccessful paged pool allocation requests.
+       .WORD   4
+       .WORD   RMI$_PG_POOL_ALLOCF
+       .ADDRESS        DAT_ARRAY+RMI_PG_POOL_ALLOCF    ;900
+       .ADDRESS        LEN_ARRAY+RMI_PG_POOL_ALLOCF    ;900
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated count of paged pool failures.
+       .WORD   4
+       .WORD   RMI$_PG_POOL_EXPF
+       .ADDRESS        DAT_ARRAY+RMI_PG_POOL_EXPF      ;904
+       .ADDRESS        LEN_ARRAY+RMI_PG_POOL_EXPF      ;904
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns physical page read I/Os.
+       .WORD   4
+       .WORD   RMI$_PREADIO
+       .ADDRESS        DAT_ARRAY+RMI_PREADIO   ;908
+       .ADDRESS        LEN_ARRAY+RMI_PREADIO   ;908
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of pages read.
+       .WORD   4
+       .WORD   RMI$_PREADS
+       .ADDRESS        DAT_ARRAY+RMI_PREADS    ;912
+       .ADDRESS        LEN_ARRAY+RMI_PREADS    ;912
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of processes in the balance set.
+       .WORD   4
+       .WORD   RMI$_PROCBALSETCNT
+       .ADDRESS        DAT_ARRAY+RMI_PROCBALSETCNT     ;916
+       .ADDRESS        LEN_ARRAY+RMI_PROCBALSETCNT     ;916
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of batch processes known to the system.
+       .WORD   4
+       .WORD   RMI$_PROCBATCNT
+       .ADDRESS        DAT_ARRAY+RMI_PROCBATCNT        ;920
+       .ADDRESS        LEN_ARRAY+RMI_PROCBATCNT        ;920
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the maximum number of concurrent processes seen by the system.
+       .WORD   4
+       .WORD   RMI$_PROCCNTMAX
+       .ADDRESS        DAT_ARRAY+RMI_PROCCNTMAX        ;924
+       .ADDRESS        LEN_ARRAY+RMI_PROCCNTMAX        ;924
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of interactive processes known to the system.
+       .WORD   4
+       .WORD   RMI$_PROCINTCNT
+       .ADDRESS        DAT_ARRAY+RMI_PROCINTCNT        ;928
+       .ADDRESS        LEN_ARRAY+RMI_PROCINTCNT        ;928
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of process context load operations.
+       .WORD   4
+       .WORD   RMI$_PROCLOADCNT
+       .ADDRESS        DAT_ARRAY+RMI_PROCLOADCNT       ;932
+       .ADDRESS        LEN_ARRAY+RMI_PROCLOADCNT       ;932
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of network processes known to the system.
+       .WORD   4
+       .WORD   RMI$_PROCNETCNT
+       .ADDRESS        DAT_ARRAY+RMI_PROCNETCNT        ;936
+       .ADDRESS        LEN_ARRAY+RMI_PROCNETCNT        ;936
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of processes currently known to the system.
+       .WORD   4
+       .WORD   RMI$_PROCS
+       .ADDRESS        DAT_ARRAY+RMI_PROCS     ;940
+       .ADDRESS        LEN_ARRAY+RMI_PROCS     ;940
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of switches from the currently-executing process.
+       .WORD   4
+       .WORD   RMI$_PROCSWITCHCNT
+       .ADDRESS        DAT_ARRAY+RMI_PROCSWITCHCNT     ;944
+       .ADDRESS        LEN_ARRAY+RMI_PROCSWITCHCNT     ;944
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of pages written.
+       .WORD   4
+       .WORD   RMI$_PWRITES
+       .ADDRESS        DAT_ARRAY+RMI_PWRITES   ;948
+       .ADDRESS        LEN_ARRAY+RMI_PWRITES   ;948
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns physical page write I/Os.
+       .WORD   4
+       .WORD   RMI$_PWRITIO
+       .ADDRESS        DAT_ARRAY+RMI_PWRITIO   ;952
+       .ADDRESS        LEN_ARRAY+RMI_PWRITIO   ;952
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of quota cache hits.
+       .WORD   4
+       .WORD   RMI$_QUOHIT
+       .ADDRESS        DAT_ARRAY+RMI_QUOHIT    ;956
+       .ADDRESS        LEN_ARRAY+RMI_QUOHIT    ;956
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of quota cache misses.
+       .WORD   4
+       .WORD   RMI$_QUOMISS
+       .ADDRESS        DAT_ARRAY+RMI_QUOMISS   ;960
+       .ADDRESS        LEN_ARRAY+RMI_QUOMISS   ;960
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of DECnet receiver buffer failures.
+       .WORD   4
+       .WORD   RMI$_RCVBUFFL
+       .ADDRESS        DAT_ARRAY+RMI_RCVBUFFL  ;964
+       .ADDRESS        LEN_ARRAY+RMI_RCVBUFFL  ;964
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of fault-on-read page faults.
+       .WORD   4
+       .WORD   RMI$_RDFAULTS
+       .ADDRESS        DAT_ARRAY+RMI_RDFAULTS  ;968
+       .ADDRESS        LEN_ARRAY+RMI_RDFAULTS  ;968
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of lock trees moved to this node.
+       .WORD   4
+       .WORD   RMI$_RML_ACQUIRE
+       .ADDRESS        DAT_ARRAY+RMI_RML_ACQUIRE       ;972
+       .ADDRESS        LEN_ARRAY+RMI_RML_ACQUIRE       ;972
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of lock trees moved from this node to
+;a cluster node with a higher value for the system parameter LOCKDIRWT.
+       .WORD   4
+       .WORD   RMI$_RML_BETTER
+       .ADDRESS        DAT_ARRAY+RMI_RML_BETTER        ;976
+       .ADDRESS        LEN_ARRAY+RMI_RML_BETTER        ;976
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of lock trees moved from this node due
+;to higher locking activity on another node in the cluster.
+       .WORD   4
+       .WORD   RMI$_RML_MORE_ACT
+       .ADDRESS        DAT_ARRAY+RMI_RML_MORE_ACT      ;980
+       .ADDRESS        LEN_ARRAY+RMI_RML_MORE_ACT      ;980
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of remaster messages received by this
+;node.
+       .WORD   4
+       .WORD   RMI$_RML_MSGRCV
+       .ADDRESS        DAT_ARRAY+RMI_RML_MSGRCV        ;984
+       .ADDRESS        LEN_ARRAY+RMI_RML_MSGRCV        ;984
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of remaster messages sent from this
+;node.
+       .WORD   4
+       .WORD   RMI$_RML_MSGSENT
+       .ADDRESS        DAT_ARRAY+RMI_RML_MSGSENT       ;988
+       .ADDRESS        LEN_ARRAY+RMI_RML_MSGSENT       ;988
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of remaster operations that failed due
+;to a lack of quota.
+       .WORD   4
+       .WORD   RMI$_RML_NOQUOTA
+       .ADDRESS        DAT_ARRAY+RMI_RML_NOQUOTA       ;992
+       .ADDRESS        LEN_ARRAY+RMI_RML_NOQUOTA       ;992
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of remaster operations that were
+;proposed and declined.
+       .WORD   4
+       .WORD   RMI$_RML_NOTAKER
+       .ADDRESS        DAT_ARRAY+RMI_RML_NOTAKER       ;996
+       .ADDRESS        LEN_ARRAY+RMI_RML_NOTAKER       ;996
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of remaster operations that have been
+;completed.
+       .WORD   4
+       .WORD   RMI$_RML_OPCNT
+       .ADDRESS        DAT_ARRAY+RMI_RML_OPCNT ;1000
+       .ADDRESS        LEN_ARRAY+RMI_RML_OPCNT ;1000
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of remaster rebuild messages received
+;by this node.
+       .WORD   4
+       .WORD   RMI$_RML_RBLDMSGRCV
+       .ADDRESS        DAT_ARRAY+RMI_RML_RBLDMSGRCV    ;1004
+       .ADDRESS        LEN_ARRAY+RMI_RML_RBLDMSGRCV    ;1004
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of remaster rebuild messages sent from
+;this node.
+       .WORD   4
+       .WORD   RMI$_RML_RBLDMSGSENT
+       .ADDRESS        DAT_ARRAY+RMI_RML_RBLDMSGSENT   ;1008
+       .ADDRESS        LEN_ARRAY+RMI_RML_RBLDMSGSENT   ;1008
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of lock trees moved from this node to
+;another cluster node because that node is the only one with locks remaining on
+;the tree.
+       .WORD   4
+       .WORD   RMI$_RML_SINGLE
+       .ADDRESS        DAT_ARRAY+RMI_RML_SINGLE        ;1012
+       .ADDRESS        LEN_ARRAY+RMI_RML_SINGLE        ;1012
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of lock trees moved from this node.
+       .WORD   4
+       .WORD   RMI$_RML_UNLOAD
+       .ADDRESS        DAT_ARRAY+RMI_RML_UNLOAD        ;1016
+       .ADDRESS        LEN_ARRAY+RMI_RML_UNLOAD        ;1016
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of global pages currently mapped for Galaxy shared memory.
+       .WORD   4
+       .WORD   RMI$_SMP_CURMAP
+       .ADDRESS        DAT_ARRAY+RMI_SMP_CURMAP        ;1020
+       .ADDRESS        LEN_ARRAY+RMI_SMP_CURMAP        ;1020
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of group global pages currently mapped for Galaxy shared
+;memory.
+       .WORD   4
+       .WORD   RMI$_SMP_CURMAP_GRP
+       .ADDRESS        DAT_ARRAY+RMI_SMP_CURMAP_GRP    ;1024
+       .ADDRESS        LEN_ARRAY+RMI_SMP_CURMAP_GRP    ;1024
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of writable group global pages currently mapped for Galaxy
+;shared memory.
+       .WORD   4
+       .WORD   RMI$_SMP_CURMAP_GRPWRT
+       .ADDRESS        DAT_ARRAY+RMI_SMP_CURMAP_GRPWRT ;1028
+       .ADDRESS        LEN_ARRAY+RMI_SMP_CURMAP_GRPWRT ;1028
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of system global pages currently mapped for Galaxy shared
+;memory.
+       .WORD   4
+       .WORD   RMI$_SMP_CURMAP_SYS
+       .ADDRESS        DAT_ARRAY+RMI_SMP_CURMAP_SYS    ;1032
+       .ADDRESS        LEN_ARRAY+RMI_SMP_CURMAP_SYS    ;1032
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of writable system global pages currently mapped for Galaxy
+;shared memory.
+       .WORD   4
+       .WORD   RMI$_SMP_CURMAP_SYSWRT
+       .ADDRESS        DAT_ARRAY+RMI_SMP_CURMAP_SYSWRT ;1036
+       .ADDRESS        LEN_ARRAY+RMI_SMP_CURMAP_SYSWRT ;1036
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of global sections currently mapped for Galaxy shared memor
+       .WORD   4
+       .WORD   RMI$_SMS_CURMAP
+       .ADDRESS        DAT_ARRAY+RMI_SMS_CURMAP        ;1040
+       .ADDRESS        LEN_ARRAY+RMI_SMS_CURMAP        ;1040
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of group global sections currently mapped for Galaxy shared
+;memory.
+       .WORD   4
+       .WORD   RMI$_SMS_CURMAP_GRP
+       .ADDRESS        DAT_ARRAY+RMI_SMS_CURMAP_GRP    ;1044
+       .ADDRESS        LEN_ARRAY+RMI_SMS_CURMAP_GRP    ;1044
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of writable group global sections currently mapped for Galaxy
+;shared memory.
+       .WORD   4
+       .WORD   RMI$_SMS_CURMAP_GRPWRT
+       .ADDRESS        DAT_ARRAY+RMI_SMS_CURMAP_GRPWRT ;1048
+       .ADDRESS        LEN_ARRAY+RMI_SMS_CURMAP_GRPWRT ;1048
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of system global sections currently mapped for Galaxy shared
+;memory.
+       .WORD   4
+       .WORD   RMI$_SMS_CURMAP_SYS
+       .ADDRESS        DAT_ARRAY+RMI_SMS_CURMAP_SYS    ;1052
+       .ADDRESS        LEN_ARRAY+RMI_SMS_CURMAP_SYS    ;1052
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the count of writable system global sections currently mapped for
+;Galaxy shared memory.
+       .WORD   4
+       .WORD   RMI$_SMS_CURMAP_SYSWRT
+       .ADDRESS        DAT_ARRAY+RMI_SMS_CURMAP_SYSWRT ;1056
+       .ADDRESS        LEN_ARRAY+RMI_SMS_CURMAP_SYSWRT ;1056
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the current count of global sections for Galaxy shared memory that are
+;not mapped to a process (reference count is 0).
+       .WORD   4
+       .WORD   RMI$_SMS_NOREF
+       .ADDRESS        DAT_ARRAY+RMI_SMS_NOREF ;1060
+       .ADDRESS        LEN_ARRAY+RMI_SMS_NOREF ;1060
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the systemwide count of storage bitmap cache hits.
+       .WORD   4
+       .WORD   RMI$_STORAGMAP_HIT
+       .ADDRESS        DAT_ARRAY+RMI_STORAGMAP_HIT     ;1064
+       .ADDRESS        LEN_ARRAY+RMI_STORAGMAP_HIT     ;1064
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of storage bitmap cache misses.
+       .WORD   4
+       .WORD   RMI$_STORAGMAP_MISS
+       .ADDRESS        DAT_ARRAY+RMI_STORAGMAP_MISS    ;1068
+       .ADDRESS        LEN_ARRAY+RMI_STORAGMAP_MISS    ;1068
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of processes in the suspended state.
+       .WORD   4
+       .WORD   RMI$_SUSP
+       .ADDRESS        DAT_ARRAY+RMI_SUSP      ;1072
+       .ADDRESS        LEN_ARRAY+RMI_SUSP      ;1072
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of outswapped processes in the suspended state.
+       .WORD   4
+       .WORD   RMI$_SUSPO
+       .ADDRESS        DAT_ARRAY+RMI_SUSPO     ;1076
+       .ADDRESS        LEN_ARRAY+RMI_SUSPO     ;1076
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of directory- or file-synch locks.
+       .WORD   4
+       .WORD   RMI$_SYNCHLCK
+       .ADDRESS        DAT_ARRAY+RMI_SYNCHLCK  ;1080
+       .ADDRESS        LEN_ARRAY+RMI_SYNCHLCK  ;1080
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of times the XQP waited for a directory- or
+;file-synch lock.
+       .WORD   4
+       .WORD   RMI$_SYNCHWAIT
+       .ADDRESS        DAT_ARRAY+RMI_SYNCHWAIT ;1084
+       .ADDRESS        LEN_ARRAY+RMI_SYNCHWAIT ;1084
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of system page faults.
+       .WORD   4
+       .WORD   RMI$_SYSFAULTS
+       .ADDRESS        DAT_ARRAY+RMI_SYSFAULTS ;1088
+       .ADDRESS        LEN_ARRAY+RMI_SYSFAULTS ;1088
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;RMI$_TMSCP_EVERYTHING:
+
+;Returns all the performance data items in the following order: 
+;
+;TMSCP_BUFWAIT Count of requests that had to wait for TMSCP buffer memory  
+;
+;TMSCP_HSTSRV  Number of TMSCP served hosts  
+;
+;TMSCP_TAPSRV  Number of TMSCP served tapes  
+;
+;TMSCP_OPCOUNT  Total operations count  
+;
+;TMSCP_ABORTCNT  Total abort operations count  
+;
+;TMSCP_BUFAVAIL  Free TMSCP pool bytes  
+;
+;TMSCP_ONLINCNT  Count of online tapes  
+;
+;TMSCP_ACCESSCNT  Total access count  
+;
+;TMSCP_FLUSHCNT  Total flush count  
+;
+;TMSCP_RDCOUNT  Count of read I/O requests by remote processors  
+;
+;TMSCP_WRCOUNT  Count of write I/O requests by remote processors  
+;
+;TMSCP_VCFAIL  Number of virtual cache failures on TMSCP served requests in
+;location 23  
+;
+;TMSCP_FRAGMENT  Extra fragments  
+;
+;TMSCP_SIZE1  Count of TMSCP served I/O requests with a length of 1 block  
+;
+;TMSCP_SIZE2  Count of TMSCP served I/O requests with a length of 2-3 blocks  
+;
+;TMSCP_SIZE3  Count of TMSCP served I/O requests with a length of 4-7 blocks  
+;
+;TMSCP_SIZE4  Count of TMSCP served I/O requests with a length of 8-15 blocks  
+;
+;TMSCP_SIZE5  Count of TMSCP served I/O requests with a length of 16-31 blocks  
+;
+;TMSCP_SIZE6  Count of TMSCP served I/O requests with a length of 32-63 blocks  
+;
+;TMSCP_SIZE7  Count of TMSCP served I/O requests with a length of 64 or more
+;blocks  
+;
+       .WORD   80
+       .WORD   RMI$_TMSCP_EVERYTHING
+       .ADDRESS        DAT_ARRAY+RMI_TMSCP_EVERYTHING  ;1092
+       .ADDRESS        LEN_ARRAY+RMI_TMSCP_EVERYTHING  ;1092
+       .LONG   <CTP_M_INT!CTP_M_ARRAY!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of timer requests made by the OpenVMS
+;operating system.
+       .WORD   8
+       .WORD   RMI$_TQESYSUB
+       .ADDRESS        DAT_ARRAY+RMI_TQESYSUB  ;1172
+       .ADDRESS        LEN_ARRAY+RMI_TQESYSUB  ;1172
+       .LONG   <CTP_M_QAD!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of timer requests.
+       .WORD   8
+       .WORD   RMI$_TQETOTAL
+       .ADDRESS        DAT_ARRAY+RMI_TQETOTAL  ;1180
+       .ADDRESS        LEN_ARRAY+RMI_TQETOTAL  ;1180
+       .LONG   <CTP_M_QAD!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of timer requests made by application
+;programs through the SYS$SETIMR system service.
+       .WORD   8
+       .WORD   RMI$_TQEUSRTIMR
+       .ADDRESS        DAT_ARRAY+RMI_TQEUSRTIMR        ;1188
+       .ADDRESS        LEN_ARRAY+RMI_TQEUSRTIMR        ;1188
+       .LONG   <CTP_M_QAD!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of timer requests made by application
+;programs through the SYS$SCHDWK system service.
+       .WORD   8
+       .WORD   RMI$_TQEUSRWAKE
+       .ADDRESS        DAT_ARRAY+RMI_TQEUSRWAKE        ;1196
+       .ADDRESS        LEN_ARRAY+RMI_TQEUSRWAKE        ;1196
+       .LONG   <CTP_M_QAD!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of transition (release pending or
+;read-in-progress) faults.
+       .WORD   4
+       .WORD   RMI$_TRANSFLTS
+       .ADDRESS        DAT_ARRAY+RMI_TRANSFLTS ;1204
+       .ADDRESS        LEN_ARRAY+RMI_TRANSFLTS ;1204
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of DECnet packets lost due to transit
+;congestion.
+       .WORD   4
+       .WORD   RMI$_TRCNGLOS
+       .ADDRESS        DAT_ARRAY+RMI_TRCNGLOS  ;1208
+       .ADDRESS        LEN_ARRAY+RMI_TRCNGLOS  ;1208
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the accumulated systemwide count of characters read from terminals.
+       .WORD   4
+       .WORD   RMI$_TTREADCNT
+       .ADDRESS        DAT_ARRAY+RMI_TTREADCNT ;1212
+       .ADDRESS        LEN_ARRAY+RMI_TTREADCNT ;1212
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of reads from terminals.
+       .WORD   4
+       .WORD   RMI$_TTREADS
+       .ADDRESS        DAT_ARRAY+RMI_TTREADS   ;1216
+       .ADDRESS        LEN_ARRAY+RMI_TTREADS   ;1216
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of characters written to terminals.
+       .WORD   4
+       .WORD   RMI$_TTWRITECNT
+       .ADDRESS        DAT_ARRAY+RMI_TTWRITECNT        ;1220
+       .ADDRESS        LEN_ARRAY+RMI_TTWRITECNT        ;1220
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of writes to terminals.
+       .WORD   4
+       .WORD   RMI$_TTWRITES
+       .ADDRESS        DAT_ARRAY+RMI_TTWRITES  ;1224
+       .ADDRESS        LEN_ARRAY+RMI_TTWRITES  ;1224
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of pages available for use by applications.
+       .WORD   4
+       .WORD   RMI$_USERPAGES
+       .ADDRESS        DAT_ARRAY+RMI_USERPAGES ;1228
+       .ADDRESS        LEN_ARRAY+RMI_USERPAGES ;1228
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of pages actually allocated to OpenVMS.
+       .WORD   4
+       .WORD   RMI$_VMSPAGES
+       .ADDRESS        DAT_ARRAY+RMI_VMSPAGES  ;1236
+       .ADDRESS        LEN_ARRAY+RMI_VMSPAGES  ;1236
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the accumulated systemwide count of volume-synch locks.
+       .WORD   4
+       .WORD   RMI$_VOLLCK
+       .ADDRESS        DAT_ARRAY+RMI_VOLLCK    ;1240
+       .ADDRESS        LEN_ARRAY+RMI_VOLLCK    ;1240
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of times the XQP entered a wait state due to volume lock
+;contention.
+       .WORD   4
+       .WORD   RMI$_VOLWAIT
+       .ADDRESS        DAT_ARRAY+RMI_VOLWAIT   ;1244
+       .ADDRESS        LEN_ARRAY+RMI_VOLWAIT   ;1244
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the number of fault-on-write page faults.
+       .WORD   4
+       .WORD   RMI$_WRTFAULTS
+       .ADDRESS        DAT_ARRAY+RMI_WRTFAULTS ;1252
+       .ADDRESS        LEN_ARRAY+RMI_WRTFAULTS ;1252
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;; Returns the number of page faults from a write in progress.
+       .WORD   4
+       .WORD   RMI$_WRTINPROG
+       .ADDRESS        DAT_ARRAY+RMI_WRTINPROG ;1256
+       .ADDRESS        LEN_ARRAY+RMI_WRTINPROG ;1256
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;; Returns the systemwide count of times the XQP waited for free space in a cach
+       .WORD   4
+       .WORD   RMI$_XQPCACHEWAIT
+       .ADDRESS        DAT_ARRAY+RMI_XQPCACHEWAIT      ;1260
+       .ADDRESS        LEN_ARRAY+RMI_XQPCACHEWAIT      ;1260
+       .LONG   <CTP_M_INT!CTP_M_GUAGE>
+;;END 
+
+ITMCNT = .- RMIITMLST/16
+RMIITM:		.BLKB	ITMCNT*12
+	
+ADDRLEN:       		.BLKB 	256
+RESARRAY:		
+	.LONG	RMI$_BLKAST	;Returns the number of blocking ast's. 
+	.LONG	0
+	.LONG	RMI$_BUFIO	;Returns the number of buffered I/O's 
+	.LONG	0
+	.LONG	RMI$_DEQ	;Returns the number of DEQ operations. 
+	.LONG	0
+	.LONG	RMI$_DIRIO	;Returns the number of direct I/O's 
+	.LONG	0
+	.LONG	RMI$_DLCKSRCH	;Returns the number of deadlock searches. 
+	.LONG	0
+	.LONG	RMI$_DLCKFND	;Returns the number of deadlocks found. 
+	.LONG	0
+	.LONG	RMI$_DZROFLTS	;Returns the number of demand zero page faults. 
+	.LONG	0
+	.LONG	RMI$_ENQCVT	;Returns the number of ENQ conversion operations. 
+	.LONG	0
+	.LONG	RMI$_ENQNEW	;Returns the number of new ENQ operations. 
+	.LONG	0
+	.LONG	RMI$_ENQNOTQD	;Returns the number of ENQ operations not queued. 
+	.LONG	0
+	.LONG	RMI$_ENQWAIT	;Returns the number of ENQ operations forced to wait. 
+	.LONG	0
+	.LONG	RMI$_FAULTS	;Returns the number of page faults since last system initialization. 
+	.LONG	0
+	.LONG	RMI$_FCPCALLS	;Returns the total number of calls to the FCP. 
+	.LONG	0
+	.LONG	RMI$_FCPCACHE	;Returns the total number of cache hits by the FCP. 
+	.LONG	0
+	.LONG	RMI$_FCPCPU	;Returns the total number of CPU tics used by the FCP. 
+	.LONG	0
+	.LONG	RMI$_FCPFAULT	;Returns the number of FCP page faults. 
+	.LONG	0
+	.LONG	RMI$_FCPHIT	;Returns the total number of window hits tics used by the FCP. 
+	.LONG	0
+	.LONG	RMI$_FCPREAD	;Returns the total number of disk reads by the FCP. 
+	.LONG	0
+	.LONG	RMI$_FCPSPLIT	;Returns the number of split transfers performed by the FCP. 
+	.LONG	0
+	.LONG	RMI$_FCPWRITE	;Returns the total number of disk writes by the FCP. 
+	.LONG	0
+	.LONG	RMI$_FREFLTS	;Returns the number of page faults from the free list. 
+	.LONG	0
+	.LONG	RMI$_FRLIST	;Returns the number of pages on the freelist. 
+	.LONG	0
+	.LONG	RMI$_GVALFLTS	;Returns the number of global valid page faults. 
+	.LONG	0
+	.LONG	RMI$_ISWPCNT	;Returns the number of process inswaps. 
+	.LONG	0
+	.LONG	RMI$_LOGNAM	;Returns the number of logical name translations 
+	.LONG	0
+	.LONG	RMI$_MBREADS	;Returns the number of mailbox reads 
+	.LONG	0
+	.LONG	RMI$_MBWRITES	;Returns the number of mailbox writes 
+	.LONG	0
+	.LONG	RMI$_MODLIST	;Returns the number of pages on the modified page list. 
+	.LONG	0
+	.LONG	RMI$_MFYFLTS	;Returns the number of page faults from the modified list. 
+	.LONG	0
+	.LONG	RMI$_NUMLOCKS	;Returns the total number of locks. 
+	.LONG	0
+	.LONG	RMI$_NUMRES	;Returns the total number of resources. 
+	.LONG	0
+	.LONG	RMI$_PREADIO	;Returns physical page read I/O's. 
+	.LONG	0
+	.LONG	RMI$_PREADS	;Returns the number of pages read. 
+	.LONG	0
+	.LONG	RMI$_PWRITES	;Returns the number of pages written. 
+	.LONG	0
+	.LONG	RMI$_PWRITIO	;Returns physical page write I/O's. 
+	.LONG	0
+	.LONG	RMI$_SYSFAULTS	;Returns the number of system page faults. 
+	.LONG	0
+	.LONG	RMI$_WRTINPROG	;Returns the number of page faults from a write in progress. 
+	.LONG	0
+	.LONG	0		; Terminator			
+RMIIOSB:	       	.QUAD	0
+OUTP:			.QUAD	0
+
+FAOBUF:		.BLKB	256
+FAODESC:	.LONG	.-FAOBUF
+		.ADDRESS  FAOBUF
+
+PRMSTR:		.ASCID	/!36<!AC!>,!UL/
+OPCSTR:		.ASCID	?PFM: !AC !AC Exceeded. Priority = !UL. !/Please inform MTS (During the day)?
+; 
+; Logical names
+	.ALIGN	LONG
+OUTINT:		.LONG
+RMILOGSTR:      .BLKB	255
+LNM_LIST:
+	.WORD	.-RMILOGSTR
+	.WORD	LNM$_STRING
+	.ADDRESS  RMILOGSTR 
+	.ADDRESS  RMILOGBUF_D
+	.LONG	0
+RMILOGBUF_D:	.LONG
+		.ADDRESS RMILOGSTR            
+LNMTBL:		.ASCID	/LNM$SYSTEM_TABLE/   
+RMICYCLOG:	.ASCID	/PFM_CYCLE/
+RMIALTLOG:	.ASCID	/PFM_ALERT_THRESH/
+
+	.align 	long
+CDXLT:		.LONG
+WAIT_INTERVAL:	.FLOAT	3600.0			; Default
+ALTTHRSH:	.LONG	10			; Default
+REC_KEY:
+		.QUAD				; Nodename here (spc pad)
+		.LONG	CTP_FAC_RMI             ; Facility
+reccode:	.LONG	0                       ; Code
+		.BLKB	96			; Rest of key
+THRESHTBL:
+		.ASCIC	/Short Term Mimimum /
+		.ASCIC	/Short Term Maximum /
+		.ASCIC	/Long Term Minimum  / 
+		.ASCIC	/Long Term Maximum  / 
+		.ASCIC	/Minimum Value      / 
+		.ASCIC	/Maximum Value      /
+THRESHTBL_SIZ = 20
+ 
+
+	.PSECT	PROG_CODE, RD, NOWRT, EXE, PIC, SHR, LONG
+
+	.CALL_ENTRY	MAX_ARGS=12, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=GET_RMI
+;
+	CALLS	#0,G^XLATE_LOGICALS	; Set controls
+;
+; Get node we are running on ...
+	$GETJPIW_S	ITMLST=JPILST
+	BLBS	R0,5$
+	RET
+5$:
+	MOVC5	NODENAME_DESC,NODENAME,#^A/ /,#8,REC_KEY
+
+; Build Item list for RMI call
+	MOVAL	RMIITMLST,R6
+	MOVAL	RMIITM,R7
+	MOVL	#ITMCNT,R8
+7$:
+	MOVQ	(R6),(R7)+
+	MOVL	8(R6),(R7)+
+	ADDL	#RMIITMLEN,R6
+	SOBGTR	R8,7$
+	CLRL	(R7)		; Terminator
+
+
+10$:	
+	CLRL	-(SP)		; AST Prm
+        CLRL	-(SP)		; AST
+	PUSHAL	RMIIOSB		; IOSB
+	PUSHAL	RMIITM		; Itm list
+	CLRL	-(SP)		; NULLARG
+	CLRL	-(SP)		; NULLARG
+	CLRL	-(SP)		; EFN
+	CALLS	#7,G^SYS$GETRMI
+	BLBS	R0,20$
+	RET
+20$:
+
+	PUSHAL	WAIT_INTERVAL
+	CALLS	#1,G^LIB$WAIT
+
+; Pass to cntrprc...
+	MOVAL	RMIITMLST,R6
+	MOVL	#ITMCNT,R8
+; Ensure item was returned.
+;	TSTL	@8(R6)			; If zero ...
+;	BEQL	110$			; .... Skip Item
+100$:
+	BBS	#CTP_V_ARRAY,12(R6),200$	; Br if this is array
+	MOVZWL	2(R6),RECCODE		; Complete key
+	PUSHAL	 OUTP
+	PUSHAL	REC_KEY
+	PUSHL	12(R6)			; Processing options
+	PUSHL	4(R6)
+	PUSHL	#CTP_C_FNPR
+	CALLS	#5,G^CNTRPRC
+	BLBS	R0,110$
+;	RET
+110$:
+	CMPW	OUTP,#SS$_DATACHECK
+	BNEQU	120$
+	PUSHAL	OUTP
+	PUSHL	R6
+	CALLS	#2,G^SEND_ALERT
+120$:
+	ADDL	#RMIITMLEN,R6
+	SOBGTR	R8,100$
+
+	CALLS	#0,G^XLATE_LOGICALS	; Reset controls
+	BRW	10$
+
+200$:
+; Here on array. These items retuned as arrays
+;	Determine which (of 2) items...
+	CMPW	#RMI$_TMSCP_EVERYTHING,2(R6)
+	BEQLU	300$
+	CMPW	#RMI$_MSCP_EVERYTHING,2(R6)
+	BEQLU	400$
+        BRW	120$
+300$:
+; Process TMSCP array
+	MOVAL	TMSCP_ITMLST,R10	; List of symbols (name)
+	MOVL	#TMSCP_ITMCNT,R11       ; Array count
+        MOVL	4(R6),R9                ; Start of array
+;
+305$:
+	MOVZWL	(R10),RECCODE		; Complete key
+	PUSHAL	 OUTP
+	PUSHAL	REC_KEY
+	PUSHL	12(R6)			; Processing options
+	PUSHL	R9
+	PUSHL	#CTP_C_FNPR
+	CALLS	#5,G^CNTRPRC
+	BLBS	R0,310$
+;	RET
+310$:
+	CMPW	OUTP,#SS$_DATACHECK
+	BNEQU	320$
+	PUSHAL	OUTP
+	PUSHL	R6
+	CALLS	#2,G^SEND_ALERT
+320$:
+	ADDL	#4,R9
+	ADDL	#2,R10
+	SOBGTR	R11,305$
+        BRW	120$
+400$:
+; Process MSCP array
+	MOVAL	MSCP_ITMLST,R10	; List of symbols (name)
+	MOVL	#MSCP_ITMCNT,R11       ; Array count
+        MOVL	4(R6),R9                ; Start of array
+;
+405$:
+	MOVZWL	(R10),RECCODE		; Complete key
+	PUSHAL	 OUTP
+	PUSHAL	REC_KEY
+	PUSHL	12(R6)			; Processing options
+	PUSHL	R9
+	PUSHL	#CTP_C_FNPR
+	CALLS	#5,G^CNTRPRC
+	BLBS	R0,410$
+;	RET
+410$:
+	CMPW	OUTP,#SS$_DATACHECK
+	BNEQU	420$
+	PUSHAL	OUTP
+	PUSHL	R6
+	CALLS	#2,G^SEND_ALERT
+420$:
+	ADDL	#4,R9
+	ADDL	#2,R10
+	SOBGTR	R11,405$
+        BRW	120$
+
+	.CALL_ENTRY	MAX_ARGS=12, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=SEND_ALERT
+;++
+;2 SEND_ALERT
+; Routine called when CNTRPRC returns SS$_DATACHECK - it has found this
+; counter to be outside normal value.
+; If alert priority is .lt. logical PFM_ALERT_THRESH alert is suppressed.
+;3 Inputs
+;	.address of RMI structure:
+;		.word length of buffer where RMI returned current value
+;		.word	RMI code
+;		.address where RMI wrote the current value
+;		.address where RMI wrote the length it returned (doesnt work)
+;		.long datatype and processing options
+;	.address of status block written by CNTRPRC
+;	       	CTP_W_OSTS     0       ; Additional status return
+;    		CTP_W_TRSH     4       ; Threashold that was exceeded
+;       	CTP_W_ESTS     6       ; Final error status
+;3 Outputs
+;	If alert is not suppressed, an OPCOM message is generated and sent.
+;	Format: 
+;
+;--
+	MOVL	8(AP),R7		; Status return
+	CMPW	ALTTHRSH,CTP_W_ESTS(R7) ; 
+	BLEQU	10$                     ; Br if Min set <= RETURN
+	MOVL	#SS$_NORMAL,R0
+	RET
+10$:
+	MOVL	4(AP),R6
+; Xlate code
+	PUSHAL	CDXLT			; Addr here
+	MOVZWL	2(R6),-(SP)		; (TEMP)
+	CALLS	#2,G^XLATE_RMI
+; Xlate value exceeded
+	MOVAL	THRESHTBL,R8
+	MOVZWL	4(R7),R9
+	DECL	R9
+	MULL	#THRESHTBL_SIZ,R9
+	ADDL	R9,R8
+
+	MOVL	#256,FAODESC
+	MOVZWL	6(R7),-(SP)		; Prio
+        PUSHL	R8			; Threshold
+	PUSHL	CDXLT			; Counter name
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	OPCSTR
+	CALLS	#6,G^SYS$FAO
+	BLBC	R0,100$ 		; Skip send on error
+	PUSHAL	FAODESC
+	CALLS	#1,G^INFORM_OPER
+100$:
+	RET	
+
+	.CALL_ENTRY	MAX_ARGS=12, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=XLATE_LOGICALS
+;++
+;2 XLATE_LOGICALS
+; Routine called once at the beginning and then at the end of each processing
+; cycle to translate and set the control logicals. The logicals that may be 
+; set are:
+;	Logical Name		Default if not present or incorrect
+;	GET_RMI_CYCLE		3600
+;	GET_RMI_ALERT_THRESH	10
+; GET_RMI_CYCLE. 	Time in seconds to wait between cycles. 
+; GET_RMI_MIN_THRESH	Value below which will cause an alert to be ignored.
+;			ALerts are generated whenever a current sample is 
+;			found to be outside normal range (as calculated by
+;			CNTRPRC). They are in range 1-255 where 1 is minor
+;			and 255 is catostrophic.
+;--
+        PUSHAL	LNM_LIST
+        CLRL	-(SP)		; Access mode
+	PUSHAL	RMICYCLOG         ; Logical
+	PUSHAL	LNMTBL  	; Table
+        CLRL	-(SP)		; No attribute
+	CALLS	#5,G^SYS$TRNLNM   
+	BLBC	R0,5100$         ; Skip on error
+; Logical is present
+; Convert to FLOAT
+	PUSHAL	OUTINT		; Outp
+	PUSHAL	RMILOGSTR		; Input
+	PUSHL	RMILOGBUF_D	; Num char
+	CALLS	#3,G^LIB$CVT_DTB
+	BLBC	R0,5100$         ; Skip on error
+        CVTLF	OUTINT,WAIT_INTERVAL
+5100$:
+; Alert threshhold
+        PUSHAL	LNM_LIST
+        CLRL	-(SP)		; Access mode
+	PUSHAL	RMIALTLOG         ; Logical
+	PUSHAL	LNMTBL  	; Table
+        CLRL	-(SP)		; No attribute
+	CALLS	#5,G^SYS$TRNLNM   
+	BLBC	R0,5200$         ; Skip on error
+; Logical is present
+; Convert to INT
+	PUSHAL	OUTINT		; Outp
+	PUSHAL	RMILOGSTR		; Input
+	PUSHL	RMILOGBUF_D	; Num char
+	CALLS	#3,G^LIB$CVT_DTB
+	BLBC	R0,5200$         ; Skip on error
+        MOVL	OUTINT,ALTTHRSH
+5200$:
+	RET
+	.END	GET_RMI
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             

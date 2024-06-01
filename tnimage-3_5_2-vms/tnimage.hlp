@@ -1,0 +1,1051 @@
+
+ tnimage Help File 
+ ------------------------------------------------------------------------
+ This help file is is ordinary ASCII format. New comments or corrections
+ can be added as needed, provided that the following format is adhered to:
+
+ (1) Line length can not exceed 80 characters.
+ (2) The first character of each line is either a digit (indicating the
+     help topic) or a space.
+ (3) A maximum of 40 lines per help topic.
+
+ No copyright restrictions apply to this file. If you pass this file to
+ another person, please indicate in the file that you have modified it,
+ to avoid confusion.
+ ------------------------------------------------------------------------
+1 General Help - (F1)
+
+  Unless you select a region, most operations will be applied to the 
+  entire image. To select a region, click on one corner and drag to the 
+  other corner with the mouse.
+
+  To add text - move to the desired location and begin typing.
+
+  To move the image around - Click on one of the 4 arrows in the menu bar.
+     The amount of movement can be changed by pressing the gray (+) or (-)
+     keys. These keys also change the distance the cursor will travel when
+     it is moved with the arrow keys.
+  
+  There are also shortcut methods for some operations:
+     Selecting foreground color - click on desired color in the displayed
+       palette with the left mouse button.
+     Selecting background color - click on desired color in the displayed
+       palette with the right mouse button.
+     Drawing lines - Press F2 to toggle line drawing mode on/off.
+     Selecting areas - Click & drag or press F3 for non-rectangular region.
+     Clicking on the menu bar also turns off line drawing, box drawing,
+       densitometry, region scanning, and most other operations.
+
+  If image colors are wrong after some operation, try pressing Alt-R to
+     rebuild the screen display. If program appears stuck, click Cancel.
+
+  The Main Cancel Button at left always cancels the current operation.
+  Some windows cannot be dismissed until the operation has been cancelled.
+  If Dismiss button seems not to work, try clicking Main Cancel Button.
+
+  See the manual tnimage.ps for more detailed information.
+
+2 Help - Pixel interaction mode
+  Determines how 2 pixels will interact when an image is copied
+  over another or loaded from disk. You can subtract 2 images, or
+  offset the same image by a small amount and then subtract it (to create a
+  3D effect). 
+     Overwrite ( default )  - This is the normal, fast mode.
+     Maximum                - Pixel is set to the larger of the 2 values.
+     Minimum                - Pixel is set to the smaller of the 2 values.
+     Add                    - The 2 values are added.
+     Subtract               - The 2 values are subtracted.
+     XOR                    - The 2 values are XOR'd.
+     Average                - The 2 values are averaged.
+  For the pixel values to become permanent, you must create a new image by
+  selecting "Create image" from the 'Files' menu. Otherwise, they will revert
+  back to their original values when the image is redrawn.
+
+3 Help - Save image
+  Transfers an image or selected region to disk.
+  
+  Save entire image - This option will cause the currently-selected image 
+    to be saved in its entirety.
+  Save selected region - Causes the selected screen region (which may contain
+    parts of 1 or more images) to be saved. If multiple images overlap,
+    the pixels from the foreground image are saved. 
+  TIFF/PCX/GIF/IMG/Custom - Selects the image file format.
+  Color/gray scale vs. monochrome - Select monochrome for black-and-white
+    images. Monochrome images will be much smaller than color/gray scale
+    images but contain no color or gray. Color and gray scale images are
+    treated identically. 
+  Filename - Click on this box, and type in the desired filename, then press
+    <Enter> or click the mouse when finished.
+  Image number - Not normally changed. This indicates which image is currently
+    selected in case you want to save the entire image.
+  Extra TIF param.(for `Other') - Selects non-standard color depths. Only
+    used if file format is TIF or Custom and Image Type is `Other'.
+
+4 Help - Print
+  Prints an image or selected region on a PostScript or PCL printer.
+
+  These settings apply to all printers:
+
+  Positive/negative - Positive prints the image exactly as it appears on
+    your screen, negative prints the inverse.
+  Grayscale, RGB, CMY, CMYK - Print mode. 
+    Grayscale - Ignores colormap, sends image as grayscale. This is the
+       recommended setting for grayscale images unless the grayscale mapping
+       has been changed.
+    RGB/Indexed color - Uses the image's colormap if present. This is the
+       recommended setting for sending 8-bit color images such as GIFs to
+       PostScript printers. Not recommended for PCL printers.
+    CMY - Uses the image's colormap if present. This is the
+       recommended setting for sending all color images to any printer.
+    CMYK - Recommended for high-end printers. Gives a wider range of colors.
+       
+  Print entire image/ print selected region - Select whether you wish to print
+    the entire image, or only the screen region which you selected most
+    recently (if no region was selected, it will print the entire image).
+  Printer command - enter a command to be used for network printers.
+  Print device/file name - the printer name, e.g. /dev/lp0 or a filename
+    if you are printing to a file.
+
+  These settings apply only to PCL printers:
+  
+  Resolution - Enter a value such as 150, 300, 600, or 1200 dots/inch, 
+    depending on the resolution of your Laserjet-compatible printer.
+  Dither size - This determines the number of gray or color levels which 
+    appear in the print-out. For example, dither size of 8x8 corresponds 
+    to 64 different possible levels. A larger dither size also means the 
+    print-out becomes larger.
+  Print quality, Media type, Depletion - Give fine control over the printout.
+
+  These settings apply only to PostScript printers:
+
+  Horiz. image size - the width of the printout in inches.
+  Image aspect -  Greater than 1 elongates the printout vertically, less 
+     than 1 stretches it horizontally.
+  Rotation - degrees counterclockwise. Because the center of rotation is 
+     the lower left corner of the image, it may be necessary to increase
+     the horizontal offset to keep the image on the page.
+  Paper size - This should be set to match the paper tray on your printer.
+     
+
+5 Help - Change palette
+  Changes the color values for 8-bit images.
+  
+  Click on the desired palette.
+  Attaching the palette to the image causes the change to be permanent.
+  These pre-defined palettes are available:
+       Gray scale      Spectrum           Multi-color 1,2, or 3
+       RGBI            Black to green     Zebra
+       Other (selects from 10,000 other pre-defined palettes).
+  Brightness - changes the color saturation.
+  Rotate palette - causes the color map to be shifted to lower or higher
+    pixel values (depending on where you click).
+  Create - Allows you to graphically create your own palette. The palette
+    can also be saved on disk.
+
+6 Help - Densitometry
+  
+  Measures the density and area of an object on the screen.
+
+  Auto background - uses fuzzy k-means to automatically determine foreground 
+    and background pixel densities.  
+  Pixel compensation -  If set to "on", the pixels are converted into 
+    values proportional to the optical density originally calculated by the
+    scanner. If set to "off", the results are raw intensity values.
+    This only has an effect if the image contains an optical density table.
+  Maximum signal - Selects whether the image is a white-on-black or
+    black-on-white image. If the maximum signal is 'black', then a completely
+    black region will have the strongest signal.
+  Area selection -
+    Automatic mode:  Click near the center of the region to be analyzed.
+      The boundaries of the region will be  calculated automatically. The 
+      area actually analyzed temporarily changes color. You may need to
+      adjust the background level so the correct area is analyzed.
+      For extremely noisy images, it may be helpful to delineate the outer
+      boundary of the region to be analyzed by first drawing a black line
+      around it.
+    Manual mode: You must select a rectangular region each time.
+    Fixed size mode: You must select a rectangular region for the first 
+      measurement. This is used as a template so that all subsequent 
+      measurements use the same number of pixels.
+  See also `Scan region...' for an alternative method of densitometry.
+
+7 Help - Filter -  Filters an image or selected region.
+       Low pass  - Blurring filter
+       High pass - Sharpening filter
+       Laplace   - Edge detection
+       Sobel     - Sobel edge enhancement
+       Background subtract - Removes only low spatial frequencies.
+         Eliminates slow gradients and broad smudges from image. The entire
+         image will probably get lighter or darker, depending on whether the
+         "maximum signal" is set to "white" or "black".
+       Background flatten (de-trending) - Removes color gradients. 
+       Noise filter - Eliminates extraneous pixels.
+       Sharpen / - Adds shadow at 45ø angle (freeze-fracture effect).
+       Sharpen | - Adds shadow at 90ø angle (freeze-fracture effect).
+       Sharpen / - Adds shadow at 0ø angle (freeze-fracture effect).
+    Kernel    - Determines the number of surrounding pixels to be
+       convoluted with each pixel. In conjunction with kernel multiplier,
+       this determines the size range that will be emphasized or smoothed.
+    Kernel multiplier - Determines the area that is covered by the selected 
+       kernel. A higher value results in filtering lower spatial frequencies.
+    Range (median)  - Determines the maximum deviation from the median
+       value that is permissible during noise filtering. If a pixel deviates 
+       from the median by more than this amount, the median is substitued. 
+    Amount of filtering - How much filtering is desired (10=maximum).
+    Pseudo color images (such as GIFs) should be converted to 24 bits/pixel
+       before filtering.
+
+8 Help - Scan region
+    Performs densitometric analysis on a screen region by scanning it from
+    one side to the other.
+    Select coordinates mode - In this mode, you must reselect the region to 
+     be scanned each time. This is done by:
+        Click on one starting corner with left mouse button.
+        Drag to the other starting corner and release mouse button.
+        Click on one ending corner (This can be on the left, right, above, or
+          below the starting corners).
+        Drag to the other ending corner and release. Scanning will then start
+          in the direction of 'start' to 'end'.
+    Maximum (black or white) - Determines whether black or white is to be
+       regarded as the largest signal.
+    Rhomboid, 90°(4 pts.): the starting and ending edges will automatically 
+       'snap' to the closest value (0 or 90 degrees), causing diagonal areas 
+       to be scanned as a series of vertical or horizontal lines. Select 4
+       points and press any key to start. To select next area, select 4 more
+       points. Click 'cancel' when finished with  densitometry.
+    Rhomboid (4 pts.): starting edge can be at any angle.
+    Fixed width: Scans a rectangle of constant width. Select 2 points, one
+       at each end of region to scan. Press any key to start measurement.
+       To select next area, select 4 more points.  Click 'cancel' when 
+       finished with  densitometry.
+    Automatically save scan - If checked, the data will be saved in an ASCII
+       file after each scan.
+    Filename - Filename under which the scan will be saved. If the 1st 8
+       characters are all digits, the filename will be incremented as a 
+       number each time, e.g., '1000.dat' will become '1001.dat'.
+    Peak area measurement - Use mouse to click and drag desired region on 
+       the density profile plot.  The area is shown in the lower right. 
+       Or, click on "Peak areas" to get a table of all peaks. You can save 
+       this table by clicking on `save to disk'.
+    Manual Baseline - click on the graph to create control points for a Bezier
+       curve for the baseline, then click on "Finished" or press <space>
+       to subtract the baseline from the graph.
+    
+9 Help - Fill an area
+
+   Flood-fills a screen area with color. Flood fill will not go outside 
+   the selected area.
+
+   Fill type - Select between a solid color, or a gradient which changes
+     in the vertical or horizontal direction.
+   Fill color - The color to be used when filling with a solid color.
+
+   Maximum gradient color -  The color value to be used at the top (for
+     vertical fills) or far left (for horizontal fills). Image should be
+     at least 24 bits/pixel for good results. The 'maximum' color can be 
+     higher or lower than the 'minimum' color.
+   Minimum gradient color - The pixel value to be used at the bottom (for
+     vertical fills) or far right (for horizontal fills).
+
+   Interactive filling mode - click on a point inside the region to fill.
+     Repeat for each area to fill. At any time, you can stop the fill process 
+     by pressing <ESC> or clicking on Cancel button.
+     If no filling occurs, it may be necessary to change the border colors.
+     Max border color _  The region that includes all contiguous pixels between
+     Min border color    these two values will be filled.
+
+   Preselect filling mode - Select desired area to fill in advance by dragging
+     a rectangle or double-clicking on an object. 
+
+
+
+10 Help - Click box
+    The minimum and maximum acceptable values are shown. Click on the
+    arrows on each side of the indicator bar to increase or decrease
+    the value, or click and drag the vertical position indicator until
+    the desired value is obtained.
+    
+    You can also type the number directly, by clicking on the number field.
+
+11 Help - Read image
+  Transfers an image from disk to the screen.
+  Filename selection:
+  Click on the "Filename" box, then type the filename, or click again
+  to select a file from the list.  Click on desired file with the mouse. 
+  The TAB key toggles between the filename list, directory list, and drive 
+  list. Clicking on the desired list has the same effect.
+
+  Click on the small triangles in the upper and lower right of the list
+  to scroll through the list. Or, click on and drag the indicator to
+  move rapidly through the list.
+  The arrow keys can also be used to scroll up and down in the
+  currently-active list.
+  To change drives, click on the desired drive name.
+
+  Positive/negative: Determines whether the image should be color-inverted.
+  Vertical/horizontal: Determines the screen orientation for the image.
+  X-position: Left x-coordinate of the image.
+  Y-position: Upper y-coordinate of the image.
+  X size: Final size of the image in the x dimension, as a fraction of the
+     original size (0-1). (The x or y dimension is relative to the orientation
+     of the image, not the screen).
+  Y size: Final size of the image in the y dimension, as a fraction of the
+     original size (0-1).
+  Note: Targa format images must have the extension .TGA to be readable.
+
+12 Help - Create Palette
+  Creates a new, custom palette for 8-bit images.
+ 
+  To change Red, move the mouse cursor to the top box.
+  To change Green, move the mouse cursor to the middle box.
+  To change Blue, move the mouse cursor to the lower box.
+
+  Then click and drag to create a graph of the intensity of that color
+  for each color value between 0 and 255. Click on 'OK' when finished.
+  
+  Click on 'smooth' to make the new palette smoother.
+  
+
+13 Help - Plot
+    
+  Click and drag on the graph to select a range of X-values to be integrated.
+  Click OK when finished.  
+  BL Smoothness: Adjusts the frequency cutoff of the automatic baseline
+     calculation. A higher value increases the smoothness of the calculated
+     baseline.
+
+
+14 Help - Color Intensity
+
+  If the region you selected contains a monochrome region, adjust 
+  the desired change in brightness from -255 to 255 (0=no change). The
+  pixel values in 8-bit regions will be incremented or decremented
+  by this amount.  Usually this means the image gets lighter or darker;
+  but the actual effect on the appearance of the image is determined 
+  by the current palette.
+  
+  If the region you selected contains a color (16,24, or 32 bit/pixel)
+  region, adjust the change in brightness of the red, green, and blue 
+  components as desired. This will adjust the colors in regions containing 
+  color images.
+
+  To individually adjust the RGB components of an 8 bit/pixel image,
+  you must convert the image to color first (select `Image'...`Convert
+  color depth'). 
+
+  Intensity and contrast can also be adjusted interactively by dragging
+  on the palette.  
+ 
+  "Color/brightness" tries to use the color palette if possible whereas 
+  "Change pixel value" always changes the actual image.
+
+15 Help - Significant digits
+
+  This selects the number of decimal places that will be displayed
+  when floating-point numbers are used, such as during densitometry.  
+
+
+16 Help - Configure
+
+   Color reduction method determines the algorithm used when viewing
+   a hi-color image (15 or 16-bits/pixel) or true color image (24 or
+   32 bits/pixel) when TN-Image is in an 8 bit/pixel screen mode. This
+   requires mapping the real colors into a palette.
+   
+   TN-Image can use quantization to find an optimal palette, or try to
+   fit the image into the currently-selected palette.
+
+   Luminosity factors are used when converting from color to gray scale.
+   They should be between 0 and 1 and total to 1.0.
+
+   Active Color Planes - Selects which colors (r,g, or b) to which 
+   all image manipulations are applied.
+
+   Raise image on focus - If checked, clicking on an image or otherwise
+   selecting it will bring it to the foreground.
+
+   Multiple windows - If checked, each image will be created in a separate
+   window.
+   
+17 Help - O.D. Table
+
+   The optical density table is used to convert pixel values to optical
+   density. This is also known as "gamma correction" and is only used
+   for 8 bit/pixel images. Some image files contain their own O.D. table.
+   
+   TN-Image uses this information when "pixel compensation" is selected
+   in densitometry and region-scanning modes.
+   
+18 Help - Histogram (indexed-color screen modes)
+   Displays graphs showing the distribution of intensities and color 
+   values in the image.
+
+   The top box displays the number of pixels in the selected region
+   for each of the 256 possible pixel values (intensities).
+
+   The other 3 boxes display the palette color attributes of the same
+   pixels, for each of the 64 possible red, green, and blue palette values.
+
+   Clicking on one of the the 4 plot areas selects which plot has the
+   current focus. Displayed parameters and any area measurements, 
+   smoothing, etc., apply only to the plot that has the current focus.
+
+   All 4 boxes are re-scaled whenever a change is made that affects
+   the maximum or minimum values.
+   
+19 Help - Histogram (color screen modes)
+
+   Displays graphs showing the distribution of color values in the image.
+
+   The 3 boxes display the number of pixels in the selected region
+   for each of the possible red, green, and blue color values. 
+
+   Clicking on one of the the 3 plot areas selects which plot has the
+   current focus. Displayed parameters and any area measurements, 
+   smoothing, etc., apply only to the plot that has the current focus.
+   
+   All 3 boxes are re-scaled whenever a change is made that affects
+   the maximum or minimum values.
+
+20 Help - Math
+
+   Performs a point-by-point mathematical transformation of the intensities 
+   or red, green, and blue values in the selected image or region. 
+   
+   The decision of which formulas to apply depends on the color depth of 
+   the image at each point - if the point is an 8 bit pixel, the intensity 
+   is changed; otherwise, the r,g, and b values are changed.
+   
+   You can enter any mathematical equation using the following operators 
+   and functions:
+        ()  +  -  * (multiplication)  / (division) 
+        +=  -=  *=  /=  ++  --  ||  &&  >=  <=  ==  if  else
+        |  bitwise OR  & bitwise AND  ^ bitwise XOR  ~ bitwise NOT
+        sin cos tan sinh cosh tanh asin acos atan sqrt asinh acosh atanh
+        abs log (natural logarithm) ln (natural logarithm) erf
+        log10 (base 10 logarithm) exp pi cbrt (cube root)
+        rand (random number based on specified seed)
+   The following two-parameter functions are supported:
+        max min pow (exponentiation)
+   You can also use these predefined variables for intensity, red, green, blue,
+   real, imaginary, and wavelet coefficients, respectively:  i r g b re im w.
+   
+   Example:         i=i/2 + i^2;
+                    r=g-5;
+                    g=(b+r)*g-17;
+                    b=b^1.23;
+   Note that the r,g,and b values are bounded by 0 and 31, 63, or 255 for
+   15-, 16-, and 24-bit/pixel screen modes, respectively. `i' is also 
+   limited by 0 and 255.
+
+   To use to data in other images, use the variables:
+                image[ino][frame][x][y]
+                red[ino][frame][x][y]
+                green[ino][frame][x][y]
+                blue[ino][frame][x][y]
+                real[ino][x][y]
+                imag[ino][x][y]
+                wave[ino][x][y]
+   where "ino", "frame", "x", and "y" are expressions for the image number,
+   frame (if image is 3D), and x and y coordinates. 
+   
+   Example:     if(image[1][0][x][y]<121)i=244;
+   
+   Complex math on Fourier-transformed data is not currently implemented.
+   
+21 Help - Fourier Transform
+
+   Select `forward' or `reverse' to perform Fourier transform, or select
+   `change display only' if you only want to change which component is
+   displayed. The display can be switched between the real and imaginary 
+   components of the Fourier transform.
+
+   To perform Fourier convolution or deconvolution, you must specify two
+   images. Both images will be FFT'd and the first image will be multiplied
+   or divided in the frequency domain by the second image, and then 
+   reverse-transformed to give the deconvoluted or convoluted result.
+
+   Don't forget to set the display to `real' before performing a reverse 
+   FFT, since the original image does not have an imaginary component and
+   would otherwise appear black.
+   
+   FFT's are sensitive to the background and to the number of separate
+   colors in the image. Improvement can sometimes be obtained by setting
+   the screen background to black. See the manual for other tips.
+
+22 Help - Calibration
+   Calibrates the x and y coordinates in the image to correspond to some
+   other parameter such as molecular weight. The calibrated values are
+   displayed in the information window on the left.
+ 
+   Click with the mouse at the points to use for calibration, and for each
+   point, enter the corresponding calibration value. When finished, press 
+   any key. The calibrated value will be continuously displayed in a window.
+   To turn off the calibration window, select "Calibration" again, and
+   click on "Cancel".
+
+   'x units' and 'y units' both calibrate x and y coordinates to user-
+   specified values. They are labeled 'x' and 'y' for convenience, but in 
+   fact they  are independent of each other and can be in any direction.
+
+   'z units' calibrates pixel values only, and is useful when pixel value
+   represents some other parameter such as altitude.
+
+   1-D (non-directional) - Defines a metric on the image (Recommended for
+   morphometry).
+   
+   1-D (directional) - Maps the coordinates of one dimension to a linear
+   or logarithmic function (Recommended for gel analysis).
+
+   2-D - Maps both x and y to separate linear or logarithmic functions.
+
+   
+23 Help - Draw curve 
+ 
+   Linear - Fits a straight line through the control points.
+   Bezier - Draws a Bezier curve.
+   B-Spline - Draws a B spline curve.
+   
+   To draw a curve, click with the mouse at desired positions of control
+   points. The points can be moved by dragging them to a different location.
+   When you have enough control points, press a key to make the curve
+   permanent.
+   
+24 Help - Creating custom format images
+   Sets parameters for a new image format.
+
+   `Target platform' is the type of computer that created the image.
+   For most UNIX workstations, Mac's, and Cray and similar mainframes, 
+   select `Mac'. For IBM and similar mainframes, select `MVS'.
+
+   `Bit packing' selects whether bits are to be packed left to right 
+   (TIF-like) or right to left (GIF-like). This is especially important 
+   if the total bits/pixel is not a multiple of 8.
+   
+   If `Use header' is checked, specify the file containing the header
+   to copy, the number of bytes to copy, and the offset in the header
+   where the x (image width) and y (image length) are to be placed.
+   
+   `Offsets' are the positions in the image file where various information
+   will be stored. Setting the offsets to -1 will cause them not to be
+   stored.
+   
+   `Bytes to skip' must be a multiple of the no.of bytes per pixel.
+   See manual for details.
+
+25 Help - Multiple click box
+    For each variable (e.g.,red, green, and blue), the minimum and maximum 
+    acceptable values are shown. Click on the arrows on each side of the 
+    indicator bar to increase or decrease the value, or click and drag 
+    the vertical position indicator until the desired value is obtained.
+    
+26 Help - Calibrate
+    Select "New calibration" to calibrate an image or background. 
+    Select "Hide calibration" to temporarily turn off the calibration window. 
+    Select "Un-hide calibration" to turn on the previous calibration window. 
+    
+27 Help - Grayscale adjustment
+    Changes the mapping of grayscale values to the screen. The grayscale
+    values are also filtered through the currently-selected palette, which
+    allows pseudo-color.
+    This option only has an effect on monochrome and pseudo-color images.
+    It is mainly useful for displaying monochrome images greater than
+    8 bits per pixel, and for enhancing contrast of low-contrast images.
+
+    Image white value = the highest pixel value to view in the image.   
+    Image black value = the lowest pixel value to view in the image.   
+    Screen white level = the highest screen gray level to produce.
+    Screen black level = the lowest screen gray level to produce.
+        
+28 Help - Rotate palette
+    Click on "-1" to rotate palette downwards.
+    Click on "1" to rotate palette upwards.    
+    
+    
+29 Help - Contrast
+    If the image or selected region contains monochrome pixels, select 
+    the contrast factor for the monochrome portion of the image.
+
+    If the image or selected region contains color pixels, select contrast
+    factors for the red, green, and blue components of the color portion.
+    
+    A contrast factor of 100 = no change.
+
+    Intensity and contrast can also be adjusted interactively by dragging
+    on the palette.  
+
+30 Help - Macros
+    Enter one command per line. Any menu item can be part of a macro.
+
+    In addition, several other non-menu commands can also be used.
+    Many of these commands require string or numeric parameters. The number
+    is usually the same as the order in which the item would appear in the 
+    menu or dialog box.  See "Macro Programming Guide" in manual for details.
+    
+    Press Shift+Enter to execute a single line.
+    To execute more than one line, click "Execute". The macro will be
+    executed starting at the beginning of the line at which the cursor
+    is positioned.
+    
+31 Help - Create image
+
+    Creates an image by clicking and dragging with the mouse, setting
+    a fixed size and position, or by copying or resizing another image. 
+
+    Use mouse  - Use the mouse to select the region for the new image.
+    
+    Fixed size - Enter the x and y size (in pixels), and the x and y 
+      position for the upper left corner of the image. 
+
+    Duplicate image - makes an exact copy of current image.
+    
+    Panel->multiframe - Takes an image consisting of several sub-images, and
+      puts each subimage into a multi-frame (3D) image.  If 'Manually find 
+      frames' is checked, you must click on the upper left corner of each
+      subimage. Otherwise, the subimages are found automatically,
+      using the specified x and y spacing between subimages and the upper
+      left x and y for the first subimage.
+
+    Multiframe->panel - Converts a multi-frame (3D) image into a large panel
+      consisting of subimages. The spacing (in pixels) between each subimage,
+      and the upper left coordinates for the first subimage in the panel,
+      can be specified.
+    
+    Combine images->multiframe - Similar to panel->multiframe, except each
+      subimage is taken from a different image. These images must all be
+      the same size and bits/pixel.
+      
+    Split multiframe->images - Similar to multiframe->panel, except each
+      frame is put into a separate image. If 'Align images' is checked,
+      the new images are lined up in the specified number of columns.
+      
+    Add frame to image - Adds an additional frame to current image. Use with
+      caution, since not all image file formats support multiple frames. The
+      program will warn you if you try to save a multiframe image in an 
+      incompatible format.
+    
+    Grab from screen - Program waits until you click on some other window
+      on the display, then makes a copy of it.
+      
+    Composite 2 or more images - Creates a large single-frame panel image 
+      from any number of smaller images. A spreadsheet will appear permitting 
+      the position and spacing of each image to be specified. All the images
+      must have the same bits/pixel but can be any size.
+
+    Resize image window only - changes size of image buffer for currently-
+      selected image, keeping the original image at the upper left corner,
+      and adding black pixels if necessary. This is useful in chopping images
+      to a specific size.      
+    
+32 Help - Trace curve
+ 
+    Click on the image at the leftmost edge of the curve to trace. 
+    Curve tracing will proceed from left to right.
+
+
+33 Help - Measure
+  
+    To measure distance - click at starting point and drag to ending point.
+    To measure angles   - click and drag twice to define 2 lines. The
+    angle between the lines in degrees is calculated. (The lines are
+    assumed to extend indefinitely in either direction).
+    
+    
+34 Help on Help
+  
+    Click on "Help" to get help.
+    The 'Dismiss' key is inoperative when program is getting input.
+    For more information, please consult the manual.
+
+35 Palette settings
+
+   No.of colors to leave untouched - Increase this number if flashing occurs 
+   when moving the mouse. Decrease the number if colors are displayed 
+   incorrectly.
+
+36 Font
+  
+   Click on the appropriate buttons to change the parameters as desired.
+   To select a font not listed, click "other" and type the font 
+   specification (for example, *times-medium-r*240*). See your X manual
+   for details. type "xlsfonts" for a list of fonts on your system.
+
+      
+37 Help - 3D Image
+   
+   Specify the total number of frames and the width and height of each 
+   frame in pixel units.
+   
+38 Help - Sample Palette
+
+   Click left mouse button on desired color to change foreground color.
+   Click right mouse button on desired color to change background color.   
+   Drag the '=' at right to change brightness by moving palette up/down.
+   Drag the two '<' at right to change contrast by squeezing or expanding
+   the palette.
+  
+   Depending on what other applications were running when TN-Image was
+   started, there may be a variable number of fixed colors which belong
+   to other programs and cannot be changed.
+   
+39 Help - Scanner Interface
+
+   Click on "Preview Scan" and set the desired bits/pixsl and the approximate 
+   contrast and brightness settings. A low-resolution scan will be performed.
+   Select the desired region and click "Image scan" to scan the image at 
+   full resolution.
+
+40 Help - Paste threshold (DOS Version)
+
+   Select a pixel value to determine which pixels to paste. Pixels above this
+   number will be treated as transparent and will not be pasted. Set the number
+   to its highest value to paste everything.
+
+   
+41 Help - Paste (Unix Version)
+
+   If no area is selected, the current image will be pasted.
+   
+   Background - > transparent part = Pastes the background pixels into the
+     selected region or image, only in areas where the image is transparent.
+   Background -> opaque part - Pastes the background pixels into the
+     selected region or image, only in areas where the image is opaque. Note
+     that this will make the image disappear.
+   Opaque part -> background  - Pastes the opaque pixels in the selected 
+     region or image, onto whatever is behind the image. This is the most
+     common use.
+   Transparent part-> background  - Pastes the transparent pixels (i.e., those
+     which are not visible) in the selected region or image, onto whatever is 
+     behind the image. 
+   Stencil -> background  - Pastes the transparent pixels in the selected 
+     region or image, onto whatever is behind the image, but sets them to
+     the current drawing color first, using the image as a stencil mask.
+   Entire region -> background  - Pastes the entire selected region or image
+     onto the background.
+   
+   
+42 Help - Copy/Move
+
+   Click "Copy" to copy a region to another location. Click "Move" to also
+   delete the original. Then select the region to copy by clicking and 
+   dragging with the mouse. When the mouse button is released, the selected 
+   area will be pasted to the new location.
+   
+   Transparent copy will only paste pixels with values between "Min opaque
+   pixel" and "Max opaque pixel". For indexed-color images, it may be 
+   necessary to sort the colormap first.
+   
+   If "Remap pixels" is checked, the copied pixels will be changed to the 
+   closest color found in the destination image. The colormap of the 
+   destination image is not changed by any copy.
+   
+   Click "Cancel" to stop copying and return to normal mode.
+   
+ 
+43 Help - Transparency
+
+   Set the degree of transparency (0=completely opaque, 255=completely 
+   transparent) for the currently-selected image.
+   
+      
+44 Help - Spray
+
+   Fine spray sets all the pixels in a fixed area around the cursor to the 
+     foreground (drawing) color.
+   Diffuse spray sets the pixels around the cursor to the foreground (drawing)
+     color, but in a diffuse pattern.
+   Math spray allows you to enter any mathematical formula to be applied to
+     all the pixels in a fixed area around the cursor. This can be used to
+     interactively copy small parts of another image or a different part of
+     the image.
+   
+   'Spray factor' is the size of the fixed area that will be affected.  
+   If 'spray only once' is checked, no pixel will be sprayed more than once.
+   Spraying begins when the left mouse button is clicked.
+   To return to normal mode, click the 'cancel' button at left.
+   
+45 Help - Rotate
+
+   Select the degrees to rotate the image or selected area.
+   Antialiasing gives a smoother, more accurate rotation but takes longer.
+   
+   When positioning labels, the foreground and background colors must be
+   different, otherwise the label will be invisible.
+   
+46 Help - Spreadsheet
+
+   Use the gray arrow keys to select the desired pixel, then type the 
+   intensity or RGB value.  
+
+47 Help - Change image depth
+
+   Changes the number of bits/pixel in an image. If the bits/pixel of your
+   image is not a multiple of 8, select "maximize contrast" before changing 
+   image depths, otherwise the image may become extremely dark. 
+
+48 Help - Image attributes
+
+   Changes the properties of an image. Some background properties, such as
+   colormap, can also be changed by setting "Image Number" to 0.
+   
+49 Help - Camera
+
+   Camera name = Select camera driver to use. See manual for details.
+   Camera driver may require root permissions.
+
+   Acquisition mode:
+    Normal = Each frame replaces previous frame.
+    Accumulate = Successive frames are averaged.
+    Add = RGB values of successive frames are added (for low-light conditions).
+    Subtract = RGB values of successive frames are subtracted (for removing
+        dark current).
+
+   Camera
+      Initialize = Resets the camera (may take several seconds)
+      Normal = Ordinary operation
+      
+   Frames
+      Continuous = Acquire video at specified frames/second
+      Single frame = Acquire one frame when START button is clicked.
+      
+   Click Ok or Cancel when finished, START button to begin acquiring images.
+   Click on Single frame to temporarily pause the camera.
+   
+   
+   Post processing command
+      Enter a command or macro to be executed after each frame. Examples:
+           color 10 -20 5 0       = Increase intensity by 10, decrease red by
+                                    20, increase green by 5, no change to blue.
+           filter 1 1 10          = High-pass filter, 3x3 kernel, amount of
+                                    filtering is 10.
+           r+=20;                 = Image algebra equation
+           
+50 Help - Grain/Pattern counting
+
+   Select region in which to count before starting, or click on the desired
+   image to count all grains or patterns in that image.
+
+   Clicking on "Count std. size grains" uses the default pattern which is a 
+   3x3 black grain. For all other grains and patterns, click on "Select pattern" 
+   and select a typical instance of the pattern, or click on "Read pattern 
+   from disk" to use a previously-learned pattern.
+
+   A higher threshold means pattern-matching is more selective.
+   Making the Mismatch Weight more negative increases the penalty for
+   a mismatched pixel, and will also improve selectivity.
+   
+   For some images, clicking on "Enhance grains" will greatly reduce the
+   error rate.
+
+   Type of pattern      Threshold   Match Wt.    Mismatch Wt.   
+   ---------------      ---------   ---------    ------------
+   Grains (monochrome)   0.50        1.0          -0.05  
+   Grains (color)        0.45        1.0          -0.10  
+   Grains (enhanced)     0.55        1.0          -0.15  
+   Faces                 0.60        1.0          -0.15  
+   Faces  (color)        0.95        1.0          -1.00  
+   Patterns              0.90        1.0          -0.80  
+
+
+51 Help - Local contrast maximization
+
+   This function maximizes the contrast over small areas of the image.
+   Dark areas of the image are lightened and light areas are made darker.
+   The scale setting is the maximum length in pixels of the environment over
+   which the contrast will be maximized. A small value maximizes contrast 
+   over a more local area, while a large value gives a more gentle contrast 
+   enhancement (and also takes slightly longer).
+   
+52 Help - Wavelets
+
+   Select a wavelet, then click "Decompose" or "Reconstitute" to perform 
+   forward or reverse wavelet transform. Changing the reconstitution 
+   coefficients causes a smaller range of coefficients to be used in the
+   reverse transform. When filtering low-resolution wavelet components,
+   it is sometimes necessary to add an gray value offset to the image to
+   prevent negative pixel values. Use "Intensity Contrast..Maximize Int"
+   to restore the original contrast levels.
+
+53 Help - Morphological filtering
+
+   Filters the image or selected area morphologically, by selecting pixels
+   based on their relationship to shapes in the image instead of their
+   brightness. 
+   
+   Threshold - sets pixels below threshold to black, above threshold to white.
+   Erosion - eliminates pixels at edge of shapes, making them thinner.
+   Dilation - adds pixels around edges of shapes, making them fatter.
+   Skeletonization - Makes features as thin as possible, ideally a line.
+   Quick segmentation - Draws outlines around features.
+   Watershed segmentation - Finds demarcation points around features.
+   
+   Structuring element - the set of pixels surrounding a given pixel
+   that are checked to determine what to do to the pixel.
+   
+   Type - binary filtering converts image to black + white. Grayscale
+   tries to preserve shades of gray. (Segmentation is always binary).
+
+   Watershed kernel - set of pixels around a given pixel for watershed
+   segmentation. 
+   
+   Contour sep - Sets the spacing between lines for contour maps.
+   
+54 Help - Filename
+
+   Select a filename. Click Chdir to change the current directory.
+   
+55 Help
+   Cannot perform this operation on an image greater than 16 bits/pixel,
+   as this would require too much memory.
+
+56 Help
+   This operation should be performed only on 24 bit/pixel images.
+
+57 Help - Total bits/pixel
+   The red + green + blue bits/pixel must add up to the value you 
+   specified for total bits/pixel. The total bits/pixel is probably
+   specified incorrectly.   
+   
+58 Help - Map file
+   A map file is needed to specify what colors the pixel values should
+   be mapped to. See manual for details.
+
+59 Help
+   Enter 'r', 'g', or 'b' here.
+
+60 Help
+   Enter the image number for the image.
+   
+61 Help
+   Click 'yes' to replace the existing file.
+
+62 Help - Macro
+   The macro requires a parameter.
+
+63 Help - Resize image
+   Enter a positive number. This does not need to be an integer. 
+   The dimension will be multiplied by this factor.
+   
+64 Help
+   Enter a string here. 
+
+   
+65 Help - Warping
+   
+   Drag the grid points on the image to the desired location to remove
+   distortion in the image.
+   
+   'c' makes a copy of the current warped image.       
+   'g' toggles the grid on/off.
+   'r' restores the original rectangular grid.
+   Esc (or clicking the main cancel button) when finished.
+      
+66 Help - Curve densitometry
+ 
+   Performs densitometry on a curved region one pixel thick.
+
+67 Help - Signal 11
+
+   The program has caught signal 11 (SIGSEGV). Save all data immediately.
+   Please send a bug report to tjnelson@helix.nih.gov.   
+
+68 Help - Create panel
+ 
+   Takes a multi-frame image and creates a composite image with each
+   frame aligned in a rectangular grid of the specified number of columns.
+   
+69 Help - Save spreadsheet
+
+   Saves current contents of spreadsheet in ASCII format.
+
+70 Help - Image notes
+
+   Enter any notes for the image here.
+
+71 Help - Image registration
+
+   Warps an image's x and y coordinates so corresponding points on 
+   two images are at the same location. All pixels on the warped image
+   are aligned with points on the reference image. 
+   The two images do not have to be the same size.
+   
+   Two methods are available:
+   1. Using user-selected landmark points, a list of points 
+      representing known locations on both images. This can be obtained
+      by clicking on "obtain data" or by reading a file from disk. Grain
+      counting files produced by tnimage can also be used.
+   2. Automatic. Does not need landmark points, but is slower.
+
+   Outline of procedure for registering 2 images
+   
+   1. Click 'Image no.' to select the reference and unknown image numbers. 
+   2. Click 'Obtain landmarks' for reference image and select between 1 and 
+      10,000 landmark points.
+   3. Repeat for Unknown image.
+   4. If the correspondence between the landmarks on the reference and
+      unknown image is unknown, click "Correlate points". The program will
+      re-sort the landmarks to the best fit. This will be slow if there are
+      over 100 landmarks.
+   5. If you have a data table of coordinates that needs to be warped or
+      rotated, click "Read match table". See manual for instructions on
+      creating this file.
+   6. If you want to correct for rotation distortion, click "Calculate
+      rotation map", then "Rotate image".
+   7. If you want to elastically warp the image, click "Calculate warp
+      vector map", then "Warp image".
+   8. Alternatively, if you only want to remap the list of coordinates 
+      from step 5, without warping the image, click "Create unwarped
+      spot list" or "Create warped spot list" to remap the coordinates to
+      the new alignments. In other words, you can warp an image, or a set
+      of data points, or both.
+   
+   Options
+   
+   Obtain landmks  - Interactively define new landmark points on each image.
+   Transl.landmks  - Add an x or y value to each landmark
+   Read points     - Obtain data points to be warped from disk file
+   Save points     - Save data points to disk file
+   Restore points  - Restore original data points from backup
+   Read landmarks  - Obtain landmark points from disk file
+   Edit landmarks  - Modify landmark points (landmarks)
+   Save landmarks  - Write landmark points to a disk file
+   Show data vectors - Draws arrows on image showing distance each point
+                       will be warped.
+   Correlate points - Permute `unknown' landmark points to ensure
+      the landmark points correspond to each other. This is useful if
+      the landmark points were found using grain counting. Not needed if 
+      points were obtained interactively.
+   Calculate rotation map - Create an array so that data points or images can
+      be warped. Must be done before rotating can occur. If a warping is
+      performed, you must recalculate the rotation map.
+   Calculate vector map - Create an array so that data points or images can
+      be warped. Must be done before warping can occur. If a rotation is
+      performed, you must recalculate the vector map.
+   Rotate image     - Begin rotation of the warped image.
+   Warp image       - Begin registration of the warped image.
+   Smoothing        - A higher value creates a smoother rotation map or
+                      warp vector map (1=no smoothing).
+   
+72 Help - MultiToggleBox
+  
+   Click on desired options.
+   
+73 Help - Gradient Removal
+  
+   Red, green, and blue values will be added or multiplied to the image 
+   or selected area. The value for each pixel will be calculated by 
+   interpolating the values specified for each corner. For multiplications,
+   a value of 100 is no change.
+   
+   8-bit images (such as GIFs) must be converted to 24 bits/pixel first.
+
+74 Help - Graph list
+
+   This list shows the areas that you selected by dragging the mouse on the graph.
+   
+75 Help - Freetype labels
+
+   Enter the desired text for the label and click the radio buttons to
+   set the font face, weight, slant, and size. Then click 'Accept' and
+   move to the desired location and click the left mouse button to 
+   place the label.

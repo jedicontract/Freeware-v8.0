@@ -1,0 +1,641 @@
+Article 214207 of comp.os.vms:
+Path: pa.dec.com!lead.zk3.dec.com!not-for-mail
+From: "Paul A. Jacobi" <jacobi@star.enet.dec.nospam.com>
+Newsgroups: comp.os.vms
+Subject: Re: DCL to get Alphaserver's temperature
+Date: Mon, 23 Nov 1998 17:37:38 -0500
+Organization: UBPG
+Lines: 456
+Message-ID: <3659E3B2.65239A3A@star.enet.dec.nospam.com>
+References: <DDNANJMCPMJLAAAA@my-dejanews.com>
+NNTP-Posting-Host: jacobi.zko.dec.com
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Mailer: Mozilla 4.5 [en] (Win98; I)
+X-Accept-Language: en
+
+#pragma module SHOW_POWER "X-1"                    
+/*    
+ * Copyright (C) 1998 by       
+ * Digital Equipment Corporation, Maynard, Massachusetts.
+ * All rights reserved.                  
+ *                            
+ * This software is furnished under a license and may be used and copied
+ * only  in  accordance  of  the  terms  of  such  license  and with the
+ * inclusion of the above copyright notice. This software or  any  other
+ * copies thereof may not be provided or otherwise made available to any
+ * other person.  No title to and  ownership of the  software is  hereby
+ * transferred.
+ *
+ * The information in this software is  subject to change without notice
+ * and  should  not  be  construed  as a commitment by Digital Equipment
+ * Corporation.
+ *
+ * Digital assumes no responsibility for the use  or  reliability of its
+ * software on equipment which is not supplied by Digital.
+ *
+ * Abstract:
+ *
+ *	This user program tests each of the new environmental GETSYI item 
+ *      codes and display the results in a pretty table.  
+ *                                                         
+ * Authors:
+ *
+ *	Paul A. Jacobi, November 1998
+ *
+ * Modified by:
+ *
+ */
+
+#include	<stdio> 
+#include	<stdlib>
+#include	<string>
+
+#include	<hwrpbdef>
+#include	<iledef>
+#include	<ssdef>
+#include	<syidef>
+#include	<vms_macros>
+
+/* External routines */
+
+extern int sys$getsyiw();
+extern void sys$exit();
+
+/* External global data */
+
+/* forward routines */
+
+static void show_header();
+static void show_power();
+static void show_fan();
+static void show_thermal();
+static void show_temperature();
+static int getsyi_vector(unsigned char *getsyi_buffer, int
+*buffer_length, 
+                         int item_code);
+
+
+
+
+
+
+
+
+
+
+
+                                               
+/*++
+ * main - main routine
+ *                                       
+ * FUNCTIONAL DESCRIPTION:
+ *                          
+ *	This routine is the main test routine.  It calls a routine to test
+each
+ *	of the new environmental GETSYI item codes. 
+ *
+ * INPUTS:
+ *	Standard C command line arguments - ignored
+ * 
+ * OUTPUTS:                                      
+ *	None
+ *                                                  
+ *--
+ */
+
+static int main(int argc, char **argv)
+{
+
+    show_header();
+
+    show_power();
+
+    show_fan();
+
+    show_thermal();      
+
+    show_temperature();
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                               
+/*++
+ * show_header - Show instance header
+ *                                       
+ * FUNCTIONAL DESCRIPTION:
+ *                          
+ *	This routine shows the instance header.
+ *
+ * INPUTS:
+ *	None
+ * 
+ * OUTPUTS:                                      
+ *	None
+ *                                                  
+ *--
+ */
+static void show_header()
+{
+
+    printf("\n");
+    printf("               ");
+    printf("  00  01  02  03  04  05  06  07");
+    printf("  08  09  10  11  12  13  14  15");
+    printf("\n");
+
+    printf("                ");
+    printf("________________________________");
+    printf("_______________________________");
+    printf("\n");
+
+    return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*++
+ * show_power - Show power vector
+ *                                       
+ * FUNCTIONAL DESCRIPTION:
+ *                          
+ *	This routine shows power vector.  If $GETSYI returns an error, this
+ *	routines show the decimal error code.
+ *
+ * INPUTS:
+ *	None
+ * 
+ * OUTPUTS:                                      
+ *	None
+ *                                                  
+ *--
+ */
+static void show_power()           
+{
+    unsigned char getsyi_buffer[SYI$K_ENV_VECTOR_LENGTH];
+    int buffer_length = SYI$K_ENV_VECTOR_LENGTH;
+    int i;
+    unsigned char *bp;
+    int status;
+
+    status = getsyi_vector(getsyi_buffer, &buffer_length,
+SYI$_POWER_VECTOR); 
+    if bad_status(status) {
+        printf("ERROR: SYI_POWER_VECTOR returned status of %d\n",
+status);
+        return;
+    }
+
+    printf("Power Status   ");
+
+    bp = getsyi_buffer;    
+    for (i=0; i < buffer_length; i++) {
+        switch (*bp++) {
+            case SYI$K_ENV_STATUS_FAILED:
+                printf("   -");
+                break;
+            case SYI$K_ENV_STATUS_OK:
+                printf("   +");
+                break;
+            case SYI$K_ENV_STATUS_NOT_PRESENT:
+                printf("   .");
+                break;
+            case SYI$K_ENV_STATUS_UNKNOWN:
+            default:
+                printf("   ?");
+                break;
+        }
+    }
+
+    printf("\n");
+
+    return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*++
+ * show_fan - Show fan vector
+ *                                       
+ * FUNCTIONAL DESCRIPTION:
+ *                          
+ *	This routine shows fan vector.  If $GETSYI returns an error, this
+ *	routines show the decimal error code.
+ *
+ * INPUTS:
+ *	None
+ * 
+ * OUTPUTS:                                      
+ *	None
+ *                                                  
+ *--
+ */
+static void show_fan()
+{
+    unsigned char getsyi_buffer[SYI$K_ENV_VECTOR_LENGTH];
+    int i;                                 
+    int buffer_length = SYI$K_ENV_VECTOR_LENGTH;
+    unsigned char *bp;
+    int status;
+
+    status = getsyi_vector(getsyi_buffer, &buffer_length,
+SYI$_FAN_VECTOR); 
+    if bad_status(status) {
+        printf("ERROR: SYI_FAN_VECTOR returned status of %d\n", status);
+        return;
+    }
+
+    printf("Fan Status     ");
+
+    bp = getsyi_buffer;    
+    for (i=0; i < buffer_length; i++) {
+        switch (*bp++) {
+            case SYI$K_ENV_STATUS_FAILED:
+                printf("   -");
+                break;
+            case SYI$K_ENV_STATUS_OK:
+                printf("   +");
+                break;
+            case SYI$K_ENV_STATUS_NOT_PRESENT:
+                printf("   .");
+                break;
+            case SYI$K_ENV_STATUS_UNKNOWN:
+            default:
+                printf("   ?");
+                break;
+        }
+    }
+
+    printf("\n");
+
+    return;
+}
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*++
+ * show_thermal - Show thermal vector
+ *                                       
+ * FUNCTIONAL DESCRIPTION:
+ *                          
+ *	This routine shows thermal vector.  If $GETSYI returns an error, this
+ *	routines show the decimal error code.
+ *
+ * INPUTS:
+ *	None
+ * 
+ * OUTPUTS:                                      
+ *	None
+ *                                                  
+ *--
+ */
+static void show_thermal()
+{
+    unsigned char getsyi_buffer[SYI$K_ENV_VECTOR_LENGTH];
+    int i;
+    int buffer_length = SYI$K_ENV_VECTOR_LENGTH;
+    unsigned char *bp;
+    int status;
+
+    status = getsyi_vector(getsyi_buffer, &buffer_length,
+SYI$_THERMAL_VECTOR); 
+           
+    if bad_status(status) {
+        printf("ERROR: SYI_THERMAL_VECTOR returned status of %d\n",
+status);
+        return;
+    }
+
+    printf("Thermal Status ");
+
+    bp = getsyi_buffer;    
+    for (i=0; i < buffer_length; i++) {
+        switch (*bp++) {
+            case SYI$K_ENV_STATUS_FAILED:
+                printf("   -");
+                break;
+            case SYI$K_ENV_STATUS_OK:
+                printf("   +");
+                break;
+            case SYI$K_ENV_STATUS_NOT_PRESENT:
+                printf("   .");
+                break;
+            case SYI$K_ENV_STATUS_UNKNOWN:
+            default:
+                printf("   ?");
+                break;
+        }
+    }
+
+    printf("\n");
+
+    return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*++
+ * show_temperature - Show temperature vector in Fahrenheit and Celsius
+ *                                       
+ * FUNCTIONAL DESCRIPTION:
+ *                          
+ *	This routine shows temperature vector.  If $GETSYI returns an error,
+ *      this routines show the decimal error code.
+ *
+ * INPUTS:
+ *	None
+ * 
+ * OUTPUTS:                                      
+ *	None
+ *                                                  
+ *--
+ */
+static void show_temperature()
+{
+    unsigned char getsyi_buffer[SYI$K_ENV_VECTOR_LENGTH];
+    int i;
+    int buffer_length = SYI$K_ENV_VECTOR_LENGTH;
+    unsigned char *bp;
+    int status;
+    int temp_f;
+
+    status = getsyi_vector(getsyi_buffer, &buffer_length, 
+                           SYI$_TEMPERATURE_VECTOR); 
+    if bad_status(status) {
+        printf("ERROR: SYI_TEMPERATURE_VECTOR returned status of %d\n",
+status);
+        return;
+    }
+
+    /* Show temperature in degrees Fahrenheit */
+
+    printf("Temperature (F)");
+                           
+    bp = getsyi_buffer;    
+    for (i=0; i < buffer_length; i++) {
+        switch (*bp) {
+            case SYI$K_ENV_STATUS_NOT_PRESENT:
+                printf("   .");
+                break;
+            case SYI$K_ENV_STATUS_UNKNOWN:
+                printf("   ?");
+                break;
+            default:
+                /* For better accuracy use 90/5 instead of 9/5 and
+                 * 325 for 32.5, then divide result by 10.
+                 */
+                temp_f = (((*bp * 90)/5) + 325)/10;
+                printf("%4d",temp_f);
+                break; 
+        }
+        bp++;
+    }
+
+    printf("\n");
+
+    /* Show temperature in degrees Celsius */
+
+    printf("Temperature (C)");
+                           
+    bp = getsyi_buffer;    
+    for (i=0; i < buffer_length; i++) {
+        switch (*bp) {
+            case SYI$K_ENV_STATUS_NOT_PRESENT:
+                printf("   .");
+                break;
+            case SYI$K_ENV_STATUS_UNKNOWN:
+                printf("   ?");
+                break;
+            default:
+                printf("%4d",*bp);
+                break; 
+        }
+        bp++;
+    }
+
+    printf("\n");
+
+    return;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*++
+ * getsyi_vector - Call GETSYI with supplied buffer and item code
+ *                                       
+ * FUNCTIONAL DESCRIPTION:
+ *                          
+ *	
+ *      This routines creates and item list from the supplied buffer and
+item 
+ *	code and calls GETSYI system service.
+ *
+ * INPUTS:
+ *	getsyi_buffer	- Pointer to buffer to return vector
+ *	buffer_length	- Pointer to buffer length, updated with actual length
+ *	item_code	- GETSYI item code
+ * 
+ * OUTPUTS:                                      
+ *	None
+ *                                                  
+ *--
+ */
+static int getsyi_vector(unsigned char *getsyi_buffer, int
+*buffer_length, 
+                         int item_code)
+{
+    unsigned short retlen;
+    ILE3 item_list[2];
+    int status;
+
+    item_list[0].ile3$w_code = item_code;
+    item_list[0].ile3$w_length = *buffer_length;
+    item_list[0].ile3$ps_bufaddr = getsyi_buffer;
+    item_list[0].ile3$ps_retlen_addr = &retlen;
+    item_list[1].ile3$w_code = 0;
+    item_list[1].ile3$w_length = 0;
+
+
+    status = sys$getsyiw(0, 0, 0, item_list, 0, 0, 0);
+    if bad_status(status)
+        retlen = 0;
+
+    *buffer_length = (int) retlen;
+    return(status);
+
+}
+
+
+
++---------------------------------------------------------------------+
+| Paul A. Jacobi                      Phone: (603) 884-1948           |
+| Digital Equipment Corporation       FAX  : (603) 884-0189           |
+| OpenVMS Systems Group, ZKO3-4/U14   Email: jacobi@star.enet.dec.com |
+| 110 Spitbrook Road                                                  |
+| Nashua, NH 03062-2698                                               |
+|                                                                     |
+| To reply, remove "nospam-" from the return address.                 |
++---------------------------------------------------------------------+
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 

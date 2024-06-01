@@ -1,0 +1,253 @@
+REDEFINE PLOT CLOCK
+!
+! Do a clock face vector plot.
+!
+! B. Z. Lederman    WU World Communications, Inc.   23-May-1988
+!
+DECLARE STRING VECTOR TITLES
+DECLARE REAL VECTOR DEGREES, MAGNITUDES
+DECLARE INDEX
+!
+! The first data point is the hour
+! the second is the minute
+! the third is to put the digital time as a text string in the title
+!
+ENTRY 0 (TITLE3 : STRING, TITLE2 : STRING, TITLE1 : STRING)
+    BEGIN
+        PLOT DATA_LIMITS 0
+        TITLES (1) = 'The time is now:'
+        TITLES (2) = TITLE1
+    END
+ENTRY 1 (H, M, DUMMY : STRING)
+    BEGIN
+        DEGREES(1) = ( (H + (M / 60)) * 30) ! convert time to degrees
+        MAGNITUDES(1) = 0.75                ! short hour hand
+        DEGREES(2) = (M * 6)                ! convert minutes to degrees
+        MAGNITUDES(2) = 1.0                 ! long minute hand
+    END
+!
+ENTRY 2
+    BEGIN
+        PLOT DATA_LIMITS 5 (DEGREES, MAGNITUDES) ! save or restore real arrays
+        PLOT DRAW_CIRCLES 0 (TITLES, DEGREES, MAGNITUDES)   ! start plot
+        PLOT DRAW_CIRCLES 1                      ! draw 12 hour markers
+        PLOT DRAW_CIRCLES 4 (DEGREES)            ! draw vectors clockwise
+    END
+END_PLOT
+
+REDEFINE PLOT COMPASS
+!
+! Do a direction and magnitude vector plot (clockwise).
+!
+! B. Z. Lederman    WU World Communications, Inc.   12-May-1988
+!
+DECLARE STRING VECTOR TITLES
+DECLARE REAL VECTOR DEGREES, MAGNITUDES
+DECLARE INDEX
+ENTRY 0        (TITLE2 : STRING, TITLE1 : STRING)
+    BEGIN
+        PLOT DATA_LIMITS 0
+        TITLES (1) = 'Compass plot of'
+        TITLES (2) = TITLE1
+    END
+ENTRY 1 (D, M)
+    BEGIN
+        INDEX = INDEX + 1
+        DEGREES(INDEX) = D
+        MAGNITUDES(INDEX) = M
+    END
+!
+ENTRY 2
+    BEGIN
+        PLOT DATA_LIMITS 5 (DEGREES, MAGNITUDES) ! save or restore real arrays
+        PLOT DRAW_CIRCLES 0 (TITLES, DEGREES, MAGNITUDES)   ! start plot
+        PLOT DRAW_CIRCLES 2                      ! draw X and Y axis
+        PLOT DRAW_CIRCLES 4 (DEGREES)            ! draw vectors clockwise
+    END
+END_PLOT
+
+REDEFINE PLOT DRAW_CIRCLES
+!
+! The "working stuff" of clock face, compass and vector plots.
+!
+! B. Z. Lederman  WU World Communications  23-May-1988
+!
+! This plot does not draw a background (easier conversion to paper prints).
+!
+DECLARE X_POS, I
+DECLARE ANGLE, STR_LEN, MAX_LEN
+DECLARE REAL VECTOR SCALED_MAG
+DECLARE DEFAULT_TITLE, RADIUS, Y_CENTER, MAX_MAG
+!
+ENTRY 0 (TITLES : STRING VECTOR,
+         DEGREES : STRING VECTOR,
+         MAGNITUDES : REAL VECTOR)
+    BEGIN
+        PLOT HOUSEKEEP 0
+        PLOT DATA_LIMITS 4            ! last top level plot was a "pie" plot
+        SET_SEGMENT 5
+        PRINT 'S(M1(L0))'             ! set output mapping
+        CLEAR_SEGMENT 3
+        SET_SEGMENT 0
+        PRINT 'L(A1)'                 ! set character cell loading
+        PRINT 'L"X"FFFFFFFFFFFFFFFF'  ! load cell
+        PRINT 'L"Y"FFFFFFFFFFFFFFFF'  ! (not actually used)
+        PRINT 'L"Z"FFFFFFFFFFFFFFFF'
+        SET_SEGMENT 1
+        PLOT DATA_LIMITS 6 (DEFAULT_TITLE)  ! set flag if TITLE plot not active
+!
+        IF DEFAULT_TITLE NE 0 THEN          ! put in "real" title
+        BEGIN
+            PRINT 'T(BS2)'                  ! Text command
+            INCR I OVER TITLES
+                MAX_LEN = MAX_LEN + LENGTH (TITLES(I)) + 1
+            IF MAX_LEN > 38 THEN X_POS = 0 ELSE X_POS = (38 - MAX_LEN) * 10
+            PRINT 'P', LXY (X_POS, 0)
+            INCR I OVER TITLES
+                BEGIN
+                    STR_LEN = STR_LEN + LENGTH (TITLES(I)) + 1
+                    IF (STR_LEN < 38) THEN PRINT 'T"', TITLES(I), ' "'
+                END
+        END
+        ELSE PLOT DATA_LIMITS 13               ! output a plot header
+!
+        PLOT DATA_LIMITS 7 (RADIUS, Y_CENTER)  ! return radius for plot circle
+!
+! Scale the magnitudes of the plot lines.
+!
+        MAX_MAG = MAX (MAGNITUDES)
+        INCR I OVER MAGNITUDES
+            SCALED_MAG(I) = MAGNITUDES(I) * (RADIUS / MAX_MAG)
+!
+! Start drawing
+!
+        PRINT 'T(E)T(A1)p', LXY(380, Y_CENTER),   ! set position to center
+            'c(w(r))', RX(RADIUS),                ! clear a circle
+            'c', RX(RADIUS), 'T(A0)'              ! outline a circle
+    END
+!
+ENTRY 1
+!
+! Draw in 12 hour markers in dashed lines for clock face.
+!
+    BEGIN
+!
+! Drawing the center circle depends on the command comming just after
+! drawing the main circle outline.
+!
+        PRINT 'c', RX((RADIUS / 50))              ! draw a small center circle
+!
+        ANGLE = 0
+        INCR I FROM 1 TO 12
+        BEGIN
+            ANGLE = ANGLE - 30
+            PRINT 'p', LXY(380, Y_CENTER), 'p',
+                RXY( (- RADIUS / 2) * SIN(ANGLE), (- RADIUS / 2) * COS(ANGLE) )
+            IF I EQ 12 THEN
+                BEGIN                            ! top mark a little longer
+                    PRINT 'V(W(P2I(0)))',
+                        RXY((- RADIUS / 1.75) * SIN(ANGLE),
+                            (- RADIUS / 1.75) * COS(ANGLE) )
+                END
+            ELSE
+                BEGIN
+                    PRINT 'V(W(P2I(0)))',
+                        RXY((- RADIUS / 2) * SIN(ANGLE),
+                            (- RADIUS / 2) * COS(ANGLE) )
+                END
+        END
+    END
+!
+ENTRY 2
+!
+! Draw in vertical and horizontal axis using dashed lines.
+!
+    BEGIN
+        PRINT 'p', LXY(380, Y_CENTER), 'V(W(P2I(0)))', RX(RADIUS)
+        PRINT 'p', LXY(380, Y_CENTER), 'V(W(P2I(0)))', RY(RADIUS)
+        PRINT 'p', LXY(380, Y_CENTER), 'V(W(P2I(0)))', RX(- RADIUS)
+        PRINT 'p', LXY(380, Y_CENTER), 'V(W(P2I(0)))', RY(- RADIUS)
+    END
+!
+! Entry 3 was separate magnitude scaling: doesn't really make much sense.
+!
+ENTRY 4 (DEGREES : STRING VECTOR)
+!
+! Plot vectors clockwise from top.
+!
+    BEGIN
+        INCR I OVER DEGREES
+            BEGIN
+            ANGLE = -1 * DEGREES(I)
+            PRINT 'p', LXY(380, Y_CENTER), 'v',
+                RXY((- SCALED_MAG(I)) * SIN(ANGLE),
+                    (- SCALED_MAG(I)) * COS(ANGLE)),
+                'c', RX((RADIUS / 50))
+            END
+!
+        OUTPUT_SEGMENT 0,1
+        PLOT HOUSEKEEP 2
+    END
+!
+ENTRY 5 (DEGREES : STRING VECTOR)
+!
+! Plot vectors counter-clockwise from right.
+!
+    BEGIN
+        INCR I OVER DEGREES
+            BEGIN
+            ANGLE = -1 * DEGREES(I)
+            PRINT 'p', LXY(380, Y_CENTER), 'v',
+                RXY(SCALED_MAG(I) * COS(ANGLE),
+                    SCALED_MAG(I) * SIN(ANGLE)),
+                'c', RX((RADIUS / 50))
+            END
+!
+        OUTPUT_SEGMENT 0,1
+        PLOT HOUSEKEEP 2
+    END
+END_PLOT
+
+REDEFINE PROCEDURE TIME
+!
+! Feed the current time into the clock plot.
+!
+! B. Z. Lederman    WU World Communications 23-May-1988
+!
+PLOT CLOCK USING FN$HOUR("NOW"), FN$MINUTE("NOW"),    ! time
+    "X" (FORMAT FN$TIME("NOW") USING X(8))            ! digital time in title
+END_PROCEDURE
+
+REDEFINE PLOT VECTORS
+!
+! Plot vector values (normal to X and Y axis).
+!
+! B. Z. Lederman    WU World Communications 23-May-1988
+!
+DECLARE STRING VECTOR TITLES
+DECLARE REAL VECTOR DEGREES, MAGNITUDES
+DECLARE INDEX
+!
+ENTRY 0 (TITLE2 : STRING, TITLE1 : STRING)
+    BEGIN
+        PLOT DATA_LIMITS 0
+        TITLES (1) = 'Vector Plot of:'
+        TITLES (2) = TITLE1
+    END
+!
+ENTRY 1 (D, M)
+    BEGIN
+        INDEX = INDEX + 1       ! for each data point
+        DEGREES(INDEX) = D      ! store angle
+        MAGNITUDES(INDEX) = M   ! and magnitude
+    END
+!
+ENTRY 2
+    BEGIN
+        PLOT DATA_LIMITS 5 (DEGREES, MAGNITUDES) ! save or restore real arrays
+        PLOT DRAW_CIRCLES 0 (TITLES, DEGREES, MAGNITUDES)  ! start plot
+        PLOT DRAW_CIRCLES 2                   ! draw X and Y axis
+        PLOT DRAW_CIRCLES 5 (DEGREES)         ! draw vectors counterclockwise
+    END
+END_PLOT
+

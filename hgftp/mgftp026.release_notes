@@ -1,0 +1,1524 @@
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          MadGoat FTP Release Notes
+
+
+
+          August, 2000
+
+
+
+          This file contains the release notes for MadGoat
+          FTP V2.6-4. It describes any features, restrictions,
+          changes, or additions made to the MadGoat FTP software
+          in this release, and includes information that is not
+          provided elsewhere in the MadGoat FTP manual set.
+
+
+
+
+          Revision/Update Information:  This is a new manual.
+
+          Operating System and Version: OpenVMS VAX V5.0 or later
+
+                                        OpenVMS Alpha V1.5 or
+                                        later
+
+          Software Version:             MadGoat FTP V2.6-4
+
+          Hunter Goatley
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          ________________________
+          10 August 2000
+
+          Permission is granted to copy and redistribute this
+          document for no commercial gain.
+
+          The information in this document is subject to change
+          without notice and should not be construed as a
+          commitment by MadGoat Software. The authors and
+          MadGoat Software assume no responsibility for any
+          errors that may appear in this document.
+
+          DISCLAIMER: The software described in this document
+          is provided "as is." No guarantee is made by the
+          authors or MadGoat Software as to the suitability,
+          reliability, security, usefulness, or performance of
+          this software.
+
+          The following are trademarks of Digital Equipment
+          Corporation:
+
+          AXP            VAX            DEC            OpenVMS
+          VMS            UCX            VAXcluster     VMScluster
+
+          MultiNet is a registered trademark of Process Software
+          Corp.
+
+          TCPware is a trademark of Process Software Corp.
+
+          WIN/TCP and PathWay are registered trademarks of
+          Attachmate, Inc.
+
+          __________
+          Copyright ©2000 MadGoat Software & Hunter Goatley. All
+          Rights Reserved.
+
+ 
+
+
+
+
+
+
+
+
+
+          _______________________________________________________
+
+          Contents
+
+          _______________________________________________________
+          CHAPTER 1  INSTALLATION NOTES                       1-1
+
+                _________________________________________________
+                1.1   COMMANDS                                1-1
+
+                _________________________________________________
+                1.2   ON-LINE HELP                            1-2
+
+
+          _______________________________________________________
+          CHAPTER 2  NEW FEATURES AND BUG FIXES               2-1
+
+                _________________________________________________
+                2.1   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.6-4                                  2-1
+
+                _________________________________________________
+                2.2   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.6-3                                  2-1
+
+                _________________________________________________
+                2.3   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.6-2                                  2-2
+
+                _________________________________________________
+                2.4   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.6-1                                  2-3
+
+                _________________________________________________
+                2.5   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.6                                    2-3
+
+                _________________________________________________
+                2.6   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.5-4                                  2-4
+
+
+                                                              iii
+
+ 
+
+
+          Contents
+
+
+
+
+
+                _________________________________________________
+                2.7   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.5-3                                  2-4
+
+                _________________________________________________
+                2.8   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.5-2                                  2-6
+
+                _________________________________________________
+                2.9   NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.5-1                                  2-6
+
+                _________________________________________________
+                2.10  NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.5                                    2-6
+
+                _________________________________________________
+                2.11  NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.4                                    2-8
+
+                _________________________________________________
+                2.12  NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.3-1                                  2-9
+
+                _________________________________________________
+                2.13  NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.3                                    2-9
+
+                _________________________________________________
+                2.14  NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.2-6                                 2-10
+
+                _________________________________________________
+                2.15  NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.2-5                                 2-10
+
+                _________________________________________________
+                2.16  NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.2-4                                 2-10
+
+          iv
+
+ 
+
+
+                                                         Contents
+
+
+
+
+
+                _________________________________________________
+                2.17  NEW FEATURES AND BUG FIXES IN MGFTP
+                      V2.2-3                                 2-11
+
+                _________________________________________________
+                2.18  BUG FIXES IN MGFTP V2.2-2              2-11
+
+                _________________________________________________
+                2.19  BUG FIXES IN MGFTP V2.2-1              2-11
+
+                _________________________________________________
+                2.20  NEW FEATURES IN MGFTP V2.2             2-12
+
+                _________________________________________________
+                2.21  BUGS FIXED IN MGFTP V2.2               2-13
+
+                _________________________________________________
+                2.22  NEW FEATURES AND BUG FIXES FROM
+                      PREVIOUS RELEASES                      2-14
+
+
+          _______________________________________________________
+          CHAPTER 3  KNOWN BUGS AND RESTRICTIONS              3-1
+
+
+          _______________________________________________________
+          CHAPTER 4  PROBLEM REPORTS                          4-1
+
+                _________________________________________________
+                4.1   INFO-MADGOAT@MADGOAT.COM                4-1
+
+                _________________________________________________
+                4.2   MADGOAT-ANNOUNCE@MADGOAT.COM            4-1
+
+                _________________________________________________
+                4.3   MADGOAT-BUGS@MADGOAT.COM                4-1
+
+                _________________________________________________
+                4.4   MADGOAT-REGISTER@MADGOAT.COM            4-2
+
+                                                                v
+
+ 
+
+
+
+
+
+
+
+
+          _______________________________________________________
+
+   1      Installation Notes
+
+
+
+          This chapter contains items of interest pertaining to
+          the installation of MadGoat FTP.
+
+          MadGoat FTP consists of both an FTP client and an FTP
+          server. It requires the NETLIB library for TCP/IP
+          support. Both the client and server support STRU
+          VMS, which means that VMS files transferred between
+          a client and server that both support STRU VMS will
+          retain all file attributes.
+
+          __________________________________________________________________
+
+   1.1    Commands
+
+          The command used to invoke the MadGoat FTP client
+          can either be defined as a foreign symbol or
+          added to the system-wide DCL command tables
+          (SYS$LIBRARY:DCLTABLES.EXE). When the latter method
+          is chosen, the command is available to all users on
+          the system (though file protections and privileges may
+          prevent them from executing the program).
+
+          The installation gives you the option of adding the
+          FTP command to the DCL command tables. Since most
+          TCP/IP vendors also supply an FTP command, adding
+          the MadGoat FTP command will replace the vendor's
+          definition.
+
+
+
+
+
+
+
+                                                              1-1
+
+ 
+
+
+          Installation Notes
+
+
+
+
+          __________________________________________________________________
+
+   1.2    On-line Help
+
+          During the installation, you will be given the option
+          of installing the help files for MadGoat FTP client in
+          one of the system help libraries. The system default
+          help library is SYS$SYSROOT:[SYSHLP]HELPLIB.HLB. The
+          installation procedure will give you the option of
+          installing the help files in other libraries (those
+          defined by the logicals HLP$LIBRARY, HLP$LIBRARY_1,
+          etc.).
+
+          You may wish to insert the help files in a local
+          library pointed to by one of the HLP$LIBRARY logicals
+          to avoid cluttering the normal VMS help library.
+
+          The on-line help files can be found in the directory
+          MADGOAT_ROOT:[HELP].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          1-2
+
+ 
+
+
+
+
+
+
+
+
+          _______________________________________________________
+
+   2      New Features and Bug Fixes
+
+
+
+          MadGoat FTP V2.6-4 includes the following new features
+          and bug fixes over earlier versions.
+
+          __________________________________________________________________
+
+   2.1    New Features and Bug fixes in MGFTP V2.6-4
+
+          o  The setting of the window size was failing under
+             UCX for non-privileged users because setting buffer
+             sizes is considered a privileged operation by UCX.
+             The MGFTP client can now be installed with SYSPRV
+             safely to allow this to work for non-privileged
+             users. In previous versions, the client do not allow
+             for being installed securely.
+
+          o  NETLIB V2.2G is now packaged with MGFTP.
+
+          __________________________________________________________________
+
+   2.2    New Features and Bug fixes in MGFTP V2.6-3
+
+          o  The default window size used by MGFTP has been
+             increased from 6144 bytes to 17520. This change
+             should speed up file transfers over some links, in
+             some cases dramatically. For example, transfers over
+             an ISDN may be twice as fast as in previous versions
+             of MGFTP.
+
+             A new logical, MADGOAT_FTP_WINDOW_SIZE, has been
+             added to allow the default window size to be
+             overridden. The logical can be defined in any
+             logical name table, allowing users to override a
+             system default.
+
+                                                              2-1
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+
+          o  Previous versions of MGFTP did not set the DCL
+             symbol $STATUS when COPY/FTP was used and it failed
+             for whatever reason. This has been corrected. Note
+             that DIR/FTP may or may not set an error exit status
+             if a file does not exist-some servers, including the
+             MGFTP server, do not return an error for a DIR of a
+             non-existent file, for example.
+
+          o  When MGFTP was invoked via DIR/FTP, the case of the
+             specified filename was not preserved. This problem
+             has been corrected.
+
+          __________________________________________________________________
+
+   2.3    New Features and Bug fixes in MGFTP V2.6-2
+
+          o  Previous versions of MGFTP could be configured to
+             limit the number of active FTP connections, but the
+             startup procedures did not implement it correctly.
+             Even when correctly set up, the FTP listener did
+             not return a valid response (it returned a 421
+             error string, but it wasn't properly terminated
+             by a carriage-return/linefeed combination, causing
+             most clients to not see the error message). This
+             problem has been corrected.
+
+          o  Added support for a new logical, MADGOAT_FTP_
+             MAXIMUM_SERVERS, the value of which is a number
+             specifying the maximum number of FTP connections
+             that can be established at any one time.
+
+          o  The MGFTP client was modified to report most errors
+             back to DCL when /ERROR=EXIT or ON ERROR EXIT is
+             used, allowing command procedures to check for
+             errors by checking the value of the DCL symbol
+             $STATUS. Not all errors are passed on correctly;
+             this will be corrected in a future release.
+
+          o  Added support for new reply logicals:
+
+          2-2
+
+ 
+
+
+                                       New Features and Bug Fixes
+
+
+
+
+
+
+            o  MADGOAT_FTP_220_REPLY - the greeting displayed by
+               the listener when a client connects
+
+            o  MADGOAT_FTP_221_REPLY - the message displayed
+               by the listener and the server when closing a
+               connection
+
+             The values of these logicals can be either text
+             strings or a string of the form "@file.ext", which
+             causes the specified file to be displayed.
+
+          o  The LDIR command did not handle invalid file
+             specifications properly, resulting in an infinite
+             loop of displayed error messages. This problem has
+             been corrected.
+
+          __________________________________________________________________
+
+   2.4    New Features and Bug fixes in MGFTP V2.6-1
+
+          o  Added support for the SIZE command to the client and
+             server.
+
+          o  Modified the routine to transfer a file from the
+             network to the local disk to issue the SIZE command
+             before the transfer. If the remote server supports
+             SIZE, the client will use the size returned as
+             the initial allocation quantity when the file
+             is created, reducing the need to extend the file
+             repeatedly during the transfer.
+
+          __________________________________________________________________
+
+   2.5    New Features and Bug fixes in MGFTP V2.6
+
+          o  Increased the throughput performance when
+             transferring files from the network to the local
+             disk. Previous versions of the server and client
+             wrote binary files out one block at a time,
+             resulting in a severe performance penalty. In V2.6,
+             the data is written in 127-block chunks per write.
+             This change has resulted in transfers from the net
+
+                                                              2-3
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+
+             to the local disk that are 2 to 6 times faster than
+             previous versions.
+
+          __________________________________________________________________
+
+   2.6    New Features and Bug fixes in MGFTP V2.5-4
+
+          o  The MGFTP server did not work well with "cluster
+             aliases" implemented by MultiNet and TCPware because
+             it didn't specify the cluster alias when binding
+             sockets for the data connections. This problem has
+             been corrected.
+
+          o  The MGFTP server would generate an access violation
+             if connections to an account were rejected with the
+             REJECT logical. This didn't cause any problems with
+             the session, as the accvio happened during the image
+             rundown, but it did leave an accvio message in the
+             FTP_SERVER.LOG for the account. This problem has
+             been corrected.
+
+          __________________________________________________________________
+
+   2.7    New Features and Bug fixes in MGFTP V2.5-3
+
+          o  The MGFTP binaries for OpenVMS Alpha were produced
+             using the Compaq BLISS-32E V1.8 compiler. Previous
+             versions were produced using V1.3. This should
+             result in better optimized code.
+
+          o  The MADGOAT_FTP_ACTIVITY log file now includes
+             messages about successful file transfers, which
+             can be useful in gathering statistics.
+
+             In previous versions of MGFTP, those messages were
+             only generated for the messages STORed by the
+             server, and the message was actually generated
+             before the file was actually transferred. Now,
+             messages are generated for all file transfers by
+             the server. The messages are now created at the end
+             of the transfer, giving accurate delivery times via
+             the record timestamps in the log file.
+
+          2-4
+
+ 
+
+
+                                       New Features and Bug Fixes
+
+
+
+
+
+          o  The DCL commands DIR/FTP and COPY/FTP did not
+             properly handle remote file specs that contained
+             spaces in the file or directory name. This problem
+             has been corrected.
+
+          o  The MGFTP server now plays better with PC browsers
+             (specifically, Netscape and Internet Explorer) when
+             the UNIX directory listing emulation is used. The
+             following changes were made to accomodate these
+             browsers:
+
+            o  Netscape is actually smart enough to recognize
+               that it's talking to a VMS system by checking the
+               output generated in response to the SYST command.
+               Unfortunately, when UNIX emulation was in
+               effect, this caused Netscape to misinterpret the
+               directory listing and display only the returned
+               file names. Now, when the logical MADGOAT_FTP_
+               HIDE_VMS_SYST is defined and UNIX emulation is
+               in effect, the SYST response includes spaces to
+               disguise the fact that it's a VMS system running
+               MGFTP. This causes Netscape to interpret the file
+               names and display file information for each file
+               listed.
+
+            o  When presented with a URL such as
+               "ftp://user:pass@node/dir/", both Netscape and IE
+               will issue the command "CWD /DIR/". In previous
+               versions of MGFTP, this would try to access [DIR]
+               and not the expected [.DIR]. This problem has
+               been fixed. Now, "CWD /DIR/" is interpreted as
+               "CD [.DIR]" for non-ANONYMOUS logins and as "CD
+               [DIR]" for ANONYMOUS logins.
+
+          o  In previous versions of MGFTP running on versions of
+             VMS prior to V7.2, issuing the command "ls -l" would
+             result in the server shutting down the connection.
+             This problem has been corrected (though "-l" still
+             doesn't have any special meaning as it does for some
+             UNIX FTP servers).
+
+                                                              2-5
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+
+          o  The MGFTP listener now truncates usernames at the
+             first invalid character. This change allows the
+             server to ignore usernames set up for firewall
+             access.
+
+          o  In previous versions of MGFTP, the client SPAWN
+             command incorrectly translated the command parameter
+             to lowercase. This problem has been corrected so
+             that the normal DCL case rules apply.
+
+          o  The client commands LCD and LLS (local DIR and local
+             LS) are not documented, but are present. They will
+             be documented in MGFTP V2.6.
+
+          __________________________________________________________________
+
+   2.8    New Features and Bug fixes in MGFTP V2.5-2
+
+          o  The MGFTP client did not handle some types of
+             connection failures properly, resulting in IP
+             devices (BG:, INET:) not getting released.
+
+          o  The MGFTP client now shows the full expanded file
+             name on file transfer errors.
+
+          __________________________________________________________________
+
+   2.9    New Features and Bug fixes in MGFTP V2.5-1
+
+          o  A logic error in setting the end-of-file byte caused
+             the last block of a file to be lost when the last
+             block transferred was a full 512 bytes. This problem
+             has been fixed.
+
+          __________________________________________________________________
+
+   2.10   New Features and Bug fixes in MGFTP V2.5
+
+          o  Passive mode support in the MadGoat FTP server has
+             been reworked to work properly with more clients. In
+             previous versions, the server assumed clients worked
+             like the MGFTP client did in passive mode: the PASV
+             command was sent, the passive connection was made,
+             and then the file transfer command was sent.
+
+          2-6
+
+ 
+
+
+                                       New Features and Bug Fixes
+
+
+
+
+
+             However, many FTP clients actually send the PASV
+             command and the file transfer command (LIST, STOR,
+             etc.) before establishing the passive connection.
+             With such clients, a race condition existed that
+             would sometimes cause the server to close the
+             connection without transferring some or all of the
+             data.
+
+             In MGFTP V2.5, the server now handles passive mode
+             properly for both types of connections.
+
+          o  In previous versions of MGFTP, connections that
+             failed to log in for whatever reason (invalid
+             password, invalid account, etc.) and immediately
+             exited the FTP session would cause the MGFTP
+             Listener to die with an access violation. The access
+             violation occurred when the listener tried to send
+             the reply code to the client; it didn't check to
+             be sure the the connection still existed before
+             attempting to send the reply code. This problem has
+             been fixed.
+
+          o  When transferring a binary file from a UNIX or NT
+             system, MGFTP pads the final block with nulls to
+             make an even 512-byte block. There was code present
+             to set the first-free-byte field in the file header,
+             but that code didn't work, which meant that when
+             the file was transferred back to the UNIX or NT
+             system, it would have grown in size to include the
+             padded nulls added by MGFTP. This problem has been
+             fixed; the actual size of the file is now properly
+             maintained by MGFTP.
+
+          o  In MGFTP V2.4, the listener could not be started on
+             multiple nodes of a cluster because the log file was
+             locked by the first process started. The FTP_STARTUP
+             command procedure now defines a node-specific log
+             file for each listener process.
+
+
+                                                              2-7
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+          __________________________________________________________________
+
+   2.11   New Features and Bug fixes in MGFTP V2.4
+
+          o  In MGFTP V2.2, the client and server were changed
+             to translate the UNIX directory spec "/" to
+             "SYS$DISK:[000000]". While this is the more correct
+             behavior for anonymous logins, it was usually
+             incorrect for non-anonymous accounts. The client and
+             server will now translate "/" to "SYS$DISK:[000000]"
+             for anonymous logins, and to "SYS$LOGIN:" for non-
+             anonymous logins.
+
+          o  In previous versions of MadGoat FTP, the MGFTP
+             Listener was unable to do remote hostname lookups
+             after a connection was established when running
+             under MultiNet and Pathway. This version of MGFTP
+             uses the UCX-emulation provided by each to do the
+             DNS lookup so that the name of the remote host can
+             be written to the log files.
+
+          o  On UCX and TCPware systems, defining MADGOAT_FTP_
+             LOCAL_HOSTNAME had no effect, because the listener
+             did a second lookup of the host name. This problem
+             has been fixed.
+
+          o  The MadGoat FTP Listener no longer creates a new
+             activity log file each time it starts. Instead, it
+             appends records to the existing file.
+
+          o  The MADGOAT_FTP_ACTIVITY log file now includes
+             messages about successful file transfers, which
+             can be useful in gathering statistics.
+
+          o  The activity log now differentiates between servers
+             and anonymous servers with the label "ANONYMOUS-
+             Server".
+
+          o  The FTP_SERVER.EXE image is now installed with
+             NETMBX and TMPMBX, in addition to SYSPRV and PHY_
+             IO. Previously, it was assumed that the ANONYMOUS
+             account had at least NETMBX and TMPMBX.
+
+          2-8
+
+ 
+
+
+                                       New Features and Bug Fixes
+
+
+
+
+
+          o  Several memory leaks in the MGFTP Listener have been
+             fixed. The leaks could eventually have caused to the
+             listener to die with an access violation.
+
+          __________________________________________________________________
+
+   2.12   New Features and Bug fixes in MGFTP V2.3-1
+
+          o  When doing UNIX ls emulation, resource identifiers
+             as owners weren't handled properly, resulting in an
+             invalid display. This problem has been corrected.
+
+          __________________________________________________________________
+
+   2.13   New Features and Bug fixes in MGFTP V2.3
+
+          o  The MadGoat FTP Server can now generate directory
+             listings in a UNIX-style format, for greater
+             compatibility with browsers that think the world
+             only runs UNIX. When the logical MADGOAT_FTP_DO_
+             UNIX_LS is defined, the MGFTP server will produce
+             directory listings similar to those generated by
+             UNIX servers if the specified path is in a UNIX-
+             style format. By equating the logical with the
+             value "ALWAYS", you can force the server to always
+             generate UNIX-style listings.
+
+          o  The MGFTP Listener now checks for the logical
+             MADGOAT_FTP_LOCAL_HOSTNAME. If that's defined, the
+             equivalence string is used as the system name in the
+             220 greeting displayed to the client. A generic name
+             like "ftp.madgoat.com" can be displayed instead of
+             the actual system name.
+
+          o  The MGFTP client ATTACH command now supports the
+             /PARENT qualifier.
+
+
+
+
+                                                              2-9
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+          __________________________________________________________________
+
+   2.14   New Features and Bug fixes in MGFTP V2.2-6
+
+          o  The MGFTP Server now accepts subdirectory names in
+             the Netscape string "CD [.~user.subdir]" format. See
+             the notes for V2.2-5 below for more information.
+
+          __________________________________________________________________
+
+   2.15   New Features and Bug fixes in MGFTP V2.2-5
+
+          o  The MGFTP Server has been modified to check for the
+             existence of the logical MADGOAT_FTP_ALLOW_PRIV_
+             PORT. If that logical is defined /SYSTEM/EXEC, then
+             privileged ports will be accepted on the server
+             PORT commands. (See the changes made in V2.2-2 for
+             information about this security risk.)
+
+          o  Netscape tries to be helpful and converts references
+             to "CD ~user" to "CD [.~user]". The MGFTP Server
+             now recognizes this special case and converts it to
+             "~user".
+
+          o  In previous versions of MGFTP V2.2, pressing CTRL-A
+             could generate a "divide by zero fault" if no data
+             had been transferred yet. This problem has been
+             corrected.
+
+          __________________________________________________________________
+
+   2.16   New Features and Bug fixes in MGFTP V2.2-4
+
+          o  To protect systems against the CERT FTP Bounce
+             attack, the MGFTP server no longer allows
+             connections to 3rd-party machines via the server
+             PORT command.
+
+
+
+
+          2-10
+
+ 
+
+
+                                       New Features and Bug Fixes
+
+
+
+
+          __________________________________________________________________
+
+   2.17   New Features and Bug fixes in MGFTP V2.2-3
+
+          o  Pressing CTRL-A while transferring a file will now
+             show the estimated time remaining for a transfer (if
+             the total file size is known, meaning on all PUTs
+             and on GETs transferred via STRU VMS or when the
+             total file size can be determined).
+
+          o  Timezone support in the FTP server has been updated
+             to include support for the SYS$TIMEZONE_DIFFERENTIAL
+             logical.
+
+          o  The MGFTP server didn't properly transfer "Stream"
+             format files in BINARY mode (it forced those files
+             to ASCII mode). This problem has been corrected.
+
+          __________________________________________________________________
+
+   2.18   Bug fixes in MGFTP V2.2-2
+
+          o  The MGFTP client did not support the /PORT qualifier
+             on the OPEN command, though it did support it from
+             the DCL command line. The OPEN command now accepts
+             /PORT=value to specify an alternate FTP port.
+
+          o  A potential security hole existed in the FTP server
+             that could have allowed attackers to gain illegal
+             access to RSH/RLOGIN ports. The server no longer
+             accepts port numbers lower than 1024 on the PORT
+             command.
+
+          o  Another CMUIP access violation in the MGFTP listener
+             has been fixed.
+
+          __________________________________________________________________
+
+   2.19   Bug fixes in MGFTP V2.2-1
+
+          o  The MGFTP listener would die with a "Network
+             partner disconnected logical link" error under CMUIP
+             whenever an FTP session disconnected. This problem
+             has been corrected.
+
+                                                             2-11
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+          __________________________________________________________________
+
+   2.20   New Features in MGFTP V2.2
+
+          o  Support has been added for NETLIB V2. Previous
+             versions of MadGoat FTP worked with NETLIB V2 via
+             the V1 compatibility routines in NETLIB V2. However,
+             an incompatibility between those routines and MGFTP
+             would sometimes cause the MGFTP listener to exit
+             when some connections timed out. This problem has
+             been corrected.
+
+          o  Support has been added for passive-mode transfers.
+             Passive-mode transfers are typically used when the
+             FTP client and server are separated by a firewall.
+             The client now includes the commands SET PASSIVE and
+             SHOW PASSIVE, and the server now supports the PASV
+             command.
+
+          o  The command procedure FTP_GET_CONNECTION_INFO.COM
+             now receives the local host name and IP address, in
+             addition to the remote host name and address. This
+             feature may be useful to sites with machines that
+             have multiple addresses.
+
+          o  The MadGoat FTP client now supports being called
+             from COPY/FTP and DIR/FTP. All qualifiers are
+             supported except COPY/FTP/FDL. When MGFTP is
+             started, the logicals OPENVMS$FTP and OPENVMS$FTPDIR
+             (used by COPY/FTP and DIR/FTP, respectively) are
+             automatically defined to point to the MadGoat FTP
+             client.
+
+          o  The MadGoat FTP Server now supports the directory
+             specification "~username" to access the default
+             login directory for a user on the system.
+
+          o  By defining the logical MADGOAT_FTP_TILDE_ANONDIR,
+             you can allow users on the local system to make
+             files accessible to anonymous FTP users from special
+             subdirectories under their login directories. If the
+             logical is not defined, anonymous FTP users are not
+             allowed to use the "~user" format.
+
+          2-12
+
+ 
+
+
+                                       New Features and Bug Fixes
+
+
+
+
+
+             For example, you can define the logical to be equal
+             to "AFTP". Once defined, users can create [.AFTP]
+             subdirectories. Anonymous FTP users could then
+             access files in each user's anonymous FTP directory
+             by using a command like "CD ~USER".
+
+             This support provides anonymous FTP access analogous
+             to the serving of user-based World-Wide Web HTML
+             pages.
+
+          o  The MadGoat FTP client includes the new commands
+             DEFINE/KEY, DELETE/KEY, and SHOW KEY that let you
+             define keys to execute commands. DEFINE/KEY commands
+             can be placed in an initialization file to have
+             them defined automatically when users run the MGFTP
+             client.
+
+          o  The MadGoat FTP client commands PUT/RECURSIVE and
+             MPUT/RECURSIVE work now. Though /RECURSIVE was
+             documented in previous versions, it was ignored
+             by the client. It now will cause the specified
+             subdirectory tree to be recreated and properly
+             populated on the remote node.
+
+          o  The output displayed when transferring a file and
+             pressing CTRL-A or CTRL-T now shows the total number
+             of blocks to be transferred.
+
+          __________________________________________________________________
+
+   2.21   Bugs Fixed in MGFTP V2.2
+
+          o  The MGFTP client qualifier /QUIET disabled most
+             messages, but still allowed replies from the remote
+             system to be displayed. /QUIET/NOREPLY now prohibits
+             the display of all messages, including replies.
+
+          o  The CTRL-A and CTRL-T transfer status display in the
+             MGFTP client didn't work if MGFTP was executed from
+             within a command procedure. This problem has been
+             corrected.
+
+                                                             2-13
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+
+          o  Several obscure bugs in the MGFTP Listener have been
+             corrected. These bugs would occasionally cause the
+             listener to die with an access violation.
+
+          o  In previous versions of MGFTP, the client and server
+             would translate the UNIX directory spec "/" to
+             "SYS$LOGIN:". The spec is now correctly translated
+             to "SYS$DISK:[000000]" when it appears by itself.
+
+          o  A bug in the calculation of the percentage in the
+             CTRL-A status line could cause incorrect percentages
+             to be displayed when transferring extremely large
+             files. This problem has been corrected.
+
+          o  The FTP client commands GET and PUT did not
+             correctly handle the global /RETAIN setting. This
+             problem has been corrected.
+
+          __________________________________________________________________
+
+   2.22   New Features and Bug Fixes from Previous Releases
+
+          The following new features and bug fixes were added in
+          V2.1-2.
+
+          o  The FTP listener will now send connection
+             information (the remote host name and IP address)
+             to be read by the LOGIN.COM of a server process.
+             This information can be read by executing MADGOAT_
+             ROOT:[COM]FTP_GET_CONNECTION_INFO.COM, which will
+             set the global symbols HOST_NAME and HOST_IP with
+             the host name and IP address.
+
+             Note: The remote host name will not be returned if
+             the underlying TCP/IP transport on the server's
+             system is Multinet or WIN/TCP. The IP address will
+             be returned in its place.
+
+          o  Added the MADGOAT_FTP_WILD_VERSION logical name
+             which controls the default filespec for the LIST
+             FTP server command. If MADGOAT_FTP_WILD_VERSION is
+             defined as "T" or "Y", then a default filespec of
+             *.*;* will be used, i.e., all versions of the files
+
+          2-14
+
+ 
+
+
+                                       New Features and Bug Fixes
+
+
+
+
+
+             requested will be displayed. Otherwise, the normal
+             default filespec of *.*; will be used.
+
+          o  Fixed a bug that caused LIST and NLST commands to
+             never complete in some cases under CMU-Tek TCP/IP.
+
+          o  Fixed a bug in the FTP client's error handling.
+             Errors that were detected before executing any
+             commands were causing an infinite loop of error
+             messages.
+
+          o  Fixed the FTP client's /VERIFY output. This output
+             was being lost when SYS$OUTPUT was redefined to
+             point to a file.
+
+          The following new features and bug fixes were added in
+          V2.1-1.
+
+          o  Support for listening to a port other than the
+             default FTP port (21) was added to FTP_LISTENER.
+             The MADGOAT_FTP_LISTENER_PORT logical name may be
+             used to specify an alternate port. This logical name
+             should be defined /SYSTEM/EXECUTIVE.
+
+          o  Fixed a bug in the handling of MADGOAT_FTP_DIRS
+             values of the form "dev:[000000...]." Directory
+             specifications of this form will now work.
+
+          o  Stream LF files were being sent "as is" during STRU
+             F, TYPE A transfers (instead of being sent as a
+             series of CR/LF delimited lines). This problem has
+             been corrected.
+
+          The following new features and bug fixes were added in
+          V2.1.
+
+          o  The FTP client now allows the user to define aliases
+             for remote hosts. In addition to the host name, an
+             alias entry may include remote login information.
+
+                                                             2-15
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+
+          o  Wildcarded directory names are now supported for the
+             MADGOAT_FTP_DIRS and MADGOAT_FTP_user_DIRS logical
+             names. For example, the following are now acceptable
+             directory values: DISK:[*...], DISK:[DIR*.SUB%], and
+             DISK:[DIR.SUB*...].
+
+          o  The MADGOAT_FTP_QUOTE_PATHNAME logical was added
+             to control whether the pathname is quoted in 257
+             replies. 257 replies are sent for the PWD and MKD
+             server commands. For example:
+
+                              >PWD
+                              <257 "SYS$SYSROOT:[SYSHLP]" is current directory.
+
+             The quotes in the reply are not recognized by some
+             FTP clients. They can be disabled, on a per-user
+             basis, by defining MADGOAT_FTP_QUOTE_PATHNAME as "F"
+             or "N".
+
+          o  A bug that caused the FTP server to sometimes
+             disconnect during LIST and NLST commands has been
+             corrected.
+
+          o  The FTP server's installed privileges were remaining
+             enabled if they were authorized for the user.
+             Installed privileged are now disabled if they were
+             not enabled at login time.
+
+          The following new features and bug fixes were added in
+          V2.0-3.
+
+          o  NETMBX privilege is now enabled before attempting to
+             connect to a remote host. Previously, the FTP client
+             did not enable it, so installing the client with
+             NETMBX had no effect.
+
+          o  Some FTP clients do not switch from STRU O VMS
+             before attempting a directory listing, which would
+             cause the FTP server to complain about the STRU.
+             This restriction has been removed from the FTP
+             server.
+
+          o  Nested command procedure calls are now supported.
+
+          2-16
+
+ 
+
+
+                                       New Features and Bug Fixes
+
+
+
+
+
+          o  The speed of local and remote directory listings was
+             improved.
+
+          o  The FTP client will now prompt for a username after
+             connecting to a remote host if MADGOAT_FTP_USER_
+             PROMPT is defined.
+
+          o  The FTP server will now display the contents of
+             .MESSAGE files if present when changing directories.
+
+          The following new features and bug fixes were added in
+          V2.0-2.
+
+          o  A bug that caused the MADGOAT_FTP_ANONYMOUS_
+             DIRS logical to be ignored has been corrected.
+             Previously, the logical was ignored if the FTP log
+             files could not be created.
+
+          o  If the remote host name exceeded 28 characters in
+             length, the FTP client would not accept commands
+             from the user. This has been corrected.
+
+          o  The two-line opening greeting from the FTP listener
+             has been changed to a single line to allow Mosaic to
+             work with MadGoat FTP servers.
+
+          o  The LOGIN and USER commands were modified to accept
+             /ACCOUNT as a qualifier instead of a parameter.
+
+          The following new features and bug fixes were added in
+          V2.0-1.
+
+          o  A bug in the installation procedure prevented the
+             installation of both sources and executables. This
+             has been corrected.
+
+          o  FTP_STARTUP.COM now starts NETLIB, if it hasn't
+             already been started.
+
+          o  A bug in the client that caused access violations on
+             CTRL-C for some commands has been corrected.
+
+          o  The HELP command was looking for the wrong help
+             library. This has been corrected. (It worked if the
+             MADGOAT_FTP_HELP logical was defined.)
+
+                                                             2-17
+
+ 
+
+
+          New Features and Bug Fixes
+
+
+
+
+
+          o  The client command PUT would sometimes fail with
+             "record too large for user's buffer" when Stream_LF
+             files were transferred. This has been corrected.
+
+          MadGoat FTP V2.0 was the first release of the MadGoat
+          Software version of the FTP client and server.
+
+          MadGoat FTP began life as the FTP client and server
+          that were distributed with CMU-Tek TCP/IP, a mostly-
+          free TCP/IP implementation written by Tektronix and
+          Carnegie-Mellon University and supported by CMU. When
+          the code was made freely available, support was picked
+          up primarily by Henry Miller and John Clement.
+
+          MadGoat FTP is based on John and Henry's CMU FTP
+          V3.1. The MadGoat version works with the NETLIB TCP/IP
+          Interface Library. The NETLIB port was done by Darrell
+          Burkhead, who based some of the changes on a much
+          earlier UCX port (known as CRUX) done by Matt Madison.
+          The OpenVMS Alpha port was done by Hunter Goatley.
+
+          NETLIB V2.2F is included with the MadGoat FTP
+          distribution. NETLIB is written by Matt Madison and
+          is also a MadGoat Software product.
+
+          MadGoat FTP is currently maintained by Hunter Goatley
+          (goathunter@goatley.com).
+
+          The MadGoat FTP software contains numerous changes,
+          enhancements, and bug fixes over the original CMU
+          version.
+
+
+
+
+
+
+
+
+
+          2-18
+
+ 
+
+
+
+
+
+
+
+
+          _______________________________________________________
+
+   3      Known Bugs and Restrictions
+
+
+
+          This chapter describes the known bugs and restrictions
+          of MadGoat FTP V2.6-4.
+
+          o  When using CTRL-C to abort an action, the FTP client
+             may or may not properly reset the STRU setting. For
+             example, when connected to a server that support
+             STRU VMS, the client switches to STRU FILE for
+             directory listings and automatically switches
+             back to STRU VMS when the command has completed. IF
+             CTRL-C is used to abort the listing, the structure
+             setting may not be reset to STRU VMS, though the
+             remote server is reset. To correct this, simply
+             issue the SET STRUCTURE VMS command before any other
+             command.
+
+          o  When PUTting to a remote server and you specify the
+             same file name as the source and destination file
+             names, the case of the destination name is lost.
+             The case is maintained as long as the file names are
+             different.
+
+          o  The MadGoat FTP server cannot determine the remote
+             host name for logging purposes when the underlying
+             TCP/IP transport is MultiNet or WIN/TCP. This is
+             because of an AST implementation conflict between
+             these transports and the MadGoat FTP server.
+
+             The only effect is that FTP_SERVER.LOG files will
+             show only the numeric IP address for the remote
+             host.
+
+          o  If you are running MadGoat FTP under CMU-Tek,
+             you will need to make sure that the MAXBUF SYSGEN
+             parameter is set to at least 8300.
+
+                                                              3-1
+
+ 
+
+
+          Known Bugs and Restrictions
+
+
+
+
+
+          o  If you are running MadGoat FTP under DEC TCP/IP
+             Services for VMS v3.1, you may need to define a
+             couple of logical names by hand. UCX$INET_HOST
+             should be defined as the hostname of the local
+             system; UCX$INET_DOMAIN should be defined as
+             the local domain name. Combining UCX$INET_HOST
+             and UCX$INET_DOMAIN should make the FQDN (Fully
+             Qualified Domain Name) for the local system. For
+             example, with an FQDN of wkuvx1.wku.edu, you could
+             define UCX$INET_HOST as wkuvx1 and UCX$INET_DOMAIN
+             as wku.edu.
+
+             If UCX$INET_HOST and UCX$INET_DOMAIN are not defined
+             correctly, you will need to redefine them at system
+             startup. They should be defined /SYSTEM/EXECUTIVE_
+             MODE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          3-2
+
+ 
+
+
+
+
+
+
+
+
+          _______________________________________________________
+
+   4      Problem Reports
+
+
+
+          MadGoat Software has set up the following electronic
+          mailing lists for discussions and support of its
+          products.
+
+          __________________________________________________________________
+
+   4.1    Info-MadGoat@MadGoat.com
+
+          Discussion of MadGoat Software products by users and
+          MadGoat developers. To subscribe, send a mail message
+          to:
+
+                      Info-MadGoat-Request@MadGoat.com
+
+          with the word SUBSCRIBE in the first line of the body
+          of the message.
+
+          __________________________________________________________________
+
+   4.2    MadGoat-Announce@MadGoat.com
+
+          Announcements of new releases and new products from
+          MadGoat. To subscribe, send a mail message to:
+
+                    MadGoat-Announce-Request@MadGoat.com
+
+          with the word SUBSCRIBE in the first line of the body
+          of the message.
+
+          __________________________________________________________________
+
+   4.3    MadGoat-Bugs@MadGoat.com
+
+          Address for reporting bugs in MadGoat Software
+          products. Please include the name of the package and
+          version in the subject header of the message, so the
+          report can be more easily directed to the appropriate
+          developer.
+
+                                                              4-1
+
+ 
+
+
+          Problem Reports
+
+
+
+
+          __________________________________________________________________
+
+   4.4    MadGoat-Register@MadGoat.com
+
+          Address for registering your use of MadGoat Software.
+          Registration of your installation is at your
+          discretion and is used by MadGoat Software only to the
+          determine the size of the user base for each product
+          and the future directions of the products.
+
+          To register, simply mail a message to MadGoat-
+          Register@MadGoat.com with the following information:
+
+             Installer's name
+             Company name and address
+             System(s) on which the MadGoat software is running
+             Which products you're using
+             Any comments and/or suggestions you might have
+
+          Also, you can find the MadGoat Software web page using
+          the URL "http://www.madgoat.com/".
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          4-2

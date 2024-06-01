@@ -1,0 +1,6 @@
+# 6.macro 
+# Demonstration of evaluating variables
+set(a=234);
+whatis(a);
+evaluate(sqrt(44));
+whatis(sin(erf(a)));

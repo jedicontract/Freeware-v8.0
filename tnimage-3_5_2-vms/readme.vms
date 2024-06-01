@@ -1,0 +1,25 @@
+Dear OpenVMS user,
+to install this software, you should already have:
+1. Jpeg library
+2. TIFF library
+3. PNG  library
+4. ZLIB library
+5. FLEX library
+
+All graphic required software may be downloaded from http://fafner.dyndns.org/~alexey/libsdl/required.html,  FLEX library can be downloaded from HP OpenVMS freeware site.
+
+When you are ready,
+please do:
+$@configure
+$@build
+
+Configure script will check all required environment and make all required config files, build.com - compile it.
+Please see, that Jpeg, Tiff from http://fafner.dyndns.org/~alexey/libsdl/required.html are built as shared libraries, and TNIMAGE build process uses it.
+But if you do not like this, you may use on your Alpha platform precompiled static binary TNIMAGE_STATIC.EXE
+
+I'm using this pretty software with my astronomy photo hobby issues.
+
+bug reports, problems are welcome
+regards,
+Alexey Chupahin alex@rostov.ultrastar.ru, elvis_75@mail.ru
+ZAO Ultra, Russia

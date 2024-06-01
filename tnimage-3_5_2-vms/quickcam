@@ -1,0 +1,35 @@
+# tnimage configuration file for connectix quickcam 
+# order of parameters may be important
+
+# command-line options for camera driver
+driver /home/tjnelson/camera/cqcam-0.45a/cqcam
+defaults /home/tjnelson/.cqcrc
+other -32+
+scale -s
+width -x
+height -y
+brightness -b
+black -B
+white -w
+hue -H
+saturation -S
+contrast -c
+initialize -a+ -r
+normal -a-
+
+# default parameters
+# 0=put camera image on main window, 1=put in separate window
+default_shell 1
+
+# width and height of image produced by camera
+default_width 640
+default_height 480
+
+# scale of image as defined by camera driver
+default_scale 1
+
+# depth of camera image, in bytes/pixel
+default_depth 3
+
+# default post-processing command or macro name
+default_post_command filter(1,1,10)

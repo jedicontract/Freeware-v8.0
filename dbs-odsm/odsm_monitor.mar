@@ -1,0 +1,952 @@
+	.title	odsm_monitor
+	.ident	/X2-006/
+	.subtitle Psect, library and external definitions
+
+;+
+; Version:	X2-006
+;
+; Facility:	Online Disk Space Monitor
+;
+; Abstract:	This program monitors the disks.
+;
+; Environment:	
+;
+; History:
+;
+;	06-Jun-1991, DBS; Version X1-001
+; 001 -	Original version.
+;	06-Jun-1991, DBS; Version X1-002
+; 002 -	Added code to handle interrupt messages.
+;	06-Jun-1991, DBS; Version X1-003
+; 003 -	Added enabling/disabling of flags.
+;	07-Jun-1991, DBS; Version X1-004
+; 004 -	Added flag to allow path forcing for dual ported disks.
+;	(Option is not implemented yet.)
+;	07-Jun-1991, DBS; Version X1-005
+; 005 -	Path forcing implemented.
+;	09-Jun-1991, DBS; Version X1-006
+; 006 -	Added code to return messages to the sender of interrupts.
+;	10-Jun-1991, DBS; Version X1-007
+; 007 -	If host field in database is blank, don't do any host checking.
+;	10-Jun-1991, DBS; Version X1-008
+; 008 -	Added code to check for shadow set virtual units so that the wrong
+;	host message is still generated but no path forcing is attempted.
+;	09-Jul-1991, DBS; Version X1-009
+; 009 -	Changed code that compares the host name on file with that returned
+;	by the $getdvi - now use cmpc5.
+;
+;	29-Jul-1992, DBS; Version X2-001
+; 001 -	Modified to handle shadow sets correctly.  The format of the database
+;	file has changed to use the physical device as the key.  Volume labels
+;	are now checked as well.
+;	09-Sep-1993, DBS; Version X2-002
+; 002 -	Changed location of data file and image.
+;	06-Oct-1993, DBS; Version X2-003
+; 003 -	Broadcasts are now done via $sndopr.  If this fails, they are directed
+;	to OPA0: as before.
+;	08-Nov-1993, DBS; Version X2-004
+; 004 -	Added secondary key to the data file (for listing purposes only).
+;	19-Nov-1993, DBS; Version X2-005
+; 005 -	Now use sys_send_operator for opcom messages.
+;	23-Feb-1994, DBS; Version X2-006
+; 006 -	Changed location of data file to ODSM_DATA:ODSM_DISKS.DATA and
+;	location of executable to ODSM_EXE.
+;-
+
+	.library	"SYS$LIBRARY:LIB.MLB"
+	.library	"SYS$LIBRARY:STARLET.MLB"
+	.library	"DBSLIBRARY:SYS_MACROS.MLB"
+	.library	"DBSLIBRARY:ODSM.MLB"
+	.link		"SYS$SYSTEM:SYS.STB" /selective_search
+
+	.disable global
+
+	.external	lib$put_output
+	.external	lib$signal
+	.external	lib$stop
+	.external	lib$tparse
+	.external	str_len
+	.external	str_uppercase
+	.external	sys_broadcast
+	.external	sys_send_operator
+
+	$dcdef
+	$devdef
+	$dvidef
+	$fabdef
+	$iodef
+	$jpidef
+	$libdef
+	$namdef
+	$rabdef
+	$rmsdef
+	$ssdef
+	$stsdef
+	$tpadef
+	$gblini GLOBAL
+	_odsmdef
+
+	def_psect _odsm_data_rw, type=DATA, alignment=LONG
+	def_psect _odsm_data_ro, type=RO_DATA, alignment=LONG
+	def_psect _odsm_code, type=CODE, alignment=LONG
+
+	.subtitle Read only data area
+
+	nul=0
+	lf=10
+	cr=13
+	space=32
+
+	set_psect _odsm_data_ro
+
+odsm_version:	.ascid	"ODSM_Monitor X2-006"
+process_name:	.ascid	"ODSM X2-006"
+
+odsm_program:	.ascid	"ODSM_EXE:ODSM_MONITOR"
+odsm_mbx:	.ascid	"ODSM_MAILBOX"
+
+console:	.ascid	"OPA0:"
+blank_line:	.ascid	<cr>
+
+default_interval:
+	.ascid	"0 00:05:00.00"	; default of five minutes
+exit_timer:
+	.ascid	"0 00:00:10.00"	; wait 10 seconds before exiting
+
+already_running:
+	.ascid	"  The monitor is already running, aborting"
+bad_input:
+	.ascid	"  I am having problems with the data base"
+no_mailbox:
+	.ascid	"  I can't create my mailbox"
+bad_message:
+	.ascid	"  Message <!AS> is invalid"
+starting:
+	.ascid	"  Online Disk Space Monitor is now running . . ."
+restarting:
+	.ascid	"  Restarting, as requested by !AS [!AS, pid=!XL]"
+exiting:
+	.ascid	"  Exiting, as requested by !AS [!AS, pid=!XL]"
+
+no_disk:
+	.ascid	"  Device !AS could not be found on the system"
+not_disk:
+	.ascid	"  Device !AS is not a disk"
+not_mounted:
+	.ascid	"  Disk !AS!AS is not mounted"
+too_full:
+	.ascid	"  Disk !AS!AS has exceeded it's maximum threshold of !UB%!/"-
+		"  Current usage is !UB%, with !UL blocks free"
+too_empty:
+	.ascid	"  Disk !AS!AS is below it's minimum threshold of !UB%!/"-
+		"  Current usage is !UB%, with !UL blocks free"
+wrong_host:
+	.ascid	"  Disk !AS!AS was found on host !AS but should be on !AS"
+wrong_label:
+	.ascid	"  Disk !AS is labelled !AS but should be !AS"
+status_fao:
+	.ascid	"  Maximum checking is !AC, Minimum checking is !AC!/"-
+		"  Missing checking is !AC, Host checking is !AC!/"-
+		"  Path forcing is !AC, Label checking is !AC"
+enabled:
+	.ascic	"ENABLED"
+disabled:
+	.ascic	"DISABLED"
+
+	reset_psect
+
+	.subtitle Impure data area and TPA argument block
+
+	set_psect _odsm_data_rw
+
+;>>> start of lib$tparse argument block
+; this becomes the argument block for all lib$tparse action routines
+
+odsm_parse_ctrl:	; control block for lib$tparse
+	.long	tpa$k_count0	; longword count - required
+	.long	tpa$m_abbrev	; allow unambiguous abbreviations
+		; from here down is filled in at run time
+	.long	0	; length of input string	tpa$l_stringcnt
+	.long	0	; pointer to input string	tpa$l_stringptr
+	.long	0	; length of current token	tpa$l_tokencnt
+	.long	0	; pointer to current token	tpa$l_tokenptr
+	.blkb	3	; unused area
+	.byte	0	; character returned		tpa$b_char
+	.long	0	; binary value of numeric token	tpa$l_number
+	.long	0	; argument supplied by user	tpa$l_param
+		; up to here is REQUIRED, anything after here is optional
+odsm_parse_ctrl_end:
+
+;>>> end of lib$tparse argument block
+
+	alloc_string	odsm_command, 256
+	alloc_string	odsm_faobuf, 1024
+
+delta_time_q:	.quad	0		; for the internal format
+exit_time_q:	.quad	0
+
+	m_all		== ^XFFFFFFFF
+	m_minimum	== 1
+	v_minimum	== 0
+	m_maximum	== 2
+	v_maximum	== 1
+	m_missing	== 4
+	v_missing	== 2
+	m_host		== 8
+	v_host		== 3
+	m_pathforce	== 16
+	v_pathforce	== 4
+	m_label		== 32
+	v_label		== 5
+odsm_flags:	.long	m_all
+
+mbx_channel:	.word	0
+mbx_acmode	== 0
+mbx_bufquo	== 0
+mbx_maxmsg	== 256
+mbx_perm	== 1
+mbx_promsk	== ^X0000FF00
+
+qio_iosb:
+iosb_status:	.word	0
+iosb_bytes:	.word	0
+sender_pid:	.long	0
+
+	alloc_string	device_name, 64
+	alloc_string	disk_name, 12
+	alloc_string	host_name, 64
+
+dev_channel:	.word	0
+host_ascic:	.byte	0
+host_ascic_t:	.blkb	odsm_s_host
+
+	alloc_string	dvi_host_name, 64
+	alloc_string	dvi_volnam, 12
+	alloc_string	dvi_fulldevnam, 64
+
+dvi_freeblocks:	.long	0
+dvi_maxblock:	.long	0
+dvi_inuse:	.long	0
+dvi_inuse_pc:	.byte	0
+dvi_devchar:	.long	0
+dvi_devchar2:	.long	0
+dvi_devclass:	.long	0
+dvi_shdw_master:.long	0
+dvi_shdw_member:.long	0
+
+dvi_itmlst:	.word	4, dvi$_freeblocks
+		.address dvi_freeblocks
+		.long	0
+		.word	4, dvi$_maxblock
+		.address dvi_maxblock
+		.long	0
+		.word	dvi_host_name_s, dvi$_host_name
+		.address dvi_host_name_t
+		.address dvi_host_name
+		.word	dvi_volnam_s, dvi$_volnam
+		.address dvi_volnam_t
+		.address dvi_volnam
+		.word	dvi_fulldevnam_s, dvi$_fulldevnam
+		.address dvi_fulldevnam_t
+		.address dvi_fulldevnam
+		.word	4, dvi$_devchar
+		.address dvi_devchar
+		.long	0
+		.word	4, dvi$_devchar2
+		.address dvi_devchar2
+		.long	0
+		.word	4, dvi$_devclass
+		.address dvi_devclass
+		.long	0
+		.word	4, dvi$_shdw_master
+		.address dvi_shdw_master
+		.long	0
+		.word	4, dvi$_shdw_member
+		.address dvi_shdw_member
+		.long	0
+		.long	0		; to end the list
+
+	alloc_string	sender_prcnam, 15
+	alloc_string	sender_name, 12
+	alloc_string	sender_tt, 7
+
+jpi_itmlst:	.word	15, jpi$_prcnam
+		.address sender_prcnam_t
+		.address sender_prcnam
+		.word	12, jpi$_username
+		.address sender_name_t
+		.address sender_name
+		.word	7, jpi$_terminal
+		.address sender_tt_t
+		.address sender_tt
+		.long	0		; to end the list
+
+	reset_psect
+
+	.subtitle Main command processing loop
+
+	set_psect _odsm_code
+
+	.entry -
+odsm_start, ^m<>
+
+	clrl	request_id
+	clrl	sender_tt
+
+	$setprn_s -
+		prcnam=process_name
+	blbs	r0, 10$
+	brdcst	already_running
+	brw	90$
+
+10$:	jsb	odsm_open_input
+	blbs	r0, 20$
+	brdcst	bad_input
+	brw	90$
+
+20$:	$crembx_s -
+		prmflg=#mbx_perm, -
+		chan=mbx_channel, -
+		maxmsg=#mbx_maxmsg, -
+		bufquo=#mbx_bufquo, -
+		promsk=#mbx_promsk, -
+		acmode=#mbx_acmode, -
+		lognam=odsm_mbx
+	blbs	r0, 30$
+	brdcst	no_mailbox
+	brw	90$
+
+30$:	$qio_s	chan=mbx_channel, -
+		func=#<io$_setmode!io$m_setprot>, -
+		iosb=qio_iosb, -
+		p2=#mbx_promsk
+
+	$qio_s	chan=mbx_channel, -
+		func=#<io$_setmode!io$m_wrtattn>, -
+		iosb=qio_iosb, -
+		p1=mbx_ast_routine
+
+	$bintim_s -
+		timbuf=default_interval, -
+		timadr=delta_time_q
+	$bintim_s -
+		timbuf=exit_timer, -
+		timadr=exit_time_q
+
+	brdcst	starting
+	calls	#0, show_status
+
+80$:	$schdwk_s -
+		daytim=delta_time_q
+
+	tstl	odsm_flags		; see if anything needs checking
+	beql	85$			; nothing set, so just hang around
+
+	jsb	process_disks
+
+85$:	$hiber_s
+
+	brb	80$
+
+90$:	ret
+
+	.subtitle AST routine to read the mailbox
+
+	.entry -
+mbx_ast_routine, ^m<>
+
+	$qiow_s chan=mbx_channel, -
+		func=#<io$_readvblk!io$m_now>, -
+		iosb=qio_iosb, -
+		p1=odsm_command_t, -
+		p2=#mbx_maxmsg
+	blbs	r0, 10$
+	brw	80$
+
+10$:	tstl	sender_pid
+	beql	20$
+	$getjpiw_s -
+		pidadr=sender_pid, -
+		itmlst=jpi_itmlst
+	pushal	sender_name
+	pushaq	sender_name_ds
+	calls	#2, g^str_len
+
+20$:	tstw	iosb_bytes
+	beql	80$
+
+	movw	iosb_bytes, -
+		odsm_command
+
+	cmpb	#130, odsm_command_t	; see if interrupt sent the message
+	beql	30$			; yes, so check it out
+	jsb	odsm_syntax_error
+	brb	80$
+
+30$:	decl	odsm_command		; shorten the length by one
+	incl	odsm_command+4		;  and up the address by one
+
+	pushaq	odsm_command
+	calls	#1, g^str_uppercase
+	movq	odsm_command, -
+		odsm_parse_ctrl+tpa$l_stringcnt
+	pushab	start_keyword_tbl	; that's the keyword table to use
+	pushab	start_state_tbl		; that's the state table to use
+	pushab	odsm_parse_ctrl		; that's the control block
+	calls	#3, g^lib$tparse	; let's parse the command
+	blbs	r0, 80$			; any errors ?
+	jsb	odsm_syntax_error	; go do some error processing
+
+80$:	$qio_s	chan=mbx_channel, -
+		func=#<io$_setmode!io$m_wrtattn>, -
+		iosb=qio_iosb, -
+		p1=mbx_ast_routine
+
+	movq	odsm_command_ds, -
+		odsm_command
+	clrl	sender_tt
+
+90$:	ret
+
+odsm_syntax_error::
+
+	$fao_s	ctrstr=bad_message, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#odsm_command
+	tstl	sender_tt
+	beql	10$
+	s_brdcst odsm_faobuf, sender_tt
+	brb	90$
+10$:	brdcst	odsm_faobuf, console
+
+90$:	rsb
+
+	.subtitle Exit, Restart, Set/Reset flag routines
+
+	.entry -
+odsm_exit, ^m<>
+
+	$delmbx_s -
+		chan=mbx_channel
+
+	$fao_s	ctrstr=exiting, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#sender_name, -
+		p2=#sender_prcnam, -
+		p3=sender_pid
+	s_brdcst odsm_faobuf, sender_tt
+	brdcst	odsm_faobuf, console
+
+	$schdwk_s -
+		daytim=exit_time_q
+	$hiber_s
+
+	bisl	#sts$m_inhib_msg, r0
+	$exit_s	code=r0
+
+	ret
+
+	.entry -
+odsm_restart, ^m<>
+
+	$delmbx_s -
+		chan=mbx_channel
+
+	$fao_s	ctrstr=restarting, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#sender_name, -
+		p2=#sender_prcnam, -
+		p3=sender_pid
+	s_brdcst odsm_faobuf, sender_tt
+	brdcst	odsm_faobuf, console
+
+	$schdwk_s -
+		daytim=exit_time_q
+	$hiber_s
+
+	run	odsm_program
+
+	$exit_s	code=r0
+
+	ret
+
+	.entry -
+set_flags, ^m<>
+
+	bisl	tpa$l_param(ap), -
+		odsm_flags
+
+	movl	#1, r0
+
+	ret
+
+	.entry -
+reset_flags, ^m<>
+
+	bicl	tpa$l_param(ap), -
+		odsm_flags
+
+	movl	#1, r0
+
+	ret
+
+	.subtitle Show status routine
+
+	.entry -
+show_status, ^m<r2,r3,r4,r5>
+
+	movab	enabled, r0
+	movab	enabled, r1
+	movab	enabled, r2
+	movab	enabled, r3
+	movab	enabled, r4
+	movab	enabled, r5
+
+	bbs	#v_maximum, odsm_flags, 10$
+	movab	disabled, r0
+10$:	bbs	#v_minimum, odsm_flags, 20$
+	movab	disabled, r1
+20$:	bbs	#v_missing, odsm_flags, 30$
+	movab	disabled, r2
+30$:	bbs	#v_host, odsm_flags, 40$
+	movab	disabled, r3
+40$:	bbs	#v_pathforce, odsm_flags, 50$
+	movab	disabled, r4
+50$:	bbs	#v_label, odsm_flags, 60$
+	movab	disabled, r5
+
+60$:	$fao_s	ctrstr=status_fao, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=r0, -
+		p2=r1, -
+		p3=r2, -
+		p4=r3, -
+		p5=r4, -
+		p6=r5
+	tstl	sender_tt
+	beql	80$
+	s_brdcst odsm_faobuf, sender_tt
+	brb	90$
+80$:	brdcst	odsm_faobuf, console
+
+90$:	movl	#1, r0
+
+	ret
+
+	.subtitle RMS data areas for disk data base
+
+	set_psect _odsm_data_rw
+
+odsm_record:	.blkb	odsm_s_odsmdef
+odsmsrh_record:	.blkb	odsm_s_odsmdef
+
+odsm_mbf=16
+odsm_rtv=255
+
+	.align	long
+odsm_fab:
+	$fab	fac=<GET>, -
+		fop=<NAM,DFW>, -
+		fnm=<ODSM_DISKS>, -
+		dnm=<ODSM_DATA:ODSM_DISKS.DATA>, -
+		mrs=odsm_s_odsmdef, -
+		nam=odsm_nam, -
+		org=<IDX>, -
+		rat=<CR>, -
+		rfm=<FIX>, -
+		rtv=odsm_rtv, -
+		shr=<GET,PUT,DEL,UPD>
+odsm_nam:
+	$nam
+	.align	long
+odsm_rab:
+	$rab 	fab=odsm_fab, -
+		mbf=odsm_mbf, -
+		rac=<KEY>, -
+		rop=<WAT,RLK,LOA>, -
+		krf=0, -
+		ksz=odsm_k_keylength, -
+		kbf=odsmsrh_record, -
+		usz=odsm_k_length, -
+		ubf=odsm_record
+
+	reset_psect
+
+	.subtitle Open and Close routines for disk data base
+
+odsm_open_input::
+
+	$open	fab=odsm_fab
+	$connect rab=odsm_rab
+
+	rsb
+
+odsm_close_input::
+
+	$close	fab=odsm_fab
+
+	rsb
+
+	.subtitle Process the disk data base
+
+process_disks::
+
+	pushr	#^m<r2,r3,r4,r5,r8,r9>
+
+	movc5	#0, odsmsrh_record, #nul, - ; setup the key value to the
+		#odsm_k_keylength, -	; minimum for the first get
+		odsmsrh_record
+
+	$rab_store -			; setup the rab to do a keyed search
+		rab=odsm_rab, -		;  for the first record
+		rac=<KEY>, -
+		rop=<KGE>, -
+		ksz=#odsm_k_keylength, -
+		kbf=odsmsrh_record
+
+	$get	rab=odsm_rab
+	blbc	r0, 90$
+
+	$rab_store -
+		rab=odsm_rab, -
+		rac=<SEQ>, -
+		rop=<NXT>
+
+10$:	movzwl	odsm_rab+rab$w_rsz, r8
+	movl	odsm_rab+rab$l_rbf, r9
+
+	jsb	process_a_disk
+
+	$get	rab=odsm_rab
+	blbs	r0, 10$
+
+90$:	popr	#^m<r2,r3,r4,r5,r8,r9>
+
+	rsb
+
+	.subtitle Routine to check a disk
+
+process_a_disk::
+
+; Inputs:
+;	R9	Address of the data base record
+
+	pushr	#^m<r2,r3,r4,r5>
+
+	addl3	#odsm_t_device, r9, r0	; here we extract the device name from
+	movc3	#odsm_s_device, (r0), -	;  the file and find the real length
+		device_name_t		;  ignoring trailing spaces
+	pushal	device_name
+	pushaq	device_name_ds
+	calls	#2, g^str_len
+
+	addl3	#odsm_t_volnam, r9, r0	; now do the same for the volume label
+	movc3	#odsm_s_volnam, (r0), -
+		disk_name_t
+	pushal	disk_name
+	pushaq	disk_name_ds
+	calls	#2, g^str_len
+
+	addl3	#odsm_t_host, r9, r0	; now we do the same for the host name
+	movc3	#odsm_s_host, (r0), -
+		host_name_t
+	pushal	host_name
+	pushaq	host_name_ds
+	calls	#2, g^str_len
+
+	addl3	#odsm_t_host, r9, r0	; we also save the host name as a
+	movc3	#odsm_s_host, (r0), -	;  counted ascii string so we can use
+		host_ascic_t		;  it later for path forcing if we get
+	movb	host_name, host_ascic	;  that far
+
+	$getdviw_s -			; get all the device information we
+		devnam=device_name, -	;  need to do all of our checks
+		itmlst=dvi_itmlst
+	blbs	r0, 10$			; getdvi worked, so do the checks
+	jsb	say_no_disk		; it failed, say we can't find it
+	brw	90$
+
+10$:	cmpl	#dc$_disk, dvi_devclass	; make sure we have a disk
+	beql	20$			; ok, so carry on
+	jsb	say_not_disk
+	brw	90$
+
+20$:	bbs	#dev$v_mnt, -		; see if the disk is mounted
+		dvi_devchar, 30$
+	jsb	say_not_mounted
+	brw	90$
+
+30$:	tstw	disk_name		; is there a label to check
+	beql	40$			; no, so ignore it
+	cmpc5	dvi_volnam, -		; else, see if the current label is
+		dvi_volnam_t, -		;  the same as the one on file
+		#space, -
+		disk_name, -
+		disk_name_t
+	beql	40$			; yes, ok
+	jsb	say_wrong_label
+
+40$:	blbs	dvi_shdw_member, 60$	; skip this for shadow set members
+	subl3	dvi_freeblocks, -	; calculate the number of blocks
+		dvi_maxblock, -		;  inuse, since this is what we are
+		dvi_inuse		;  actually checking
+	cvtlf	dvi_inuse, r0
+	cvtlf	dvi_maxblock, r1
+	divf2	r1, r0			; we convert it to a percentage, since
+	mulf2	#^F100.0, r0		;  that's what is stored in the file
+	cvtfb	r0, dvi_inuse_pc
+
+	cmpb	dvi_inuse_pc, -		; check it against the maximum
+		odsm_b_maximum(r9)
+	bleq	50$			; ok, go check the minimum
+	jsb	say_too_full		; else, let the operator know
+	brb	60$			; go and check the host
+
+50$:	cmpb	dvi_inuse_pc, -		; check it against the minimum
+		odsm_b_minimum(r9)
+	bgeq	60$			; ok, go check the host
+	jsb	say_too_empty		; else, let the operator know
+
+60$:	blbs	dvi_shdw_master, 90$	; skip this for shadow virtual units
+	tstb	host_ascic		; do we have a host name ?
+	bneq	70$			; yes, so check it
+	brw	90$			; no, that's all folks
+
+70$:	pushal	dvi_host_name
+	pushaq	dvi_host_name_ds
+	calls	#2, g^str_len
+	cmpc5	dvi_host_name, -	; else, see if the current host is
+		dvi_host_name_t, -	;  the same as the one on file
+		#space, -
+		host_name, -
+		host_name_t
+	beql	90$			; it's the same, back to work
+	jsb	say_wrong_host		; it's different, see what more we
+					;  have to do
+90$:	popr	#^m<r2,r3,r4,r5>
+
+	rsb
+
+	.subtitle Routines to generate the alarm messages
+
+say_no_disk::
+
+	bbc	#v_missing, -		; do nothing if we're not checking
+		odsm_flags, 90$		;  for disks that are missing
+
+	$fao_s	ctrstr=no_disk, -	; let the operator know that we have
+		outbuf=odsm_faobuf_ds, - ; a disk in the data base that we
+		outlen=odsm_faobuf, -	;  can't find on the system
+		p1=#device_name
+	brdcst	odsm_faobuf, console
+
+90$:	rsb
+
+say_not_disk::
+
+	$fao_s	ctrstr=not_disk, -	; let the operator know that we have
+		outbuf=odsm_faobuf_ds, - ; a disk in the data base that we
+		outlen=odsm_faobuf, -	;  can't find on the system
+		p1=#device_name
+	brdcst	odsm_faobuf, console
+
+90$:	rsb
+
+say_not_mounted::
+
+	bbc	#v_missing, -		; do nothing if we're not checking
+		odsm_flags, 90$		;  for disks that are missing
+
+	$fao_s	ctrstr=not_mounted, -	; let the operator know that we have
+		outbuf=odsm_faobuf_ds, - ; a disk in the data base that we
+		outlen=odsm_faobuf, -	;  can't find on the system
+		p1=#device_name, -
+		p2=#disk_name
+	brdcst	odsm_faobuf, console
+
+90$:	rsb
+
+say_wrong_label::
+
+	bbc	#v_label, -		; do nothing if we're not checking
+		odsm_flags, 90$		;  for disk labels
+
+	$fao_s	ctrstr=wrong_label, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#device_name, -
+		p2=#dvi_volnam, -
+		p3=#disk_name
+	brdcst	odsm_faobuf, console
+
+90$:	rsb
+
+say_too_full::
+
+; Inputs:
+;	R9	Address of the data base record
+
+	bbc	#v_maximum, -		; skip the message if we're not
+		odsm_flags, 90$		;  checking maximum diskuse
+
+	$fao_s	ctrstr=too_full, -	; let the operator know we have a disk
+		outbuf=odsm_faobuf_ds, - ; that has exceeded it's maximum
+		outlen=odsm_faobuf, -	;  threshold setting
+		p1=#device_name, -
+		p2=#disk_name, -
+		p3=odsm_b_maximum(r9), -
+		p4=dvi_inuse_pc, -
+		p5=dvi_freeblocks
+	brdcst	odsm_faobuf, console
+
+90$:	rsb
+
+say_too_empty::
+
+; Inputs:
+;	R9	Address of the data base record
+
+	bbc	#v_minimum, -		; skip the message if we're not
+		odsm_flags, 90$		;  checking minimum diskuse
+
+	$fao_s	ctrstr=too_empty, -	; let the operator know that we have a
+		outbuf=odsm_faobuf_ds, - ; disk that has dropped below it's
+		outlen=odsm_faobuf, -	;  minimum threshold value
+		p1=#device_name, -
+		p2=#disk_name, -
+		p3=odsm_b_minimum(r9), -
+		p4=dvi_inuse_pc, -
+		p5=dvi_freeblocks
+	brdcst	odsm_faobuf, console
+
+90$:	rsb
+
+	.subtitle Routines to handle host messages and path forcing
+
+say_wrong_host::
+
+	bbc	#v_host, -		; do nothing if we're not checking
+		odsm_flags, 90$		;  host connections
+
+	$fao_s	ctrstr=wrong_host, -	; let the operator know we found a
+		outbuf=odsm_faobuf_ds, - ; disk on the wrong host
+		outlen=odsm_faobuf, -
+		p1=#device_name, -
+		p2=#disk_name, -
+		p3=#dvi_host_name, -
+		p4=#host_name
+	brdcst	odsm_faobuf, console
+
+	bbc	#v_pathforce, -		; that's all we do if path forcing
+		odsm_flags, 90$		;  is disabled
+	jsb	force_disk_path
+
+90$:	rsb
+
+force_disk_path::
+
+	$assign_s -			; we need to assign a channel to the
+		devnam=device_name, -	;  device in order to force the path
+		chan=dev_channel
+	blbc	r0, 90$			; do nothing else if that failed
+
+	$qiow_s	chan=dev_channel, -	; first we set the preferred path
+		func=#io$_setprfpath, -
+		p1=host_ascic
+	blbc	r0, 80$			; get out if that didn't work
+
+	blbs	dvi_shdw_master, 80$	; skip shadow set virtual units
+	bbs	#dev$v_ssm, -		;  and phase I shadow set members
+		dvi_devchar2, 80$
+
+	$qiow_s	chan=dev_channel, -	; now we force it
+		func=#<io$_setprfpath!io$m_forcepath>
+
+80$:	$dassgn_s -			; and deassign the channel before
+		chan=dev_channel	;  we go
+
+90$:	rsb
+
+
+	set_psect _odsm_data_rw
+
+request_id:	.long	0		; request id number
+
+text_fao:	.ascid	"!AS!/!AS"
+
+	text_size = 2048
+
+text_buffer_ds:	.long	text_size	; descriptor for text area
+		.address text_text
+text_buffer:	.long	0		; filled in by $fao
+		.address text_text
+text_text:	.blkb	text_size
+
+	reset_psect
+
+	.entry -
+send_operator, ^m<r2,r3,r4,r5,r6>
+
+	$fao_s	ctrstr=text_fao, -
+		outbuf=text_buffer_ds, -
+		outlen=text_buffer, -
+		p1=4(ap), -
+		p2=8(ap)
+	blbc	r0, 90$
+	incl	request_id
+	pushal	request_id
+	pushaq	text_buffer
+	calls	#2, g^sys_send_operator
+
+90$:	ret
+
+	.subtitle Parser state and transition defintions for start
+
+$init_state start_state_tbl, start_keyword_tbl
+
+	$state start
+	$tran	tpa$_eos	,tpa$_exit
+	$tran	'EXIT'		,tpa$_exit,odsm_exit
+	$tran	'RESTART'	,tpa$_exit,odsm_restart
+	$tran	'SHOW'		,show
+	$tran	'STATUS'	,tpa$_exit,show_status
+	$tran	'STOP'		,disable,reset_flags,,,m_all
+	$tran	'START'		,enable,set_flags,,,m_all
+	$tran	'ENABLE'	,enable
+	$tran	'DISABLE'	,disable
+
+	$state show
+	$tran	tpa$_eos	,tpa$_exit,show_status
+	$tran	'STATUS'	,tpa$_exit,show_status
+
+	$state enable
+	$tran	tpa$_eos	,tpa$_exit,show_status
+	$tran	'ALL'		,enable,set_flags,,,m_all
+	$tran	'MINIMUM'	,enable,set_flags,,,m_minimum
+	$tran	'MAXIMUM'	,enable,set_flags,,,m_maximum
+	$tran	'MISSING'	,enable,set_flags,,,m_missing
+	$tran	'HOST'		,enable,set_flags,,,m_host
+	$tran	'PATH'		,enable,set_flags,,,m_pathforce
+	$tran	'LABEL'		,enable,set_flags,,,m_label
+	$tran	'ENABLE'	,enable
+	$tran	'DISABLE'	,disable
+
+	$state disable
+	$tran	tpa$_eos	,tpa$_exit,show_status
+	$tran	'ALL'		,disable,reset_flags,,,m_all
+	$tran	'MINIMUM'	,disable,reset_flags,,,m_minimum
+	$tran	'MAXIMUM'	,disable,reset_flags,,,m_maximum
+	$tran	'MISSING'	,disable,reset_flags,,,m_missing
+	$tran	'HOST'		,disable,reset_flags,,,m_host
+	$tran	'PATH'		,disable,reset_flags,,,m_pathforce
+	$tran	'LABEL'		,disable,reset_flags,,,m_label
+	$tran	'ENABLE'	,enable
+	$tran	'DISABLE'	,disable
+
+$end_state
+
+	.end	odsm_start

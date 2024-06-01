@@ -1,0 +1,59 @@
+You need two zip files
+	EMACS21_2.ZIP - the source tree as provided by FactSet
+	EMACS21_2_IVMS.ZIP - the updates for OpenVMS/I64
+
+You may want to look at two text files (from EMACS21_2_IVMS.ZIP)
+	EMACS_ON_I64.TXT - this file
+	BUILDING_EMACS_21_FOR_VMS.TXT - instructions as provided by FactSet
+
+Unzip the files. Two sub-directories are created, EMACS.DIR and PLAY.DIR. I have
+no idea what PLAY is good for.
+
+Follow the BUILDING_EMACS_21_FOR_VMS instructions.
+
+For example, a log of what I did:
+
+$ unzip emacs21_2.zip
+$ unzip emacs21_2_ivms.zip      ! and A to "overwrite": create a new version
+$ define /tran=(conc,term) /job axpa $1$DGA3841:[hb.]
+$ set def axpa:[emacs.build]
+$ del/symbol/global cc		! it will not build with strict ansi setting 
+				! also, don't use HP C V7.2-001
+$ del/symbol/global ed		! maybe other global symbols need to go as well
+$ set def [.tradcpp]		! the "do this once" stuff
+$ mms clean
+$ mms
+$ set def [-]
+$ @[-.emacs212_3]configure --with-tcpip=YES --with-x=YES --prefix=AXPA:[] --startupdir=AXPA:[STARTUP]
+$ mms/ignore=warn clean		! not really necessary, here
+$ mms/ignore=warn		! yes, there are %ILINK-W-MULDEFs and other warnings
+$!  and the build aborts with "%MMS-F-ABORT, for target XMENU.OBJ...", just give it another try
+$ mms/ignore=warn 
+$ mms/ignore=warn install
+
+Done.
+
+For the terminal version
+$ def TERM vt300		! my DECterm says so
+$ mcr [.vms]temacs.exe -map [.vms]temacs.dump
+
+or
+
+$ set displ/cre/node=<ip-node-addr>/transp=tcpip
+$ define display "<ip-node-addr>:0.0"
+$ mcr [.vms]temacs.exe -map [.vms]temacs.dump
+
+Emacs identifies itself with the alpha prefix: alpha-dec-vmsBBV. I didn't
+bother to edit CONFIGURE.COM to get it right. That command procedure longs for a
+rewrite, anyway.
+
+In DECwindows mode I sometimes get an emacs message window
+
+ Warning: past 85% of memory limit
+ Killing some buffers may delay running out of memory.
+ However, certainly by the time you receive the 95% warning,
+ you should clean up, kill this Emacs, and start a new one.
+
+I think emacs should not do its own memory management: it should not use its own
+malloc and friends. There should be a macro or configure option for using the 
+OS's memory routines. However, I never tried to disable that.

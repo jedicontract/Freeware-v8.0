@@ -1,0 +1,128 @@
+    This is a slight expansion on the comments in the source
+    code.
+
+    Program to test and time various disk operations. This
+    program stands alone and does not rely on anything other
+    than VMS and a suitable environment (some spare disk
+    space for example). It runs user mode only and other
+    than not being careful about how large you make the test
+    files and when and where you do it, should not cause any
+    difficulties on the system. As noted below, a quiet
+    system is best for testing on.  
+ Log File
+    At the beginning of every session, the program asks for
+    the name of a log file. This is opened (or created) in
+    TPU and allows comments etc. to be added before testing
+    begins. It is to this file that all subsequent results
+    are written. If the file exists, it is added to. End
+    this part with ^z (exit TPU) to display the testing
+    menu. If you attempt to fool the program by 'quitting'
+    TPU and not creating the log file, the program will
+    fail - it assumes a certain level of cooperation from
+    you.
+
+ Operations
+  Sequential:
+    User may select either read or write test. In either
+    test number and size of records is selectable. Note that
+    on read, if the file does not exist, it is created to
+    user specification and that then sets the limits of the
+    resulting test. 
+   Indexed:
+    User may select either read or write test. In either,
+    the user specifies the number of records. The record
+    size and format is hard-coded here and fixed. The same
+    restriction is placed on read test: The file is created
+    to specification (no. of records) and that then is
+    (upper)the limit of the test.
+ Options
+    Two options during test are available via the main menu:
+    
+    Time each message. 
+    Each operation (read or write) is timed and recorded.
+    The recording takes place in a memory section to reduce
+    overhead but be aware: it will skew results somewhat. 
+    
+    Turn off Screen output. 
+    Again, outputting to the screen is overhead that skews
+    results. Turn this off to diminish this effect. Results
+    are still logged to the memory section, and, at test
+    end, written to the log file. 
+
+    The operations are toggles.
+    That is, selecting an option that is  on, turns it off
+    and vice versa.
+       
+  Programmer_notes 
+    The existing program can be used as a framework for your
+    own use. In particular, the indexed operations are fixed
+    in terms of record size, number of keys etc. This can be
+    changed either by adjusting the FAB/RAB specifications
+    here or (better) adding to the user interface and 
+    allowing the user to select more items.
+  Timing
+    The program uses the Alpha instruction RSCC which counts
+    the number of processor cycles. There are some
+    consequences to this: It is very accurate, down to
+    nanosecond in most cases. The routine that implements
+    this divides it back to microseconds. The actual,
+    calculated result is accurate down to a handful of ALPHA
+    instructions. Calling the routine and collecting the
+    current time is overhead. I don't know how big the
+    handful is but expect something less than 100 Alpha
+    instructions. 
+
+    The results can be considered precise for all but the
+    most finicky. This will not work on VAX and has 
+    been briefly tested on IPC and appears to work.
+
+    On a multiple processor
+    system, you will need to set process affinity to a
+    specific CPU. If not, and you switch processors during a
+    test, your results are random. Best results will be
+    gotten when the test process has all the CPU  and IO
+    access it wants - lightly loaded systems are best. 
+
+    If you manage to find an Alpha that reports it's speed <
+    1Mhz, this program will fail. I am told Tadpoles can
+    vary their speed but  report a constant - these machines
+    are not suitable for testing on.   
+
+  Cache Effects
+
+    By default the files you are testing are cached (in most
+    cases) via either XFC or VIOC. The test results will
+    reflect this and is suitable for 'real-world' results.
+    If you want to test a disk, once the test
+    files are created, exit (no delete) and:
+    	$SET FILE/CACHE=NO MESSAGE01.DAT	(Indexed)
+    	$SET FILE/CACHE=NO FILE_TEST.DAT       (Sequential)
+    Then, run the program again, using these files. This
+    then should give you (as close as dammit) a basis for
+    comparing different disk speeds.
+
+  Support
+
+    Occasional support can be found by mailing
+    system@ccci4.demon.co.uk I am particlarly interested in:
+
+    Amount of use - The more use this gets, the more I am
+    encouraged to expand it. If you use it, let me know along with any comments.
+
+    Bugs. There aren't any. But if you find one anyway, let
+    me know. 
+
+    Wish list. Ideas for further enhancements welcome. 
+
+    IPC Testing. If you attempt to compile and run
+    this on IA64, I'd be  most interested in the result (if
+    any).
+
+  Acknowlegements
+
+    Special thanks to Alex Daniels for the extensive testing
+    he did on this program. His efforts and feedback
+    improved the result enormously.
+
+  Paul Beaudoin
+    April 2006

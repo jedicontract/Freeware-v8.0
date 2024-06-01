@@ -1,0 +1,444 @@
+<h1>PPS01: Additional Information</h1>
+<a name="APP_1"></a><h2>PPS01 $ TCPIP SHOW SERVICE</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+ESNMP                242  UDP      ESNMP            0.0.0.0             Disabled
+FINGER                79  TCP      TCPIP$FINGER     0.0.0.0             Disabled
+FTP                   21  TCP      TCPIP$FTP        0.0.0.0             Enabled
+IMAP                 143  TCP      TCPIP$IMAP       0.0.0.0             Enabled
+LPD                  515  TCP      TCPIP$LPD        0.0.0.0             Enabled
+NTP                  123  UDP      TCPIP$NTP        0.0.0.0             Enabled
+POP                  110  TCP      TCPIP$POP        0.0.0.0             Enabled
+PORTMAPPER           111  TCP,UDP  TCPIP$PORTM      0.0.0.0             Enabled
+REXEC                512  TCP      TCPIP$REXEC      0.0.0.0             Enabled
+RLOGIN               513  TCP      not defined      0.0.0.0             Enabled
+RSH                  514  TCP      TCPIP$RSH        0.0.0.0             Enabled
+SMTP                  25  TCP      TCPIP$SMTP       0.0.0.0             Enabled
+SNMP                 161  UDP      TCPIP$SNMP       0.0.0.0             Disabled
+SSH                   22  TCP      TCPIP$SSH        0.0.0.0             Enabled
+TELNET                23  TCP      not defined      0.0.0.0             Enabled
+</pre>
+<a name="APP_2"></a><h2>PPS01 $ MCR LATCP SHOW NODE | SHOW NODE /STATUS | SHOW PORTS</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Node Name:   PPS01                          LAT Protocol Version:      5.3
+Node State:  On               
+Node Ident:   - PPS01 -
+
+Incoming Connections:  Enabled              Incoming Session Limit:   None
+Outgoing Connections:  Enabled              Outgoing Session Limit:   None
+Service Responder:     Disabled             Announcements:         Enabled
+
+Circuit Timer (msec):        80             Keepalive Timer (sec):      20
+Retransmit Limit (msg):     120             Node Limit (nodes):       None
+Multicast Timer (sec):       60             CPU Rating:                  0
+Maximum Unit Number:       9999             Extra Datalink Buffers:      9
+Queue Limit:                 24             Forward Session Limit:      16
+
+User Groups:     0, 207
+Service Groups:  0, 207
+Service Classes: 1, 3-4
+
+Service Name     Status      Rating  Identification
+PPS01            Available     34 D   - PPS01 -
+
+
+Node Name:   PPS01                          LAT Protocol Version:      5.3
+Node State:  On               
+Node Ident:   - PPS01 -
+
+                           Current   Highest   Maximum
+                           -------   -------   -------
+Active Circuits:                 0         0      1023
+Connected Sessions:              0         0    260865
+Incoming Queue Entries:          0         0        24
+Outgoing Queue Entries:          0         0     32767
+Unprocessed Announcements:       0         0       500
+Unprocessed Solicits:            0         0       250
+
+Local Services:                  1         1       255
+Available Services:              1         1       N/A
+Reachable Nodes:                 1         1       N/A
+
+Discarded Nodes:                 0
+
+
+Port Name  Port Type    Status         Remote Target (Node/Port/Service)
+---------  -----------  -------------  -----------------------------------------
+_LTA2:     Fwd. (NonQ)  Inactive       //
+_LTA40:    Fwd. (NonQ)  Inactive       LATCP$MGMT_PORT//
+_LTA41:    Fwd. (NonQ)  Inactive       LATCP$MGMT_PORT//
+
+</pre>
+<a name="APP_3"></a><h2>SHOW DEVICE /FULL _DSA0:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA0:, device type DEC RZ1DF-AB, is online, mounted, file-oriented device,
+    shareable, available to cluster, error logging is enabled, device supports
+    bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed           12082053
+    Owner process                 ""    Owner UIC                      [SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count              785    Default buffer size                 512
+    Total blocks            17773524    Sectors per track                   168
+    Total cylinders             5290    Tracks per cylinder                  20
+    Logical Volume Size     17773524    Expansion Size Limit           17879040
+
+    Volume label      "ALPHA_SYSTEM"    Relative volume number                0
+    Cluster size                   9    Transaction count                   750
+    Free blocks              7071390    Maximum files allowed            150000
+    Extend quantity               90    Mount count                           1
+    Mount status              System    Cache name             "_DSA0:XQPCACHE"
+    Extent cache size             64    Maximum blocks in extent cache   353569
+    File ID cache size            64    Blocks in extent cache             3429
+    Quota cache size               0    Maximum buffers in FCP cache       2945
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, protected subsystems enabled, file high-water marking, write-
+      through caching enabled, access dates enabled, hard links enabled.
+
+Disk $1$DKB0:, device type DEC RZ1DF-AB, is online, member of shadow set DSA0:,
+    error logging is enabled.
+
+    Error count                    1    Shadow member operation count   6337462
+    Allocation class               1
+
+Disk $1$DKC0:, device type DEC RZ1DF-AB, is online, member of shadow set DSA0:,
+    error logging is enabled.
+
+    Error count                    4    Shadow member operation count   6335496
+    Allocation class               1
+
+</pre>
+<a name="APP_4"></a><h2>SHOW DEVICE /FULL _DSA1:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA1:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed           14443808
+    Owner process                 ""    Owner UIC                      [SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count              100    Default buffer size                 512
+    Total blocks            17773524    Sectors per track                   168
+    Total cylinders             5290    Tracks per cylinder                  20
+    Logical Volume Size     17773524    Expansion Size Limit           17879040
+
+    Volume label             "DATEN"    Relative volume number                0
+    Cluster size                   9    Transaction count                   102
+    Free blocks              7466184    Maximum files allowed            250000
+    Extend quantity               90    Mount count                           1
+    Mount status              System    Cache name             "_DSA0:XQPCACHE"
+    Extent cache size             64    Maximum blocks in extent cache   373309
+    File ID cache size            64    Blocks in extent cache           365103
+    Quota cache size               0    Maximum buffers in FCP cache       2945
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+
+Disk $1$DKB100:, device type COMPAQ BD009122BA, is online, member of shadow set
+    DSA1:, error logging is enabled.
+
+    Error count                    1    Shadow member operation count   9361069
+    Allocation class               1
+
+Disk $1$DKC100:, device type COMPAQ BD009122BA, is online, member of shadow set
+    DSA1:, error logging is enabled.
+
+    Error count                    1    Shadow member operation count   9360800
+    Allocation class               1
+
+</pre>
+<a name="APP_5"></a><h2>SHOW DEVICE /FULL _DPA1:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DPA1: (PPS01), device type RAID0, is online, mounted, file-oriented device,
+    shareable, available to cluster, error logging is enabled.
+
+    Error count                    0    Operations completed           80450170
+    Owner process                 ""    Owner UIC                      [SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count               44    Default buffer size                 512
+    Total blocks           284220952    Sectors per track                   255
+    Total cylinders             4371    Tracks per cylinder                 255
+    Logical Volume Size    284220952    Expansion Size Limit          284999680
+    Allocation class             256
+
+    Volume label          "PC_DATEN"    Relative volume number                0
+    Cluster size                  20    Transaction count                   109
+    Free blocks             39608220    Maximum files allowed           1500000
+    Extend quantity              200    Mount count                           1
+    Mount status              System    Cache name             "_DSA0:XQPCACHE"
+    Extent cache size             64    Maximum blocks in extent cache  1980411
+    File ID cache size            64    Blocks in extent cache           132360
+    Quota cache size               0    Maximum buffers in FCP cache       2945
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+
+</pre>
+<a name="APP_6"></a><h2>SHOW DEVICE /FULL _DPA2:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DPA2: (PPS01), device type RAID0, is online, mounted, file-oriented device,
+    shareable, available to cluster, error logging is enabled.
+
+    Error count                    0    Operations completed           12531674
+    Owner process                 ""    Owner UIC                      [SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                5    Default buffer size                 512
+    Total blocks            35508232    Sectors per track                   255
+    Total cylinders              547    Tracks per cylinder                 255
+    Logical Volume Size     35508232    Expansion Size Limit           35962880
+    Allocation class             256
+
+    Volume label         "PC_DATEN2"    Relative volume number                0
+    Cluster size                  20    Transaction count                     6
+    Free blocks             10991100    Maximum files allowed            750000
+    Extend quantity              200    Mount count                           1
+    Mount status              System    Cache name             "_DSA0:XQPCACHE"
+    Extent cache size             64    Maximum blocks in extent cache   549555
+    File ID cache size            64    Blocks in extent cache             6840
+    Quota cache size               0    Maximum buffers in FCP cache       2945
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+
+</pre>
+<a name="APP_7"></a><h2>SHOW DEVICE /FULL _DPA3:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DPA3: (PPS01), device type RAID0, is online, mounted, file-oriented device,
+    shareable, available to cluster, error logging is enabled.
+
+    Error count                    0    Operations completed           80755739
+    Owner process                 ""    Owner UIC                      [SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                8    Default buffer size                 512
+    Total blocks           213177952    Sectors per track                   255
+    Total cylinders             3279    Tracks per cylinder                 255
+    Logical Volume Size    213177952    Expansion Size Limit          214548480
+    Allocation class             256
+
+    Volume label         "PC_DATEN3"    Relative volume number                0
+    Cluster size                  20    Transaction count                     8
+    Free blocks              5906100    Maximum files allowed            500000
+    Extend quantity              200    Mount count                           1
+    Mount status              System    Cache name             "_DSA0:XQPCACHE"
+    Extent cache size             64    Maximum blocks in extent cache   295305
+    File ID cache size            64    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       2945
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+
+</pre>
+<a name="APP_8"></a><h2>RAID SHOW PC_DATEN (_DPA1:)</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+RAID Software for OpenVMS V2.6     Display Time: 23-FEB-2006 13:30:14.27
+Copyright 2004 Hewlett-Packard Development Company, L.P. All Rights Reserved.
+
+RAID Array Parameters:
+
+        Current RAID Array ID:    PC_DATEN
+        Permanent RAID Array ID:  PC_DATEN
+        Date Created:             15-FEB-2002 11:41:56.20
+        Last Bind:                 9-JAN-2006 08:36:00.78
+        RAID Level:               0+1
+        Current State:            NORMAL
+
+        Characteristic Size:      71091338         Total Capacity:  284220952
+        Member Count:                    4         Chunk Size:            120
+        Pool in Use:                 68480         Max Pool Value:          0
+        Pages in Use:                    0         Max Page Value:          0
+
+RAID Array Configuration:
+
+        Member                               ShadowSet      ShadowSet
+    Index    Name               State         Members         State
+    -----   ------              -----        ---------      ---------
+      0     _DSA6000:           NORMAL           2         SteadyState
+               _$1$DKE0:
+               _$1$DKF0:
+      1     _DSA6001:           NORMAL           2         SteadyState
+               _$1$DKE100:
+               _$1$DKF100:
+      2     _DSA6002:           NORMAL           2         SteadyState
+               _$1$DKE200:
+               _$1$DKF200:
+      3     _DSA6003:           NORMAL           2         SteadyState
+               _$1$DKE300:
+               _$1$DKF300:
+
+RAID Array Operations:
+
+        Member
+    Index     Name                Reads         Writes        Errors
+    -----     ----                -----         ------        ------
+      0       _DSA6000:        20002456        5271707             0
+      1       _DSA6001:        19961249        5187971             0
+      2       _DSA6002:        19986543        5138994             0
+      3       _DSA6003:        20022670        5367993             0
+
+    Member Total:              79972918       20966665             0
+
+ Virtual
+   Unit        Size    Status         Reads       Writes       Errors
+ -------      ------  --------        -----       ------       ------
+ DPA0001:  284220952  ACCESS       65584814     15217211            0
+
+
+    Histogram of I/O sizes, Virtual Unit DPA0001:
+
+          Blocks/IO             Reads               Writes           Total
+          ---------             -----               ------           -----
+              1              35565243              6648627        42213870
+              2                600943                11322          612265
+              4                308826                15609          324435
+              8                474733                64489          539222
+             16               6390672              3029247         9419919
+             32              16620305               155220        16775525
+             64               5595012              5292696        10887708
+            128                    45                    0              45
+            256                 29007                    1           29008
+            512                     0                    0               0
+  more than 512                    28                    0              28
+</pre>
+<a name="APP_9"></a><h2>RAID SHOW PC_DATEN2 (_DPA2:)</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+RAID Software for OpenVMS V2.6     Display Time: 23-FEB-2006 13:30:14.72
+Copyright 2004 Hewlett-Packard Development Company, L.P. All Rights Reserved.
+
+RAID Array Parameters:
+
+        Current RAID Array ID:    PC_DATEN2
+        Permanent RAID Array ID:  PC_DATEN2
+        Date Created:             15-OCT-2004 12:29:26.57
+        Last Bind:                 9-JAN-2006 08:36:14.87
+        RAID Level:               0+1
+        Current State:            NORMAL
+
+        Characteristic Size:      17764186         Total Capacity:   35508232
+        Member Count:                    2         Chunk Size:            120
+        Pool in Use:                 71936         Max Pool Value:          0
+        Pages in Use:                    0         Max Page Value:          0
+
+RAID Array Configuration:
+
+        Member                               ShadowSet      ShadowSet
+    Index    Name               State         Members         State
+    -----   ------              -----        ---------      ---------
+      0     _DSA6004:           NORMAL           2         SteadyState
+               _$1$DKB200:
+               _$1$DKC200:
+      1     _DSA6005:           NORMAL           2         SteadyState
+               _$1$DKB300:
+               _$1$DKC300:
+
+RAID Array Operations:
+
+        Member
+    Index     Name                Reads         Writes        Errors
+    -----     ----                -----         ------        ------
+      0       _DSA6004:         4676317        2632112             0
+      1       _DSA6005:         4697212        2864744             0
+
+    Member Total:               9373529        5496856             0
+
+ Virtual
+   Unit        Size    Status         Reads       Writes       Errors
+ -------      ------  --------        -----       ------       ------
+ DPA0002:   35508232  ACCESS        7854591      4696414            0
+
+
+    Histogram of I/O sizes, Virtual Unit DPA0002:
+
+          Blocks/IO             Reads               Writes           Total
+          ---------             -----               ------           -----
+              1               3566553              1747553         5314106
+              2                 57480                 4178           61658
+              4                 33534                 8209           41743
+              8                282153                20166          302319
+             16               1650517              2347538         3998055
+             32               1691768                16283         1708051
+             64                570126               552486         1122612
+            128                   108                    1             109
+            256                  2352                    0            2352
+            512                     0                    0               0
+  more than 512                     0                    0               0
+</pre>
+<a name="APP_10"></a><h2>RAID SHOW PC_DATEN3 (_DPA3:)</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+RAID Software for OpenVMS V2.6     Display Time: 23-FEB-2006 13:30:15.23
+Copyright 2004 Hewlett-Packard Development Company, L.P. All Rights Reserved.
+
+RAID Array Parameters:
+
+        Current RAID Array ID:    PC_DATEN3
+        Permanent RAID Array ID:  PC_DATEN3
+        Date Created:             15-OCT-2004 12:40:49.00
+        Last Bind:                 9-JAN-2006 08:36:35.90
+        RAID Level:               0+1
+        Current State:            NORMAL
+
+        Characteristic Size:      71096168         Total Capacity:  213177952
+        Member Count:                    3         Chunk Size:            120
+        Pool in Use:                 71936         Max Pool Value:          0
+        Pages in Use:                    0         Max Page Value:          0
+
+RAID Array Configuration:
+
+        Member                               ShadowSet      ShadowSet
+    Index    Name               State         Members         State
+    -----   ------              -----        ---------      ---------
+      0     _DSA6006:           NORMAL           2         SteadyState
+               _$1$DKB400:
+               _$1$DKC400:
+      1     _DSA6007:           NORMAL           2         SteadyState
+               _$1$DKB500:
+               _$1$DKC500:
+      2     _DSA6008:           NORMAL           2         SteadyState
+               _$1$DKB600:
+               _$1$DKC600:
+
+RAID Array Operations:
+
+        Member
+    Index     Name                Reads         Writes        Errors
+    -----     ----                -----         ------        ------
+      0       _DSA6006:        26119468        9101785             0
+      1       _DSA6007:        26192881        9230446             0
+      2       _DSA6008:        26286221        9075380             0
+
+    Member Total:              78598570       27407611             0
+
+ Virtual
+   Unit        Size    Status         Reads       Writes       Errors
+ -------      ------  --------        -----       ------       ------
+ DPA0003:  213177952  ACCESS       61879891     18961074            0
+
+
+    Histogram of I/O sizes, Virtual Unit DPA0003:
+
+          Blocks/IO             Reads               Writes           Total
+          ---------             -----               ------           -----
+              1              32900667              6329619        39230286
+              2                440485                31982          472467
+              4                194162                15882          210044
+              8                680814                51819          732633
+             16               2877240              4616424         7493664
+             32              17110556               161605        17272161
+             64               7662196              7753743        15415939
+            128                    51                    0              51
+            256                 13692                    0           13692
+            512                     0                    0               0
+  more than 512                    28                    0              28
+</pre>

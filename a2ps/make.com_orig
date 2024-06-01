@@ -1,0 +1,16 @@
+$! Look for the compiler used
+$!
+$ ccopt = "/def=ansic"
+$ if f$getsyi("HW_MODEL").ge.1024
+$ then
+$  ccopt = "/prefix=all"+ccopt
+$ else
+$  if f$search("SYS$SYSTEM:DECC$COMPILER.EXE").eqs.""
+$   then
+$   else
+$    ccopt = "/decc/prefix=all"+ccopt
+$  endif
+$ endif
+$cc'ccopt a2ps.c
+$link a2ps
+$exit

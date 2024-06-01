@@ -1,0 +1,71 @@
+# Scanner configuration file for the umax-cli
+# scanner driver, which can be obtained from 
+# ftp://tsx-11.mit.edu/pub/linux/ALPHA/scanner.
+
+
+# Driver name to appear in list box.
+name  Umax
+
+# Location of driver (change as needed)
+driver_path $HOME/scanner/umax/umax-0.5.6/umax-cli
+
+# Scanner device name used by operating system
+device  /dev/sga
+
+# If the scanner has a specific command for a given option,
+# enter it here, otherwise leave it blank. Some drivers may have
+# separate commands for bits/pixel, or separate commands for
+# each resolution mode, while others have only generic color
+# or grayscale modes. Separate options by spaces only.
+
+# Commands which utilize numeric values. Numeric values, if
+# applicable, are supplied automatically based on dialog box
+# selections and should not be placed here.
+
+dpi_command    -R
+left_command   -X
+top_command    -Y
+width_command  -w
+height_command -h
+brightness_command -b
+contrast_command  -c
+bpp_command
+
+# Commands which don't use numeric values.
+
+gray_8_command
+gray_10_command
+gray_12_command
+gray_16_command
+color_24_command
+color_30_command
+color_36_command
+gray_command -g
+color_command -r
+preview_command  -p
+
+# Any additional command options entered here will be sent verbatim
+# to the scanner. For example, -s = slow speed, -W = warm up lamp
+# before scanning.
+
+extra_commands
+
+# Conversion factors in case scanner driver uses some other units
+# besides pixels at 300 pt/inch. For example, if driver requires 
+# all units to be in inches, set each value to 72. If the driver 
+# uses 1200 pt/inch, set each value to 4. Values do not have to be
+# integers.
+
+
+height_factor  1
+width_factor  1
+top_factor  4
+left_factor  4
+
+# Numbers which may need to be added to the contrast and brightness
+# values supplied by tnimage (which range from 0 to 255) to convert
+# to the range used by the scanner driver. For instance, if the
+# driver uses -127 to +127, enter -127 here.
+
+contrast_add 0
+brightness_add 0

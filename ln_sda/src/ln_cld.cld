@@ -1,0 +1,57 @@
+!
+! Definition of LN command syntax
+!
+!
+!	LN	name	[table] 
+!
+! Specify table to search a specific logical name table or use the qualifiers 
+! /SYSTEM to search LNM$SYSTEM only
+! /GROUP to search LNM$GROUP only
+! /PROCESS to search LNM$PROCESS only
+! /ALL to search this process and all shared tables
+!
+! /CASE_BLIND for case blind matching of name
+! /WILDCARD if name contains wildcards
+!
+! If no table is specified default is to search the tables specified by the 
+! LNM$DCL_LOGICAL search list.
+!
+! The qualifier /VALUE specifies that the name is the value of the logical name
+! to search for.
+!
+! The qualifiers /USER, /SUPERVISOR, /EXECUTIVE, and /KERNEL restrict the
+! search to only logical names that match the mode specifed. 
+! The default is to match any mode.
+!
+! /DUMP_CACHE requests a display of the process logical name translation cache
+!
+	module	LN_cld
+	ident "V1.0"
+!
+! COPYRIGHT NOTICE
+!
+! This software is COPYRIGHT (c) 2006, Ian Miller. ALL RIGHTS RESERVED.
+!
+! Released under licence described in aaareadme.txt 
+!
+	DEFINE VERB LN
+	PARAMETER P1, LABEL=NAME, VALUE(REQUIRED)
+	PARAMETER P2, LABEL=TABLE, VALUE
+	QUALIFIER JOB, NONNEGATABLE
+	QUALIFIER GROUP, NONNEGATABLE
+	QUALIFIER SYSTEM, NONNEGATABLE
+	QUALIFIER PROCESS, NONNEGATABLE
+	QUALIFIER VALUE, NONNEGATABLE
+	QUALIFIER WILDCARD
+	QUALIFIER CASE_BLIND
+	QUALIFIER ALL, NONNEGATABLE
+	QUALIFIER USER, NONNEGATABLE
+	QUALIFIER SUPERVISOR, NONNEGATABLE
+	QUALIFIER EXECUTIVE, NONNEGATABLE
+	QUALIFIER KERNEL, NONNEGATABLE
+	QUALIFIER DUMP_CACHE, NONNEGATABLE
+	DISALLOW TABLE AND (GROUP OR SYSTEM OR PROCESS OR ALL OR JOB)
+	DISALLOW ALL AND (GROUP OR SYSTEM OR PROCESS OR JOB)
+	DISALLOW ANY2 (USER, SUPERVISOR, EXECUTIVE, KERNEL)
+	DISALLOW ANY2 (GROUP, SYSTEM, JOB, PROCESS)
+	DISALLOW CASE_BLIND AND WILDCARD

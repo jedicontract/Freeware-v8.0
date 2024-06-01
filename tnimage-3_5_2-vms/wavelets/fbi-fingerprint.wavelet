@@ -1,0 +1,27 @@
+# fbi-fingerprint wavelet
+# the FBI fingerprint compression standard wavelet (the 9/7)
+# "The FBI Wavelet/Scalar Quantization Standard for Gray-scale Fingerprint 
+# Image Compression", JN Bradley, CM Brislawn and T Hopper, SPIE Proceedings 
+# vol 1961, Visual Information Processing II, Orlando, Florida,
+# pp. 293-304, Apr 1993. 
+ 
+ -4 4
+  0.037828455506995
+ -0.023849465019380
+ -0.11062440441842
+  0.37740285561265
+  0.85269867900940
+  0.37740285561265
+ -0.11062440441842
+ -0.023849465019380
+  0.037828455506995
+-4 4
+  0.00000000000000000000
+ -0.06453888264596513435
+ -0.04068941762029364834
+  0.41809227333251053338
+  0.78848561661368676834
+  0.41809227333251053338
+ -0.04068941762029364834
+ -0.06453888264596513435
+  0.00000000000000000000

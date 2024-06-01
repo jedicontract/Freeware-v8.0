@@ -1,0 +1,7 @@
+# 2.macro
+# Demonstration of file output in macros
+open(gray);
+select(100,100,110,110);
+fopen("test");
+write("test","x ",x," y ",y," pixel value ",i,"\n");
+fclose("test");

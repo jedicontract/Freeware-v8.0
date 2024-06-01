@@ -1,0 +1,1957 @@
+   TNIMAGE.NEW 
+
+   --------------------------
+   Contents:
+      Release notes 
+      Where to send bug reports
+      Abbreviated installation instructions
+      Other software available
+      How to contact the author
+      New features
+   --------------------------
+   
+   1. This software is distributed free of charge. However, in return for 
+      using this free software, users are asked to send bug reports if a 
+      bug is found (see below).
+
+   2. If you are running tnimage on an 8-bit display, close all other
+      programs that might be displaying images before starting tnimage
+      for the first time. This includes Netscape and any wallpaper images. 
+      In some cases, some of these programs may not release their colors or 
+      other X resources when they quit (especially if they crashed). In this 
+      case, if tnimage doesn't start, try restarting the X server. Solaris
+      CDE users in particular should configure tnimage to "install colormaps".
+
+   3. If you have upgraded your operating system or added X windows fonts, 
+      delete the file "~./tnimage/fonts" before starting the program the 
+      first time. This will cause the list of available fonts to be rebuilt.
+
+   4. Tnimage uses Motif and the Xbae widget library from ftp.x.org. The 
+      precompiled versions of tnimage have these libraries statically linked,
+      so it is not necessary to install Motif.
+
+   5. If you create a useful scanner or camera config. file, custom image 
+      format, or new wavelet that might be of benefit to other users, feel
+      free to send it and I will include it in future releases.
+
+   6. If you discover an image file that causes a problem with tnimage, 
+      please send me a copy of the file along with a bug report.
+
+   7. Some versions of XFree86 have a bug for 24-bit packed-pixel mode that 
+      may cause images to be displayed incorrectly on some video cards (e.g., 
+      laptops using CT 65554 based video cards). If this happens, try using 
+      the "-sparse" or "-nosparse" options for tnimage. These can also be put 
+      in your tnimage.ini file. 
+      
+   8. On some systems, running the static version of tnimage gives
+      the message:
+      loadlocale.c:220: _nl_load_locale: Assertion `idx % __alignof__ (u_int32_t) == 0' failed.
+      This means the locale on your computer is not set. Run the
+      following command before starting tnimage:
+                       export LC_ALL=POSIX
+
+ 
+   --------------------------
+   Bug reports
+   --------------------------
+
+   Email bug reports to tjnelson at brneurosci dot org.
+   If the program crashes, creates a bad file or printout, draws the screen 
+   incorrectly, or if a function is slow, confusing, or difficult to use or 
+   find, this is a bug. Give enough information to enable me to reproduce the 
+   problem. All bug reports are important and receive immediate attention. I 
+   will also be happy to hear suggestions for new features (I might even 
+   include them).
+
+   Before sending a bug report, run the program in diagnostic mode by typing:
+                    tnimage -diag > logfile
+   Include this log file with your bug report. This will provide a record of 
+   what sequence of actions caused the problem. It is not necessary to include
+   a bugfix.
+  
+   If the problem is that tnimage does not compile, type:
+                    make &> errfile
+   and mail the errfile instead.                  
+  
+   --------------------------
+   Installation
+   --------------------------
+
+   To compile tnimage, type "./configure", then "make". 
+   To install tnimage, type "make install" as root.
+   If this procedure doesn't work, consult the manual.
+   The Install script copies several auxiliary files to the following 
+   directories:
+          /usr/local/lib/tnimage/   (tnimage.hlp)
+          /usr/local/lib/tnimage/   (formats)
+          /usr/man/man1/            (tnimage.1.gz)
+          /usr/local/bin/           (tnimage)
+          $HOME/.tnimage            (plugins, scanners, etc.)         
+   More detailed instructions and problem-solving tips for compiling
+   tnimage are in the manual.
+        
+
+   --------------------------
+   Contacting the author
+   --------------------------
+
+   E-mail addresses for questions & problems:
+       tjnelson at brneurosci dot org
+
+   --------------------------
+   New features
+   --------------------------
+
+   04-22-2006 (Version 3.5.2)
+
+        Saving of multi-frame images improved (new file format).
+
+   03-21-2006 (Version 3.5.1)
+
+        Added "special character" option which allows users to
+        add symbols, icons, and characters to image labels. Users
+        can also easily create their own fonts (e.g., by creating
+        a document in LaTeX) and paste the characters onto an image.  
+        Antialiasing is supported. This is particularly useful in 
+        adding math symbols and non-English labels.
+
+        Fixed image cropping to prevent accidentally returning to
+        normal mode.
+
+        Misc. code fixes to enable compiling in x86-64 and other
+        64-bit platforms.
+ 
+   03-02-2006 (Version 3.4.0b)
+   
+        Tnimage now uses libtiff for reading LZW-compressed TIFF files.
+        This may make reading of some images faster. Libtiff is now
+        required for compiling tnimage. Use of libtiff can be disabled 
+        in the Configuration dialog box.
+
+        Bug fix in image cropping
+
+        Minor change in creating 16-bit grayscale TIFFs for more
+        compatibility with other software.
+ 
+        Fix in anti-aliased Bezier curves (still not perfect).
+ 
+   09-18-2005 (Version 3.3.23)
+   
+        Partial support for reading .1sc files made by Bio-Rad scanner 
+
+        Added animation feature for quick animations without the necessity
+        of creating a multi-frame image.
+        
+   06-13-2005 (Version 3.3.21b)
+
+        Added sketch math for editing of small details
+
+        Misc. bugfixes: grayscale contrast maximization fixed; x and y 
+        coordinates are now displayed while dragging a region.
+
+        Fixed display problem on Sparc workstations with 24-bit displays.
+
+   03-27-2005 (Version 3.3.20c)
+
+       Minor changes to image contrast functions
+
+       Improved add/remove gradient feature.
+
+   03-17-2005 (Version 3.3.19a)
+   
+       Misc. fixes to macro handling - added crop function, fixed nested
+       macros. Color parameter for drawcircle, drawrectangle, etc. is now
+       defined in the pixel depth of the image instead of the screen.
+
+       Shift-arrow keys now work in image crop.
+
+       Transient message box pops up in random locations in some window
+       managers, sometimes obscuring an image; fixed to a single location.
+
+       Spot densitometry can now measure multiple discontinuous regions
+       in each measurement.
+
+       Added point-to-point area selection method (similar to the line
+       drawing mode in xfig). Tnis mode also works in spot densitometry
+       of irregular shapes.
+      
+   01-31-2005 (Version 3.3.18e)
+
+       Added ability to draw filled circles, ellipses, etc. with 
+       gradient color with variable reflectivity. 
+
+       Added antialiasing to circles and ellipses.
+       
+       Fixed problem closing FFT dialog box
+       
+       Minor reorganization of menus
+       
+       Fixed problem with grayscale being remapped too often.
+
+       Minor fixes in spot densitometry.
+       
+   11-05-2004 (Version 3.3.17d)
+
+       Added arrow heads to bezier curve drawing functions. Improved
+       orientation of arrow heads in line drawing.
+
+       Many bugfixes and changes in listbox behavior for spot
+       densitometry.
+
+       Improved shape of bezier curve when line width is greater
+       than 1.
+       
+       Sample palette colors are now displayed in information window.
+
+       Bugfix in GIF file creation.
+
+       Changed image calibration so that image can be moved around during
+       selection of calibration points. This allows calibration of images
+       larger than the size of the screen without using the "zoom" function.
+
+       Spacing was wrong between images in composite images; fixed.
+
+    10-11-2004 (Version 3.3.16f)
+
+       Added Freetype anti-aliased labels. Since libXft and freetype are
+       installed incorrectly in some Linux distributions, this can be 
+       deactivated by typing
+
+                       ./configure --disable-xft
+
+       See manual for instructions in fixing Freetype installations.
+
+       Bugfixes for spot densitometry, densitometry dialog boxes 
+       and .BMP files
+       
+       Bugfix for grain counting in a macro
+
+       Added option for saving results of grain counting in macro.
+
+       Bugfix for commands sometimes not being executed in macro.
+       
+       Data occasionally put in wrong list box in spot densitometry; fixed.
+
+   08-11-2004 (Version 3.3.15b)
+   
+       Finally got around to adding drawing of ellipses, ovals, and
+       rounded rectangles of variable width.
+
+       Added ability to set outline color of lines and arrows.
+
+       Changed behavior of 'crop' function.
+
+       Images in separate windows now have scrollbars.
+
+       Could not select area in scanner window if another window was
+       behind it; fixed.
+
+       3D plot was placed in a floating window regardless of user
+       setting; fixed.
+
+       Added color palette to make it easier to select from a limited
+       range of colors (the colormap and dialog box options still also 
+       work for selecting unusual colors).
+
+   06-15-2004 (Version 3.3.14a)
+
+       Added erosion to chromatic aberration correction.
+
+       Fixed bug in writing GIF files for certain types of images.
+
+   02-24-2004 (Version 3.3.13)
+
+       Correction for chromatic aberration distortion of images.
+
+       Changes to filtering to prevent filtering from making images 
+       lighter or darker and remove artifacts when filtering portions
+       of color images.
+
+       Added barrel and pincushion removal feature to Warping menu.
+
+       Cursor position in "Select image" list would jump to top of list 
+       when new image was selected; fixed.
+
+   12-27-2003 (Version 3.3.12)
+   
+       Improvements of "Change Color" and "Change Gray" options
+
+   12-20-2003 (Version 3.3.11)
+
+       Added "Change Grayscale Values" option for graphically changing 
+       grayscale images.
+
+       Speed improvements to "Change Color" option
+ 
+   12-03-2003 (Version 3.3.10a)
+   
+       Added "Update color" which grabs a new foreground or background 
+       drawing color when user left- or right-clicks on a pixel on the 
+       image.
+
+       Added "spray line" option to allow extending pixels perpendicular 
+       to a pattern.
+
+       Changed maximum number of polynomial terms in image calibration 
+       to 10.
+
+   10-10-2003 (Version 3.3.9g)
+   
+       Changed Composite Image subdialog to make creating composite images
+       easier.
+
+       Added graphical pattern selector.
+
+       Precompiled Macintosh OS X version is now available. Compilation 
+       changed to work in OS X. Config files assume libjpeg, libpng, and 
+       zlib are located in directories under tnimage source files, since 
+       these are not installed by default in OS X Darwin.
+
+       Fixed grain counting allocation bug.
+
+       Compilation now works in gcc-3.x
+
+       Fix for reading 16-bit ASCII format image files
+
+       Added "put image on root window" to menu; fixed problem in "Grab
+       image from screen" when user clicks on root window.
+
+       Bug fixes in spot densitometry with 'automatic area selection'.
+
+       Improved handling of cases where user clicks Accept or Cancel
+       button in dialog box repeatedly.       
+
+       If image was not at 0,0 spot densitometry with 'automatic area 
+       selection' would cause problems; fixed.
+
+
+   07-27-2003 (Version 3.3.8a)
+
+       Pattern drawing added. All image operations can now be masked through a
+       user-selectable pattern. One use of this would be to fill areas with a 
+       pattern instead of a solid color.
+
+       Changed configuration script to make it compile in SuSE 8.2.
+
+       Colormap not being updated when slider is dragged in "Select
+       colormap"; fixed.
+       
+       Gamma correction fixed for 16 and higher bit/pixel images.
+
+       Fixed TIFF file reading algorithm to handle 1 bit/pixel LZW compressed
+       images.
+
+       Information area now shows angle of selected coordinates.
+
+       Added area measurement to Measurement mode. This is a shortcut for
+       measuring rectangular areas. Areas (including irregular-shaped areas)
+       can still be measured in Spot Densitometry.
+
+   04-25-2003 (Version 3.3.7)
+
+       Improved label dialog.
+
+       Fixed font specification in LaTex-like commands for labels.
+
+   04-11-2003 (Version 3.3.6e)
+
+       Gamma correction is now faster and doesn't make 8 bit grayscale images darker.
+
+       Brightness control now gives better results with 8-bit indexed color images.
+
+       Fixed problem with dilation and erosion only working once.
+
+       Configuration dialog now has option to restrict the floating magnifier
+       to the tnimage window instead of magnifying the entire root window. This 
+       turned out to be too annoying.     
+
+       Image duplicating, gamma correction, paste, warp, grain counting, and some 
+       other functions now work on zoomed images.
+
+       Simplified paste function.
+       
+       Some little-used features removed.
+
+       Changed 'configure' script to compile more easily in Mac OS X and Irix.
+
+       Solaris version available again.
+       
+       Unable to read certain types of TIFF files in Mac OS X version; fixed.
+
+       Various minor changes, including fixes for bugs introduced in previous
+       bugfix.
+
+       Bugfix for changing image depth of zoomed images.
+
+   03-16-2003 (Version 3.3.5i)
+
+       Improvements to floating magnifier window.
+
+       Added anti-aliased line drawing.
+
+       Bugfix in 3D plot.
+
+       Bugfix in logarithmic calibration (was not accepting radiobox setting)
+
+       In the 'color change' graph, the default mode is now changing colors
+       by dragging on control points to define a new brightness curve. 
+       Previously the default action was to change the brightness one 
+       at a time and it was not obvious that this was not the correct 
+       way to change colors.
+
+       Added strip densitometry function in image math. This allows densitometry
+       to be performed on precisely-specified areas, which is more reproducible
+       than interactively-obtained coordinates.
+
+       Changed transparency to allow transparent images of any depth.
+       
+       Bugfix for zooming of transparent or chromakeyed images.
+
+       Bugfix for copying areas in zoomed images.
+
+       More features now work on zoomed images, including image calibration,
+       depth conversion, filtering, and undo. Image calibration is now
+       independent of zoomed state.      
+
+       Bugfix for image paste.
+
+       Fixed printing problem: an invalid PostScript file would sometimes
+       be created if user loaded a corrupted .GIF image and later tried to 
+       print it.
+
+       Numbers in calibration point editor were changed to show unzoomed x 
+       and y coordinates instead of screen coordinates. This makes it easier
+       to calibrate images while they are in a zoomed state. 
+
+       Numbers in pixel coordinate window were changed to show un-zoomed
+       x and y coordinates for the pixel at current mouse position.
+
+       Changed curve-drawing so that only 'Escape' and 'Space' signal
+       the end of new data point collection. Previously any key would
+       work, which caused problems for some users.       
+
+       Other minor changes.
+    
+   02-10-2003 (Version 3.3.4)
+
+       Changed user interface in strip densitometry. Measurement no longer occurs 
+       automatically after selecting an area, but is a separate action initiated
+       by pressing any key. This allows user to reposition the control points 
+       before measuring the density.
+
+       Misc. changes to densitometry user interface to make it more intuitive.
+
+       Added 'Floating magnifier' to allow precise positioning during cut-and-paste
+       operations and densitometry.
+
+       Changed image capture feature of graphs, to allow graphs larger than the
+       width of the screen to be captured into images.
+
+   01-17-2003 (Version 3.3.3)
+
+      'Save histogram' function now saves all 65536 values for 16 bit grayscale images.
+     
+      Improved 'force background' filter. Filter now removes less of the background
+      gradient at its default setting. It is also faster and the 'amount of filtering' 
+      is now active, and fine-tunes the spatial frequency cutoff.
+ 
+      New menu option: shrink/enlarge image by interpolation instead of by
+      reduplicating pixels. This makes enlarged images less chunky in appearance.
+
+   01-10-2003 (Version 3.3.2a)
+
+      Adding label would not work if image was located at 0,0 coordinates; fixed.
+
+      Clicking 'Accept' on label rotation dialog box now works an indefinite
+      number of times for adding multiple copies of the label, or adding labels
+      at different angles.
+
+      Fixed problem with closing listbox in menu dialog.
+
+      Removed arbitrary size limitation in reading TIFF files.
+
+      Image would occasionally turn black when "Maximize Contrast" was
+      clicked; fixed.
+
+   01-01-2003 (Version 3.3.1)
+   
+      Read/write PNG format finally added.
+
+      Neural network pattern recognition results can now be saved in a file.
+
+      Minor changes in area copying and dialog boxes.
+
+      Size of selected areas can now be adjusted with shift-numpad keys or by
+      dragging on the edge.
+
+   12-01-2002 (Version 3.3.0)
+
+      Changes in reading ASCII format files.
+      
+      Added reading text format files, which prints the text file on top of
+      the current image. This is an easy way of adding labels containing
+      multiple lines or non-English character fonts.
+
+      Text selections from other X applications now can also be pasted onto 
+      an image by clicking the middle mouse button, in the same manner as
+      pasting text into an xterm.
+
+      Added gray strip in sample palette to make it easier to select black,
+      gray, and white drawing colors.
+
+      Added ruler drawing option (in line-drawing dialog). Users can create
+      rulers of adjustable scale at any angle, with or without calibration 
+      numbers on the image.
+
+   11-12-2002 (Version 3.2.20b)
+
+      Added old-style unsharp mask filter.
+
+      Edge-grabbing of images can now be prevented by Left Alt or Caps Lock keys.
+      This makes it easier to select areas near the edge of an image.
+      
+      Gradient add/subtract now respects irregularly-shaped selected areas.
+      
+      Copying regions with mouse is now more efficient.
+
+      Fixed problem with list boxes missing Window Manager events. Previously
+      if user killed the list's window using the Window Manager instead of Dismiss 
+      key, the list box was not freed, sometimes making it impossible to re-open it.
+
+      Improved identification of labels from images without alpha channel
+      (see manual).
+
+      Changed installation scripts to allow tnimage to build on Mac OSX
+      (Darwin).
+
+      Bug fix in TeX commands.
+
+   10-21-2002 (Version 3.2.19)
+
+      Added gamma correction.
+
+   10-01-2002 (Version 3.2.18c)
+
+      Fixed scaling error in "Change size" function.
+
+      Landscape printing is now a checkbox (replaces rotated printing)
+
+      Focus would sometimes change to a different image after adding 
+      a label; fixed.
+
+      Previous selected area is now restored after `create new image'. 
+      'Create image from selected area' changed to allow selected areas
+      to span multiple images.
+
+      Fixed problem with "skip bytes" function in reading raw image files.
+
+      Bug fix in "Correlate points" in Image registration.
+
+   06-10-2002 (Version 3.2.17b)
+
+     'Save image' dialog now calls filename dialog instead of being a text box.
+      
+      Fixed string formatting in spot densitometry list. 
+
+      Added new option for selecting single areas, multiple areas, or
+      using polygon method to select region in irregular area
+      densitometry.
+
+      Bug fix in manual irregular area densitometry.
+
+      Bug fixes for measurement and densitometry listboxes.
+
+   04-22-2002 (Version 3.2.16)
+
+      Program now compiles in Cygwin environment (still crashes in Cygwin
+      due to a bug in the XtRealizeWidget function in the Cygwin version of 
+      LessTif).
+
+      Added support for mouse wheel
+
+   04-02-2002 (Version 3.2.15c)
+   
+      General cleanup of code to make it ANSI-C++ compliant. 
+       
+      Fixed bug where dialog box would stay grayed out if user hit 'Cancel'
+      in a subordinate clickbox.
+      
+   03-09-2002 (Version 3.2.15)
+
+      Numerous changes to get program to compile in Red Hat 
+       
+      Fix deallocation bug in measurement list
+       
+      Added "draw cross" menu item to allow placement of cross marks on image.
+
+   01-15-2002 (Version 3.2.14)
+
+      Improvements to arrow drawing
+
+   12-15-2001 (Version 3.2.13)
+   
+      Added ability to select groups of points in 2D warping
+
+   12-06-2001 (Version 3.2.12)
+
+      Added ability to read multiframe raw images
+
+   09-01-2001 (Version 3.2.11)
+
+      New 'Magnify' function added which zooms without changing size of the window.
+      
+      Dragging mouse in graph to measure areas now automatically opens a listbox 
+      to display the area values.
+      
+      Bug fixes.
+
+      RPM file added.
+
+      Densitometry now works on zoomed and magnified images.
+
+   08-16-2001 (Version 3.2.10)
+
+      Improved handling in densitometry; added rudimentary ability to read 
+      and write 48-bit TIFF images.
+
+      Minor bug fixes
+
+   06-18-2001 (Version 3.2.9)
+
+      Improvements in handling of user-defined filters. 
+
+   06-18-2001 (Version 3.2.8)
+   
+      Added "point" measurement to create list of calibrated or uncalibrated
+      points. Densitometry now shows the calibrated x and y values if the
+      image coordinates have been calibrated.
+
+      Shift-click now selects points on an image. By shift-clicking twice,
+      an area larger than the screen can be selected. A new option in "Create
+      image" allows the newly-selected image to be captured into a new image.
+
+   05-31-2001 (Version 3.2.7)
+
+      Changes to zoom function. When zoom is active, clicking with the left 
+      or right mouse button zooms in or out. Clicking with the center button
+      restores the image to its original size.
+
+      Added alternating display of two images (useful in finding subtle
+      differences between similar images).
+
+      Misc. bug fixes
+
+      Changed GIF87a writing routine to accommodate bugs in the rendering
+      routines in some Linux Web browsers. These browsers read the incorrect
+      field in the GIF file to calculate the image size, which could make
+      the GIF file appear small in the browser.
+
+   03-25-2001 (Version 3.2.6)
+   
+      Gradient removal added
+      
+      New options in 'paste'.
+      
+      New option in 1D warping for warping horizontally, for creating 
+      ripple distortions.
+
+      Misc. bug fixes in chromakey and new image creation.
+
+      License changed to match GPL.
+
+   11-15-2000
+   
+      Changed handling of 16-bit TIFF files. The old behavior can be
+      obtained by clicking "swap bytes".
+
+   10-15-2000 (Version 3.2.5)
+   
+      Internal changes.
+
+   10-07-2000 (Version 3.2.4)
+
+      Changed behavior of Dismiss buttons to make it less confusing.
+      
+      Fixed bugs caused by the bug fixes in version 3.2.2.
+
+   10-03-2000 (Version 3.2.3)
+
+      Added updating of Save and Print dialog boxes if user clicks on
+      a different image.
+
+      Fixed problem compiling if Xbae is absent.
+
+   10-01-2000 (Version 3.2.2)
+
+      Added option for creating image panel from list of coordinates (e.g.,
+      spot/grain coordinates).
+
+      It is no longer possible to close dialog boxes or graphs using 
+      the Window Manager. This was causing numerous problems and
+      solving them was making the program too complex. The WM 
+      functionality will be gradually restored in future versions.
+     
+      Numerous bugfixes.
+
+      Fixed some macro evaluation problems caused by addition of loops.
+      Made syntax of macros more consistent: Image math commands that 
+      iterate over pixels now need to be enclosed in 'loop{...}'. Macro 
+      interpreter no longer tolerates statements not ending in semicolons.
+      Comments in macros are now supported. "Until" loops added.
+      
+      Buffers in image registration enlarged to handle 10,000 data points.
+     
+   09-17-2000 (Version 3.2.1)
+ 
+      Image registration / affine transformation which warps or rotates 
+      one image to match another using user-specified or automatically-
+      calculated alignment points. (Useful in aligning separate images 
+      for position-based identification and densitometry, such as spots 
+      on 2D acrylamide gels). Grain counting results can also be used to 
+      define the transformation. The results can be fed directly to 
+      densitometry. 
+      
+      Image registration tutorials added to manual.     
+
+      Image notes added. Users can attach a text note up to 64K to any 
+      image to document image manipulations, add patient information, etc. 
+      (accessible from menu or by pressing F1 when cursor is on an image).
+
+      New options for chopping a large image into 4 smaller pieces and for
+      creating a subimage from an image.
+
+      New multiple crosshairs cursor indicates the corresponding point on 
+      all images.
+
+      New filters: adaptive local contrast; filter to force background to 
+      constant value
+
+      Added new option to perform spot densitometry using a predefined
+      list of x,y points from a file.
+
+      Minor fixes to macro functions. Some macros that used the first 
+      argument as the image number now operate on current image. This 
+      makes the macros simpler and more consistent; for example, to do 
+      a forward Fourier transform on the current image, use "fft(1);".
+      
+      Increased protection in macros against invalid arguments.
+     
+      User can now specify how many polynomial terms to use in image 
+      calibration. This can improve the fit when extrapolating beyond
+      the data points.
+
+      Fixed problem with crawling dots being too slow if selected area is
+      too complex, and several other bug fixes. 
+      
+      Bug fixes to spot densitometry.
+
+      Fixed problem with animated images grabbing the focus whenever
+      they switch frames; fixed problem reading GIFs with different
+      size frames; fixed occasionally incorrect colormap of animated 
+      GIFs in 8 bit screen mode.      
+
+   07-10-2000 (Version 3.2.0)
+
+      Dialog box, list boxes, and clickbox handling has been completely 
+      rewritten. Graphs now automatically update themselves; problems with 
+      occasional orphan dialog forms and with tear-off menus fixed. More
+      than one image at a time can now be animated. 
+      
+      Added several fixes to protect against unexpected user actions; for 
+      example, if a user would delete the image buffer while it was being 
+      filtered or while camera was acquiring a frame, it would cause problems.
+
+      Added Laplacian wavelet transform (thanks to Dietmar Kunz).
+
+      When saving files in ASCII format, several format options are now
+      available.
+
+      Spreadsheet now has a "Save" button. 
+
+      Line drawing color is now independent of text color. This means sketch
+      mode can now draw lines containing color gradients.
+
+      Fixed minor bugs in spreadsheet and in HSV adjustment of images in
+      8-bit screen mode, and fixed bug with images that had been converted 
+      to different depths and then to grayscale and back to color. In some
+      situations, clicking 'undo' did not restore the correct image type.
+
+      2D warping control points can now be moved with the arrow keys as well
+      as by dragging the mouse.
+
+      Improved anti-aliasing in rotated text labels.
+
+      New option for displaying multi-frame images as a panel of images 
+      (similar to MRI displays). Improved handling and creation of animated 
+      images.
+
+   05-11-2000 (Version 3.1.5)
+
+      Changes to dialog box appearance; misc. bugfixes 
+
+   05-07-2000 (Version 3.1.4)
+
+      Improved local contrast enhancement algorithm to give smoother result 
+      and respect "amount of filtering" setting and selected areas. Local 
+      contrast filter is also only accessible through "filter" dialog or macros.
+
+      Corrected problem if user types an invalid directory with post-processing
+      of image activated when saving an image.
+
+      Improvements to wavelet routines - thanks to Dietmar Kunz.
+
+      Misc. bugfixes and changes to menus
+ 
+   04-17-2000 (Version 3.1.3)
+
+      Area selection in 'scissors' can now be done using polygon control 
+      points as well as in freehand mode. Option is set in Config dialog.
+     
+      New menu option & macro command for re-selecting scissors area 
+      selection without having to re-trace the area. 
+   
+      Macro handling section has been completely rewritten. Macros are now
+      more 'C'-like and have rudimentary printing and file manipulation 
+      capability, looping, and non-interactive drawing functions. For consistency, 
+      parameters in macros also must now be enclosed in parentheses and 
+      separated by commas. For example, instead of    
+                         fft myimage 1
+      you would use  
+                         fft(myimage, 1);         .
+      This makes the syntax more consistent with functions, e.g.
+                         i = sinh(erf(2.34));      
+      String variables and function variables are also supported.
+
+      New macro functions: spotsize, spotdensity, spotsignal, pixels, 
+      fopen, print, write, fclose,  findspots, countgrains, drawline, 
+      drawbox, drawcircle, drawrectangle, drawfilledrectangle, setpixel, 
+      setcolor, invertregion, between, setbackgroundcolor, message,
+      /* */ comments, for, while, stop, set, unsetpixel, freegraincountingarrays,
+      density, spotx, spoty, drawlabel, cdensity, rdensity, input,
+      getstring, reselctarea. 
+      This brings the total to 246 macro functions.
+      
+      New predefined variables: GRAINS, SPOTS, PIXELS, COMPENSATE, INVERT, v, d
+      This makes it easier to access calibrated pixel values in image algegra.
+      
+      Decimal point character in macros and 'image math' is now set by 
+      the locale. Can be overridden in tnimage.ini file.
+
+      'Image math' and 'Macro editor' menu options have been combined into one.
+
+      Macro execution now starts from the cursor position instead of the
+      first line of the macro when `execute' button is licked.
+
+      Variable names are now allowed in macro arguments. For example, you
+      can now have macros like      
+                 a = getstring("What is the filename?");
+                 open(a);
+
+      Macro section of manual rewritten.
+
+      More macro commands now take arguments: up, down, left, right,
+      abouttheimage, aboutthefile
+
+      These new macros enable processing of discrete areas defined by user, 
+      or lists of spots obtained automatically from grain counting or 
+      densitometry. One potential use would be to automatically measure each 
+      well in a multi-well plate, and automatically save a list of optical 
+      densities of each well into a file.
+
+      Fixed bugs in HP scanner interface and densitometry of irregularly-
+      shaped regions.
+
+   03-29-2000 (Version 3.1.2)
+
+      Logarithmic calibration now calculates a second-order coefficient
+      for better accuracy.
+
+      Added code to prevent image buffers from being changed if they 
+      are busy. Previously, if a user was quick enough, they could (for 
+      example) unload an image while it was being filtered, causing 
+      Bad Things to happen.
+
+      Fixed bug in capturing graph as an image. When graph was off the edge
+      of the screen, bad things would happen if user clicked "capture".
+
+      Other minor bug fixes
+
+   03-27-2000 (Version 3.1.1)
+
+      User can now select between using the O.D <-> pixel value table, 
+      user-defined pixel value calibration, or 'none' in densitometry.
+      
+      Several minor bugfixes in densitometry.
+
+      Exponential equation added to pixel value calibration.
+
+      Histogram equalization (uses a new algorithm that gives smoother
+      results than other programs)
+
+      Maximize local contrast filter now works on color images
+
+   03-20-2000 (Version 3.1.0)
+
+      Automatic creation of particle size distribution and signal 
+      distribution plots (for example, for plotting distribution of 
+      grain sizes or spot areas in a 2D gel).
+      
+      Two new grain counting methods using newly-developed algorithms.
+
+      Morphological analysis including erosion, dilation, quick
+      segmentation, and contour plots.
+     
+      Watershed transformation 
+
+      Size distribution plot added to grain counting.
+
+      Interactive warping/morphing/distortion correction in 2 dimensions
+      
+      Curve densitometry added.
+
+      Added help to message boxes.
+
+      Completely rewritten image calibration user interface. Users can now 
+      manually re-edit calibration points and calibration coefficients.
+      Pixel intensity, as well as x and y coordinates, can now be calibrated.
+
+      Improved plugin interface to make it possible to create or delete FFTs 
+      in a plugin. Also fixed problem with colormap of new image created by 
+      plugin sometimes being changed to grayscale. NOTE: See the file 
+      'plugin.cc' for mandatory changes for all new plugins that deal with 
+      FFT'd images.
+
+      New filters added: engrave, spatial differencing, multiplicative 
+      Sobel
+
+   03-01-2000 (Version 3.0.10)
+
+      Background flattening by rank leveling filter
+      
+      User-defined convolution filters
+
+      Added bit reversal option to "Read Raw Bytes", for raw images and TIF
+      files produced by certain obscure programs that fill bytes with bits 
+      in the wrong order for some reason.
+
+      Histogram fixed for 16 bit grayscale images.
+
+      Improved centering of 3D plots.
+
+   02-21-2000 (Version 3.0.9)
+
+      Added interactive mode to gradient flood fill.
+   
+      Morphometric operations (erosion, dilation, threshold, and 
+      skeletonization) added.
+ 
+      Various bug fixes.
+
+   01-21-2000 (Version 3.0.8)
+ 
+      Added ability to read images from an atomic force microscope (thanks
+      to Levente Novak for a sample image).
+
+   12-31-1999 (Version 3.0.7)
+
+      Modified image algebra to allow comma as delimiter for decimal point.
+
+      Fixed bug in median filter - thanks to Dietmar Kunz for pointing it out.
+
+   10-29-1999 (Version 3.0.6b)
+
+      Measurement of length of segmented curves added.
+
+      Minor changes, speed enhancements, and bug fixes for grain/pattern 
+      counting.
+
+   06-01-1999 (Version 3.0.3)
+     
+      3d wireframe and surface plot added. Rotation of 3d plots can be 
+      animated in all 3 axes.
+
+      New calibration mode: direction-independent 1-dimensional calibration
+
+      Various bug fixes, and a few hacks to make it work in lesstif.
+
+      Precompiled Linux versions now use glibc (libc6).
+
+      Configurable to show all messages, error messages only, or no messages.
+
+      Config file and patch for bttv driver for Hauppauge WinTV camera card
+      (contributed by Michael Lapsley).
+
+      New macro commands: selectirregulararea  scissors
+
+      Added changes for compatibility with vnc (Virtual Network Computer)
+      server.
+      
+   04-02-1999 (Version 2.9.6)
+
+      New filter added: Remove Low Frequencies
+
+   03-24-1999 (Version 2.9.5)
+
+      Measurement and densitometry now automatically prompt to save data.
+
+      Automatic background calculation is no longer disabled during 
+      densitometry of irregularly-shaped areas.
+      
+      Densitometry of circular areas.
+      
+      It is now possible to make repeated densitometry measurements of the
+      same arbitrary irregular shape.
+
+      Several other minor changes and bugfixes, including preventing filenames 
+      containing a relative path, which would cause problems if user tried to 
+      save it after changing the current working directory, and a fix for
+      grabbing contents of other windows when the window is partly off-screen.       
+      
+      Program now asks to reset display to original image after an FFT. 
+      Previously the real FFT was retained by default, which could cause
+      confusing results (i.e., some functions would appear not to work).
+
+      Added button for changing size of image window in "Create Image".
+
+      Fixed a byte-order problem in Solaris and Irix versions.
+      
+      Minor changes for compiling with Digital C++ compiler on 64-bit machines.
+
+      HTML version of manual is available again.
+
+   02-12-1999 (Version 2.9.4)
+    
+      Added mask operations.
+
+      New macro commands:  repeat, mask
+
+      Fixed an occasional problem in selecting irregular-shaped areas.
+
+   02-08-1999 (Version 2.9.3)
+
+      Added ability to automatically pre- and post-process images. For example, 
+      the image file could be encrypted, or it could be compressed with gzip
+      or other user-specified external compression program.  For many file 
+      formats, particularly formats like FITS that are uncompressed, using gzip 
+      on the output can result in a significantly smaller file size.
+
+      Automatically reads gzipped images without need for decompression.
+
+      Added several predefined variables to image algebra so calculations
+      can access various parameters of the image such as width, calibration,
+      and fft-pixel and wavelet-pixel conversion factors.
+      
+      Added 'readtif' plugin for users who prefer to use the Leffler libtiff
+      library. This could be useful, for example, in reading Fax images or
+      other TIFF subtypes not supported in tnimage.
+
+      New macro command: whatis
+
+      New option in Create/Resize image for making composite of 2 or more 
+      smaller images into a larger image.
+
+      Escape key now dismisses dialog boxes; several Ctrl-key keyboard 
+      shortcuts added.
+
+   02-01-1999 (Version 2.9.2)
+
+      Added densitometry and morphometry of irregularly-shaped regions.
+
+      HSV (hue, saturation, and value) adjustments added.
+
+      Order and number of parameters in "contrast", "brightness", and
+      "maximize" macros changed to accomodate HSV (see manual).
+      
+      New macro commands: intensity, lighten, darken.
+      
+      Several bug fixes, including an occasional printing problem that 
+      would occur under a set of unusual conditions.
+
+      Easier conversion of 16-bit grayscale images to color.
+
+   01-24-1999 (Version 2.9.1)
+   
+      Wavelet transforms added.
+   
+      Menu options for reading, writing, and erasing FFT moved to FFT dialog.
+
+      Performance increase and bug fixes for spray math.
+
+      New predefined variable 'w' and function 'wave' in image algebra to
+      allow manipulation of wavelet coefficients in user-defined formulas.
+
+   01-10-1999 (Version 2.8.2)
+
+      Added "Local contrast adjustment" feature which equalizes the 
+      contrast in dark and light areas. 
+      
+      Misc. bug fixes, including: median filter was ignoring 'range' parameter;
+      Background subtract filter was ignoring 'amount of filtering' parameter;
+      in Select Non-Rectangular Region, when user is instructed to click on 
+      center of selected region, if user clicked somewhere outside of the 
+      image instead,  program would barf; fixed.
+      
+      Added progress bars for slow operations.
+
+   11-21-1998 (Version 2.8.1)
+
+      Fixed wallpaper bug for 32 bit displays.
+      
+      Added grain counting and pattern-counting feature, which uses neural
+      networks to recognize and count patterns such as cells, letters, faces, 
+      or grains in an image.
+
+      Added ability to use false-colors in grayscale images (including 16-bit
+      and higher grayscale images). This is different from pseudo-color. See 
+      manual for details.
+      
+      Added ability to copy FFT buffer into a regular image.
+
+      Fixed bug in reading 32 bit TIF files in Solaris.
+
+   10-12-1998 (Version 2.7.8)
+
+      Added ability to select non-rectangular areas manually using the mouse, 
+      instead of double-clicking (which selects areas automatically). 
+      Multiple, non-contiguous areas can be selected and operated on as a 
+      group.
+
+      "Paint region", "Gradient fill", "Rotate", "Filter", "Delete", and most 
+      others now respect irregularly-shaped selected regions. 
+
+      Added new menu command "Switch selected/unselected" and new macro 
+      commands "switchselected", "manuallyselectarea", and "showselected". 
+
+      Gradient fill now requires that you preselect the area to be filled, e.g.
+      manually or by double-clicking. This makes it more flexible as gradient
+      areas now need not be contiguous, as well as faster and more reliable
+      than before. 
+
+   10-08-1998 (Version 2.7.7)
+
+      Improvements in "create image".
+
+      New option in "create image" now allows screen-grabbing from another 
+      window.
+      
+      Misc. bug fixes. including a bug in copying colormaps when not in 8 bit 
+      mode.
+
+      Changed creation of animated GIFs. It was found that if a GIF is not 
+      positioned exactly at 0,0, the GIF causes Netscape to crash if 
+      incorporated in a Web page.
+
+      Added option to remap one 8-bit image to the colormap of another so 
+      that both have the same colormap (in "Colormap Options").
+
+   09-18-1998 (Version 2.7.6)
+
+      Added 2-dimensional calibration of image x and y coordinates.
+
+      Resizing images was only getting 1st frame of multiframe images; fixed.
+
+      If image was moved on screen during image algebra, coordinates were 
+      wrong; fixed.
+
+      New functions in image math: erf(), real[][][], imag[][][], and new 
+      predefined variables 're' and 'im' permit manipulation of FFT 
+      frequency components in image math.
+
+      Images in image algebra can now  be addressed by name instead of image
+      number, by entering the image name in double quotes.
+
+      Fixed problem caused by Lesstif file selector bug.
+
+      New macro commands: duplicate, resize, evaluate (for interactive 
+      inspection of user variables, pixels, and math formulas).
+
+      Many commands now take either the image name or number as an argument. 
+      
+      Other minor changes in some macro command arguments.
+
+      Misc. bug fixes, including bugs in depth conversion bug and Tiff images.
+
+   08-24-1998 (Version 2.7.5)
+
+      Graphs (such as colormaps) can now be changed using Bezier curves as 
+      well as by dragging the mouse. Creating custom colormaps by dragging 
+      with mouse is also now easier.
+      
+      Added z-axis rotation of images in Frame Control dialog (x and y axis 
+      rotation will be added in the future).
+
+      Colormap windows and self-updating lists are automatically raised so 
+      they aren't obscured if tnimage window is maximized (Doesn't work in 
+      fvwm95).      
+
+      Contrast and brightness controls are now consolidated in the same 
+      dialog, which has 3 graphs allowing user to change the contrast/
+      brightness for each value of R, G, and B by dragging mouse on the 
+      graph, as well as specifying numeric factors to add, multiply, 
+      smooth, etc. The original contrast adjustment controls have 
+      been moved to the "Intensity" menu.
+      
+      Numerous bug fixes, including a fix for image calibration and for 
+      printing grayscale images when in 16 bit/pixel mode.
+
+   07-27-1998 (Version 2.7.4)
+
+      Added autoconf script for easier compilation.
+
+      Added ability to specify a non-default visual on the command line 
+      (experimental).
+      
+      Red and blue were swapped on Solaris 3D 32-bit card; (hopefully) fixed.
+      
+      Configuration files are now searched for in /usr/local/lib/tnimage as 
+      well as $HOME/.tnimage directories. 
+
+   07-20-1998 (Version 2.7.3)
+
+      Added ability to convert multiframe images into panels, combine
+      a set of images into an animated multiframe image, duplicate images,
+      and split multiframe images into a number of individual images.
+
+      Added ability to view and create animated GIF files.
+
+      Added full-screen crosshairs.
+      
+      Adjusted position of text to be closer to center of cursor location.
+
+      Added ability to embed a limited subset of rudimentary LaTeX-like 
+      commands in label strings to allow mixed fonts, superscripts, subscripts,
+      and greek characters in labels. (includes: \it \rm \sf \bf \tt \font
+      \size \gr \med \up \down \left \right \u \d \l \r \s).
+
+      Added ability to set frame rate in "Image Properties" dialog.
+
+      Fixed display problem on X servers using 15-bpp.
+      
+      Added ability to use image to set X11 background (wallpaper).
+
+      New macro commands:  root  root-off  root-permanent  wallpaper
+
+   07-04-1998 (Version 2.7.1)
+
+      Fixed compatibility problems with lesstif, to take into account some
+      small idiosyncracies with lesstif.
+      
+      Added ability to remove image algebra at compile time (for users without
+      lex and yacc).
+      
+      Fixed several byte-order problems with Solaris and Irix versions.
+
+      Several bug fixes for Solaris and Irix versions.
+      
+   06-27-1998 (Version 2.7.0)
+    
+      Improved custom image creation. Custom images now support compression.
+      Image descriptors are now editable text files.
+
+   06-20-1998 (Version 2.6.9)
+   
+      Composite images can now be easily converted into multi-frame images 
+      (see the example image of the rotating ATPase molecule borrowed from 
+      a recent article).
+      
+      Added command for shifting individual frames vertically and horizontally
+      to facilitate building multi-frame images.
+
+      Custom image formats now handle images with multiple frames.
+
+      Fixed problem reading grayscale JPEG files.
+      
+      Added ability to read Tiff files corrupted by ImageQuant.
+      
+      "Maximize contrast" functions added.
+
+      New macro commands: frame, shift, movie, maximize, maximizecontrast.
+
+   06-01-1998 (Version 2.6.8)
+
+      Improved FITS support.
+      
+      Added plugin for reading 8-bit HDF format images.
+
+      Plugin interface is changed, background image is no longer available to
+      plugins. Existing plugins should be modified and recompiled.
+
+   04-10-1998 (Version 2.6.7)
+   
+      Camera support added. Frames can be accumulated, added, or subtracted to
+      remove dark current. A post-processing macro can be executed after each
+      frame.      
+
+   03-29-1998 (Version 2.6.6)
+
+      Expression evaluator now accepts user-defined variables. Performance 
+      improvements and bug fixes in expression evaluator. Syntax is also more
+      "C"-like in that all formulas must now end with a semicolon.
+
+   12-20-1997 (Version 2.6.5)
+
+      User-defined buttons can now function as toggle buttons, with
+      separate, user-definable commands that can be executed when the 
+      button is activated and deactivated.
+
+      Labels and graphic elements can now be selected, copied, and moved
+      without affecting the underlying image. 
+      
+      Non-rectangular items, such as text and segments of images, 
+      can now be selected and processed. Double-clicking on a label
+      selects the label, while double-clicking on part of the image
+      identifies and selects a non-rectangular image area. If a rectangular 
+      area is already selected, the region selected by double-clicking 
+      is constrained to lie within that area.
+      
+      Copy/move function has been changed. It is no longer necessary to
+      select a region to copy. The currently-selected region (which may be
+      an image or a non-rectangular item) is automatically copied when
+      it receives a mouse click-drag event. The items "copy" and "move" 
+      have also been removed from the main menu. The "move" command now
+      merely toggles between copy and move modes.
+      
+      New macro commands: cancel, slew, chromakey, zoom, unzoom, fftdisplay,
+      clear_alpha, clear_alpha_channel, show_alpha.
+
+      Improved image algebra interface & functionality. Conditionals and
+      multiple statements per line are now supported. Multiple image 
+      equations can be executed as a group or one at a time. Image 
+      equations can also now be executed as macro commands. Equations 
+      can be saved and read from disk. Syntax is also now more C-like. 
+      The operator set includes:
+      =, +=, -=, *=, /=,|=, &=, ^=, ||, &&, | , ^ , & , ~, ==, !=, < , 
+      <=, >, >=, +, - , * ,/ , ! ,+ , - , ++, --, [ , ] , {, }, if, else,
+      abs, sin, cos, tan, sinh, cosh, tanh, asin, acos, atan, 
+      sqrt, asinh, acosh, atanh, cbrt, log, log10, ln, rand, pi,   
+      exp, max, min, pow.
+
+      Changed fft dialog box handling.
+
+      Background now behaves like a regular image and can be backed up, 
+      zoomed, etc.
+
+   11-19-1997 (Version 2.6.4)
+
+      Support for other scanners in addition to H/P added. Any external 
+      driver that can produce a valid image file can now interface with 
+      tnimage. See manual for installation procedures for your particular 
+      scanner, CCD camera, etc.
+      
+      New file formats: PBM, PGM, PPM added.     
+
+      HTML version of manual is now available.
+
+      Data can now be imported into graphs.
+
+   11-08-1997 (Version 2.6.3)
+    
+      Image zoom feature added. All image editing features, including 
+      area copy, labels, and FFT also work on zoomed images.
+
+      Improved plugin support to improve efficiency, allow passing 
+      up to 20 arguments to the plugin, and allow the plugin to create
+      new images. This could be used, for example, to add support for
+      additional scanners or image types.
+
+      Improved ability to read pathological GIF files.
+      
+      Garbage collection is now a compile-time option. This improves 
+      performance on systems with a large amount of memory.
+
+   10-16-1997 (Version 2.6.2)
+      
+      Bug fixes in spreadsheet.
+
+   10-13-1997 (Version 2.6.1)
+
+      Added 'spray erase' function; redefined 'erase' command to restore the
+      part of the image when mouse is clicked.
+
+      Crawling box around selected area is now easier to see.
+
+      Sample palette for 8-bit images now updates itself automatically in 
+      16- and 24-bit screen modes.
+
+      Undo buffer is no longer replaced when image depth is changed, but is
+      now converted along with the image.
+
+   10-06-1997 (Version 2.6.0)
+
+      Added spreadsheet display for images. Pixel values can be entered as
+      integers, RGB values, hex integers, or (if an image has been FFT'd) 
+      floating point numbers. Changes in the image are immediately reflected
+      in the spreadsheet and vice-versa. More spreadsheet-type math and
+      statistical functions will be added later. 
+
+      Spot densitometry has a new option, 'Auto Background', which uses the
+      fuzzy k-means algorithm to automatically determine the background value 
+      for each measurement. It is now no longer necessary to continually adjust 
+      a fixed background value if the background is uneven. This option is now 
+      the default where appropriate.
+
+      More fixes, including a bug that sometimes caused the image to appear 
+      black after certain operations with 8-bit images on 24-bit displays.
+
+      Complete rewrite of the manual, with example images. The manual is 
+      also available online 
+      (http://brneurosci.org/tnimage-manual/tnimage.html).
+
+      Reorganized information area window to display more information.
+
+      Fixed bug that caused the original image to be saved by "save image"
+      instead of a replica of the FFT when FFT is being displayed.
+
+      "About the image" window is now automatically updated. Some other 
+      windows, such as "FFT display mode" are more interactive.
+
+      The "Macro" window now executes each line as a command when <Shift-Enter> 
+      is pressed. This allows it to be used as a command-line interface to 
+      tnimage  if desired instead of having to use the menus.
+
+      Fixed contrast and brightness controls again.
+
+      New macro commands: moveto, up, down, left, right, title, step, 
+      linestyle, partition, spreadsheet, and transparency.
+
+      Quantization type is no longer saved in the .ini file. Previously, if a
+      user changed to "Fit current palette", the option would be remembered
+      and could cause unexpected behavior when a colormap was generated.
+
+
+   09-02-1997 (Version 2.5.13)
+
+      Downgraded Motif locally from version 2.0.1 to 2.0 so that the 
+      precompiled Linux versions of tnimage will be linked to libXm.so.2 
+      instead of libXm.so.2.0. This should help ensure compatibility for 
+      users with old versions of Motif.
+
+      Improved speed and user interface when changing contrast.
+
+      Fixed problem reading interlaced .GIF files. 
+      
+      Added reading of FITS and PDS format images.
+
+   08-15-1997 (Version 2.5.11)
+
+      Diagnostic mode added.
+      
+      Adjustable text spacing.
+      
+      "About the image" list box now selects images without closing, and 
+      updates itself dynamically.
+
+      Improved color to grayscale conversion routine.
+
+      "Chromakeyed copy" feature removed.
+
+      Added interactive "spray filtering".
+
+      Several minor changes to dialog boxes. 
+
+      The default locations of the files "tnimage.hlp" and "formats" have been
+      changed to /usr/local/lib/tnimage/ and the location for "tnimage.ini" has
+      been changed to $HOME/.tnimage/ . 
+      
+      Temporary print files are now placed in the current directory instead of
+      the startup directory.
+
+      Arrow drawing, similar to Photoshop arrow mode, added.
+
+      Variable-width lines added. Wide lines can have color gradient and skew
+      for 3D effect. "Line style" menu item added.
+
+      Improved event handling. Button presses sometimes were being missed on 
+      slower systems while a movie is playing or with transparency.
+      
+      Man page added.
+
+      8-bit colormaps belonging to an image can now be displayed in all
+      screen modes.
+
+      Improved and simplified gradient fill interface.
+
+      Fixed undo buffer (was being discarded after a Fourier transform).
+      FFTs now work correctly in all display modes, and for all image types,
+      not just grayscale. A warning is given if the image is not grayscale.
+    
+      Image rotation granularity increased to 0.0001 degrees.
+
+      Added ability to switch between the two most recently-loaded fonts.
+
+      Various internal changes to fix display problems on Solaris version.
+
+   07-01-1997 (Version 2.5.9)
+
+      Added "Separate colors" option to split an image into red, green,
+      and blue subimages.
+      
+      Fixed bug in reading TIF files with Planar color format (used by some
+      confocal microscopes) and a few other minor bugs.
+
+      Added "spray math" which allows any mathematical formula to be applied
+      interactively to the image as a spray. Controls for "fine spray", "math 
+      spray", and "diffuse spray" have been combined into a single dialog box.
+
+      Improved transparency, chroma-key, and grayscale image handling and 
+      added bug fixes in 16, 24, and 32 bit/pixel screen modes.
+      
+      True transparency has been added. The 'transparency' in version 2.5.6
+      has been more appropriately renamed as 'chromakey'.
+
+      Images and labels can now be rotated at any angle.
+
+   05-24-1997 (Version 2.5.8)
+
+      Added "Label" option to facilitate adding and positioning labels.
+
+      Improved speed of copying transparent images.
+      
+      Fixed bug that sometimes required clicking on information area
+      before text could be typed.
+ 
+      Slowed down movie frame rate, which was causing excessive loads on
+      some systems with slower video (e.g., Sun).
+
+      Internal changes to "About the file" option. 
+
+   05-22-1997 (Version 2.5.7)
+
+      Added ability for users to remove or create new custom buttons on
+      left side of the main window. The buttons can execute any command 
+      or macro.
+
+   05-20-1997 (Version 2.5.6)
+
+      Transparent images added (it is now possible to position, cut, and paste
+      text, graphic elements and images with transparent backgrounds).
+      
+      Reorganized menus so that all modifiable image attributes can be set
+      in the same dialog.
+
+      Gamma tables, colormaps, and image calibration parameters can now be
+      copied from one image to another.
+
+      3D images can now be played back as movies.
+
+   05-17-1997 (Version 2.5.5)
+   
+      Added import of XWD X-Window screendump files.
+
+      In curve tracing, it is now possible to select any color to trace
+      instead of only the darkest or lightest colors.
+
+   05-15-1997 (Version 2.5.4)
+
+      Improved functionality of image cut/paste for different image types.
+     
+   05-01-1997 (Version 2.5.3)
+   
+      Improved handling & bug fixes for monochrome images. Image depth of
+      monochrome images can now be changed without causing a conversion to
+      color. 
+
+      Grayscale remapping now also works for FFTs and 8-bit grayscale images
+      instead of only grayscale images > 8 bits.
+      
+      Plug-in support added (only functional on Linux, Solaris, and Irix 
+      versions so far).
+
+   04-01-1997 (Version 2.5.0)
+
+      X window icons and resource handling added.
+      
+      Improved scanner support.
+      
+      Option for loading each image in a separate window. Portions of an image
+      can still be cut/pasted onto other images, even if they are in separate
+      windows.
+      
+      Densitometry dialog box is now interactive, allowing faster adjustment of
+      densitometry parameters. Densitometry now works on most images > 8 
+      bits/pixel. 
+      
+      Multiple files can be selected in file selection dialog box.
+
+   02-22-1997 (Version 2.4.0)
+   
+      HP scanner support added (Unix versions only).
+      
+      Improved macro editing.
+
+   02-15-1997 (Version 2.3.0)
+   
+      First Unix versions for SGI Irix, Solaris, Linux, and ConvexOS released.
+
+      New math functions and calculations using data from other images 
+      added to image math.
+      
+      3D image support added.
+
+   12-01-1996 (Version 2.23)
+      
+      Fixed problem with PostScript printing. Images wider than the
+      screen would contain an image of the palette if it was being
+      displayed.
+
+      Changed dialog options for PostScript to allow the y/x ratio
+      to be adjusted.
+
+      Various performance improvements.
+      
+      Minor bug fixes and clarifications of the documentation.
+      
+      Fixed bug which caused extraneous pixels in 24 bit/pixel screen 
+      modes on ATI Mach 64 cards.
+  
+      XGA Microchannel support added.
+           
+      Fixed handling of 16 bit grayscale images (Printer output on
+      PCL printers would be solid black if grayscale mapping was set 
+      too high; in densitometry, it was impossible to set background 
+      above 255; 16-bit TIFF files were not automatically recognized).
+      
+      PCL printer output is now gamma corrected.
+
+      Development of DOS version discontinued.
+      
+   04-01-1996 (Version 2.20)
+
+      User-selectable cursor type.
+
+   03-15-1996 (Version 2.19)
+
+      "Paint" and "Fill region" options now remain in effect until
+      explicitly deactivated.
+
+      Areas calculated in strip densitometry are now reported
+      in terms of calibrated distances instead of raw pixels.
+
+      Images can now be resized by click-and-dragging on the lower right      
+      corner.
+      
+      Minor bug fixes.
+
+   02-15-1996 (Version 2.18)
+
+      Added creation of raw ASCII and raw byte files.
+
+      Added ability to load a Fourier-transformed image. (The header on
+      old-style FFT files must be changed before they can be read. See 
+      manual for details).
+      
+      Added movable window to display Real and Imaginary values for each
+      coordinate of a FFT'd image.
+
+      Contrast and pixel math functions now have better control in
+      changing FFT values.
+
+   02-01-1996 (Version 2.17)
+
+      PostScript printing added.
+      
+      Added ability to redirect printing to a different printer or a file.
+
+      Initialization file is now editable.
+
+   01-01-1996 (Version 2.16)
+   
+      Version 0.01 (beta) for Linux available.
+      
+      Improved macros so that raw byte images can be loaded with a macro.
+      
+      Added more defaults to custom file format to permit creation of
+      custom file formats with only raw bytes.
+
+      Added interactive color adjustment of 8-bit images. The color balance
+      of low-end images such as GIFs can now be adjusted without converting
+      them to 24 bits/pixel.  The original intensity adjustment was renamed 
+      to "Change pixel value" to more accurately reflect its function.
+
+      8-bit images (such as GIFs) can now be filtered without first 
+      converting them to 24 bits/pixel. 
+      
+      In high-color and true color screen modes, the red, green, and blue
+      color planes can now be isolated. Operations such as filtering,
+      copying, etc. can be applied to any combination of color planes.
+      For example, it is now possible to filter the blue colors in an
+      image, leaving the red and green untouched.
+
+      GIF files with invalid color palettes are automatically repaired. 
+      It is no longer necessary to repair them manually. The option "read
+      entire palette" has also been removed.
+
+      "Restore image" also restores the original color palette.
+
+      Reorganized menu structure.
+
+      When converting images to different depths, the title and other data
+      are now retained.
+
+      Bug in horizontal and vertical flipping of images fixed.
+   
+      Changed frame-rate testing to make it more accurate and easier on
+      the eyes.
+
+   11-01-1995 (Version 2.14)
+   
+      Horiz. and vertical flipping is now faster.
+      
+      Fixed-size image creation can now copy images extending beyond the 
+      edge of the screen. 
+      
+      Image title can be changed manually from the menu or when creating
+      an image.
+      
+
+   09-01-1995 (Version 2.13)
+   
+      It is now easier to grab windows and images with the mouse.
+      
+      Brightness and contrast can now be interactively changed by dragging
+      on the palette bar (pseudocolor modes only).
+ 
+      Increased speed of the most common filtering operations (up to 4x
+      faster).
+
+      Selected area is now outlined by a "crawling box".
+
+      A status box is now visible to indicate which state the program is
+      in (densitometry, sketch mode, etc). Clicking on this box deactivates
+      the mode.
+      
+
+   08-01-1995 (Version 2.12)
+   
+      Measurement of angles added.
+      
+      2D Calibration mode added. 
+      
+      Distance measurement now reports in terms of calibrated distances
+      instead of raw pixels.
+      
+      Fixed-width strip densitometry mode added.
+      
+
+   07-01-1995 (Version 2.11)
+    
+      Curve tracing added.
+
+      Default palette at start-up is now gray scale instead of spectrum.
+      Palette changes are now automatically remembered.
+
+
+   06-01-1995 (Version 2.10)
+   
+      Spot densitometry now displays a list of densitometry results
+      which can be saved on disk.
+
+      Warping now works on an image instead of a screen area.
+
+   05-01-1995 (Version 2.09)
+
+      Added -xres and -bpp command line options.
+      
+      Support for user-specified screen resolution for 1600 x 1200 and
+      higher resolution modes. 
+   
+      Complete rewrite of FFT section to improve functionality, memory
+      utilization, ease of use, and display characteristics of FFT-related 
+      options.
+      
+      FFT matrices can now be saved on disk in ASCII format.
+
+      Added ability to resize and duplicate images, and create images of
+      a fixed size. 
+
+      Macros and automated batch processing added.
+
+      Added "Raw ASCII" image format.
+
+      Various stability enhancements under Windows.
+
+   03-24-1995 (Version 2.07)
+
+      Added "Background flatten" (de-trend) and Sobel filtering options.
+
+      Fixed a problem with image not getting the new quantized palette after 
+      an image was converted from 16 to 8 bits when tnimage was in a 16 bit
+      screen mode.
+
+      Speed enhancements for filtering (16-54% faster), and contrast, 
+      pixel math, and color/brightness adjustment (50 to 166% faster).
+
+      Added ability to shell to DOS or execute a command. 
+      
+      Program now asks if you want to save an image that has been modified.
+
+   03-18-1995 (Version 2.05)
+   
+      Creation of custom file formats has been improved.
+      tnimage can now "learn" to automatically recognize, create, and 
+      correctly display almost any uncompressed raster file format. 
+
+      Fixed filtering of medical grayscale images (occasionally would
+      inappropriately set a pixel to white).
+
+   02-01-1995 (Version 2.02)
+   
+      Added reading and writing of Jpeg, TGA, and Windows BMP formats.
+      
+      Fixed display bug for ATI Mach 64 card and some very early 
+      SVGA cards, and improved the diagnostics (-diag option) for VESA
+      and detection of XGA cards.
+     
+   12-15-1995 (Version 2.01)
+   
+      Support for grayscale images from 1-32 bits/pixel such as X-ray,
+      CT, and MRI images.
+
+   11-20-1994 (Version 2.00)
+   
+      2D Fourier transforms and Fourier deconvolution and convolution
+      of two images added.
+      
+      Linear and logarithmic calibration of images for molecular weight
+      determination.
+      
+      Color printing of images added.
+
+      Several new options in image printing added: x and y offset, 
+      media type, and printer color adjustment.
+        
+      Numerous small fixes for problem in creating CMYK images and other
+      minor bugs including bug in changing the image size if no images 
+      are present.
+
+      XOR'ing, addition, subtraction, etc. of multiple images is now easier
+      to use.
+
+      Completely rewritten memory management to fix some bugs. Previously
+      it was sometimes possible to completely fill memory with images,
+      making it impossible to display the dialog box necessary to save
+      the image.
+
+      Menus are now accessible by Alt+key combinations as well as by the
+      mouse.
+      
+      Fixed 800x600 display problem at 24 bpp on ATI and other cards which
+      split pixels across banks.
+
+      Creation of CMYK custom images is now possible.
+      
+      Palette display is now available in color modes.
+      
+      Color to grayscale conversion added.
+      
+      "About the image" message list added.
+      
+      Width scanning of unknown file formats to determine image dimensions
+      added.
+     
+      Increased maximum number of images to 512 (in registered version).
+
+      Much faster printing of text in menus.
+      
+      More parameters are now automatically saved in .INI file.
+      
+      Support for wildcards in filenames on command line.
+      
+      User-definable equations for mathematical point-by-point color
+      transformation.
+
+      Color to luminosity conversion factors are now changeable.
+      
+      More help screens added.
+
+      Frame rate test function added.
+            
+
+   10-01-1994 (Version 1.50)
+
+      Pixel values now range between 0 and 1 for all screen modes,
+      instead of 0-255, 0-32767, etc.
+
+      Support for editing, reading and writing of true color (24 bit),
+      high color (15 & 16 bit), and 32 bit/pixel images.
+
+      Support for true color and high color VESA modes, at resolutions
+      up to 1280x1024 at 16 million colors.
+
+      Reading/writing of unusual TIF files of all bit/pixel depths
+      from 1 to 32 bits/pixel.
+
+      Reading/writing of custom files in a user-specified format, and
+      raw binary files, with 1 to 32 bits/pixel.
+
+      Densitometry, color intensity, contrast, and histogram functions
+      extended to work for 15,16, 24, and 32 bit/pixel screen modes
+      and all image types.
+
+      Expanded size of menu bar with new information, including
+      current screen depth, image bits/pixel, RGB values of the pixel
+      at the cursor point.
+
+      Several new options, including phase shifting of color images
+      and user-selectable number of significant figures on floating-
+      point numbers.
+
+      Conversion of images from pseudo-color to color, color to
+      pseudo-color, and changing the color depth of an image is now
+      possible.
+
+      Down-conversion to pseudo-color can use optimized color
+      quantization, or fit the colors to the user's palette.
+
+      Each image now has its own palette. In 8-bit/pixel screen modes,
+      clicking on an image automatically switches tnimage to the
+      appropriate palette.
+
+      Various speed enhancements.
+
+      Shareware message is now nicer.     
+      
+ 
+    08-01-1994
+      All dialog boxes, file lists, and messages can be click-and-dragged
+      to anywhere on the screen.
+
+      `Warping' of images added.
+
+      Added new information to "About the program..." option, including
+      details about each image, its location, size, and filename.
+
+      Support for GEM IMG files and files from IBM MVS.
+
+    07-01-1994
+      Automatic and manual subtraction of baseline from scanned areas.
+
+      Automatic peak detection and integration of scanned areas. This
+      feature makes "scanning" an area of the screen more suitable for
+      quantitation than "densitometry" in many cases.
+
+      Integrated peaks are shown in a list, which can be edited from
+      within tnimage or saved to disk as an ASCII file.
+
+      File list allows you to select a file, change drives, and change
+      subdirectories from a menu instead of typing the filename.
+
+      Smoothing of profiles of scanned regions.
+
+      Scanned region profiles may be saved to disk or captured as a
+      new image.
+
+    06-01-1994
+      Scanned regions are plotted on the screen. Area of any region
+      of the curve can be measured by clicking-and-dragging.
+
+      Pressing <Enter> or <Esc> is now the same as clicking "OK" or
+      "Cancel" in all message boxes.
+
+      Added support for certain unconventional VESA cards and lower
+      resolution screen modes, down to 640x400.
+
+      Reading of compressed and tiled TIF files.
+
+      User can graphically create or modify a palette.
+

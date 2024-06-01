@@ -1,0 +1,238 @@
+!++
+!     Define symbols according to macro values
+!--
+
+.IFDEF DEBUG
+DBG = /DEBUG
+DBGOPT = /NOOPTIMIZE/DEBUG
+.ELSE
+DBG = /NODEBUG
+DBGOPT = /OPTIMIZE/NODEBUG
+.ENDIF
+
+.IFDEF LIST
+LST = /LIST
+.ELSE
+LST = /NOLIST
+.ENDIF
+
+.IFDEF DIAG
+DIA = /DIAGNOSTICS
+.ELSE
+DIA = /NODIAGNOSTICS
+.ENDIF
+
+.IFDEF PCA
+PCAOPT = /DEBUG
+.ENDIF
+
+!++
+!      List of tools used and required symbols
+!
+!      !C++ used
+!      !Executables used
+!--
+
+
+!++
+!     Missing sources catch-all
+!--
+
+.DEFAULT
+   ! No source found for $(MMS$TARGET)
+   ! - Attempting to continue
+
+
+
+!++
+!   Complete application - default build item
+!--
+
+COMPLETE_APPLICATION depends_on -
+     ASTYLE_MAIN.EXE
+        CONTINUE
+
+
+!++
+!   C++
+!--
+
+MMS$OLB.OLB(ASBEAUTIFIER=ASBEAUTIFIER.OBJ) depends_on -
+      ASBEAUTIFIER.CXX -
+-!   ,ALGORITHM.H -
+     ,ASTYLE.H -
+-!   ,CCTYPE.H -
+     ,ALPHA$LIBRARY:DECC$RTLDEF.TLB(STRING=STRING.H) -
+-!   ,IOSTREAM.H -
+-!   ,VECTOR.H -
+-!   ,SSTREAM.H -
+     !
+       CXX $(CFLAGS)  $(LST) $(DBGOPT) $(DIA)  /OBJ=ASBEAUTIFIER.OBJ ASBEAUTIFIER.CXX
+       LIBRARY/REPLACE MMS$OLB.OLB ASBEAUTIFIER.OBJ
+       DELETE ASBEAUTIFIER.OBJ;*
+
+MMS$OLB.OLB(ASENHANCER=ASENHANCER.OBJ) depends_on -
+      ASENHANCER.CXX -
+     ,ASTYLE.H -
+-!   ,FSTREAM.H -
+-!   ,IOSTREAM.H -
+-!   ,SSTREAM.H -
+     ,ALPHA$LIBRARY:DECC$RTLDEF.TLB(STRING=STRING.H) -
+-!   ,VECTOR.H -
+     !
+       CXX $(CFLAGS)  $(LST) $(DBGOPT) $(DIA)  /OBJ=ASENHANCER.OBJ ASENHANCER.CXX
+       LIBRARY/REPLACE MMS$OLB.OLB ASENHANCER.OBJ
+       DELETE ASENHANCER.OBJ;*
+
+MMS$OLB.OLB(ASFORMATTER=ASFORMATTER.OBJ) depends_on -
+      ASFORMATTER.CXX -
+-!   ,ALGORITHM.H -
+     ,ASTYLE.H -
+-!   ,CCTYPE.H -
+     ,ALPHA$LIBRARY:DECC$RTLDEF.TLB(STRING=STRING.H) -
+-!   ,IOSTREAM.H -
+-!   ,VECTOR.H -
+-!   ,SSTREAM.H -
+     !
+       CXX $(CFLAGS)  $(LST) $(DBGOPT) $(DIA)  /OBJ=ASFORMATTER.OBJ ASFORMATTER.CXX
+       LIBRARY/REPLACE MMS$OLB.OLB ASFORMATTER.OBJ
+       DELETE ASFORMATTER.OBJ;*
+
+MMS$OLB.OLB(ASRESOURCE=ASRESOURCE.OBJ) depends_on -
+      ASRESOURCE.CXX -
+     ,ASTYLE.H -
+     ,ALPHA$LIBRARY:DECC$RTLDEF.TLB(STRING=STRING.H) -
+-!   ,SSTREAM.H -
+-!   ,VECTOR.H -
+     !
+       CXX $(CFLAGS)  $(LST) $(DBGOPT) $(DIA)  /OBJ=ASRESOURCE.OBJ ASRESOURCE.CXX
+       LIBRARY/REPLACE MMS$OLB.OLB ASRESOURCE.OBJ
+       DELETE ASRESOURCE.OBJ;*
+
+MMS$OLB.OLB(ASTYLE_MAIN=ASTYLE_MAIN.OBJ) depends_on -
+      ASTYLE_MAIN.CXX -
+     ,ASTYLE.H -
+-!   ,FSTREAM.H -
+-!   ,IOSTREAM.H -
+-!   ,SSTREAM.H -
+     ,ALPHA$LIBRARY:DECC$RTLDEF.TLB(STRING=STRING.H) -
+-!   ,VECTOR.H -
+     !
+       CXX $(CFLAGS)  $(LST) $(DBGOPT) $(DIA)  /OBJ=ASTYLE_MAIN.OBJ ASTYLE_MAIN.CXX
+       LIBRARY/REPLACE MMS$OLB.OLB ASTYLE_MAIN.OBJ
+       DELETE ASTYLE_MAIN.OBJ;*
+
+
+!++
+!   Links
+!--
+
+ASTYLE_MAIN.EXE depends_on -
+      MMS$OLB.OLB(ASBEAUTIFIER=ASBEAUTIFIER.OBJ) -
+     ,MMS$OLB.OLB(ASENHANCER=ASENHANCER.OBJ) -
+     ,MMS$OLB.OLB(ASFORMATTER=ASFORMATTER.OBJ) -
+     ,MMS$OLB.OLB(ASRESOURCE=ASRESOURCE.OBJ) -
+     ,MMS$OLB.OLB(ASTYLE_MAIN=ASTYLE_MAIN.OBJ) -
+-!   ,MMS$OLB.OLB(APPEND=APPEND.OBJ) -
+-!   ,MMS$OLB.OLB(BACK=BACK.OBJ) -
+-!   ,MMS$OLB.OLB(BEGIN=BEGIN.OBJ) -
+-!   ,MMS$OLB.OLB(COMPARE=COMPARE.OBJ) -
+-!   ,MMS$OLB.OLB(C_STR=C_STR.OBJ) -
+-!   ,MMS$OLB.OLB(EMPTY=EMPTY.OBJ) -
+-!   ,MMS$OLB.OLB(END=END.OBJ) -
+-!   ,MMS$OLB.OLB(FIND=FIND.OBJ) -
+-!   ,MMS$OLB.OLB(LENGTH=LENGTH.OBJ) -
+-!   ,MMS$OLB.OLB(POP_BACK=POP_BACK.OBJ) -
+-!   ,MMS$OLB.OLB(PUSH_BACK=PUSH_BACK.OBJ) -
+-!   ,MMS$OLB.OLB(RETURNSTR=RETURNSTR.OBJ) -
+-!   ,MMS$OLB.OLB(SIZE=SIZE.OBJ) -
+-!   ,MMS$OLB.OLB(STRING=STRING.OBJ) -
+-!   ,MMS$OLB.OLB(SUBSTR=SUBSTR.OBJ) -
+-!   ,MMS$OLB.OLB(FIND_FIRST_NOT_OF=FIND_FIRST_NOT_OF.OBJ) -
+-!   ,MMS$OLB.OLB(FIND_LAST_NOT_OF=FIND_LAST_NOT_OF.OBJ) -
+-!   ,MMS$OLB.OLB(OUTFILE=OUTFILE.OBJ) -
+-!   ,MMS$OLB.OLB(FLUSH=FLUSH.OBJ) -
+-!   ,MMS$OLB.OLB(FPERRORHANDLER=FPERRORHANDLER.OBJ) -
+-!   ,MMS$OLB.OLB(FPMEMORYALLOC=FPMEMORYALLOC.OBJ) -
+-!   ,MMS$OLB.OLB(GET=GET.OBJ) -
+-!   ,MMS$OLB.OLB(GETLINE=GETLINE.OBJ) -
+-!   ,MMS$OLB.OLB(IN=IN.OBJ) -
+-!   ,MMS$OLB.OLB(INCHECK=INCHECK.OBJ) -
+-!   ,MMS$OLB.OLB(OPT=OPT.OBJ) -
+-!   ,MMS$OLB.OLB(OPTIONSIN=OPTIONSIN.OBJ) -
+-!   ,MMS$OLB.OLB(OUT=OUT.OBJ) -
+-!   ,MMS$OLB.OLB(RESERVE=RESERVE.OBJ) -
+-!   ,MMS$OLB.OLB(STR=STR.OBJ) -
+-!   ,MMS$OLB.OLB(STREAMITERATOR=STREAMITERATOR.OBJ) -
+     !
+       cxxLINK $(DBG) $(PCAOPT) /EXE=ASTYLE.EXE MMS$OLB.OLB/LIBRARY/INCLUDE=(ASTYLE_MAIN) -
+          ! End of Link
+
+
+
+
+!++
+!   Files not found.  MMS references to these files will generate errors.
+!--
+
+!     ALGORITHM.H
+!     CCTYPE.H
+!     FSTREAM.H
+!     IOSTREAM.H
+!     SSTREAM.H
+!     VECTOR.H
+
+
+
+!++
+!   Objects not found.  The following symbols may be undefined.
+!--
+
+!     APPEND
+!     BACK
+!     BEGIN
+!     COMPARE
+!     C_STR
+!     EMPTY
+!     END
+!     FIND
+!     FIND_FIRST_NOT_OF
+!     FIND_LAST_NOT_OF
+!     FLUSH
+!     FPERRORHANDLER
+!     FPMEMORYALLOC
+!     GET
+!     GETLINE
+!     IN
+!     INCHECK
+!     LENGTH
+!     OPT
+!     OPTIONSIN
+!     OUT
+!     OUTFILE
+!     POP_BACK
+!     PUSH_BACK
+!     RESERVE
+!     RETURNSTR
+!     SIZE
+!     STR
+!     STREAMITERATOR
+!     STRING
+!     SUBSTR
+
+!++
+!  Create object library if it doesn't already exist
+!--
+
+.FIRST
+	! MMS $(mmsqualifiers) $(mmstargets)
+       IF F$SEARCH( "MMS$OLB.OLB" ) .EQS. "" -
+		THEN $(LIBR)/CREATE MMS$OLB.OLB
+
+!++
+!  End of build cleanup work
+!--
+
+.LAST
+       CONTINUE
+

@@ -1,0 +1,45 @@
+# Format descriptor for lum image format
+# Created by tnimage 2.7.0 on Jun 24 1998
+identifier lum
+headerfile 
+compression 
+decompression 
+compression_extension 
+platform 20
+packing 0
+useheader 0
+useidentifier 0
+headerbytes 0
+skipbytes 2048
+compressflag 0
+defaultbpp 8
+defaultcolortype 0
+defaultxsize 128
+defaultysize 128
+defaultrbpp 0
+defaultgbpp 0
+defaultbbpp 0
+defaultkbpp 0
+defaultframes 1
+# Offsets into the uncompressed file:
+identifieroff 65535
+xoff 806
+yoff 808
+bppoff 810
+colortypeoff 65535
+compressflagoff 65535
+redbppoff 65535
+greenbppoff 65535
+bluebppoff 65535
+blackbppoff 65535
+xposoff 65535
+yposoff 65535
+framesoff 65535
+fpsoff 65535
+chromakeyoff 65535
+chromakey_graymin_off 65535
+chromakey_graymax_off 65535
+chromakey_rgbmin_off 65535
+chromakey_rgbmax_off 65535
+paletteoff 65535
+imageoff 65535

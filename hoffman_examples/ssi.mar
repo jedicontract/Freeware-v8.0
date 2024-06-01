@@ -1,0 +1,611 @@
+Article 26735 of comp.os.vms:
+Path: jac.zko.dec.com!pa.dec.com!decwrl!uunet!organpipe.uug.arizona.edu!CS.Arizona.EDU!buckie.ucha!buckie.nntp!DWING
+Newsgroups: comp.os.vms
+Subject: Re: need prompt like in MSDOS
+Message-ID: <1993Dec23.090041.596@buckie.hsc.colorado.edu>
+From: dwing@uh01.Colorado.EDU (Dan Wing)
+Date: 23 Dec 93 09:00:41 MDT
+Reply-To: dwing@uh01.Colorado.EDU
+References: <2fb5u7$hf@ub.d.umn.edu>,<1993Dec23.024718.595@buckie.hsc.colorado.edu>
+Organization: Ski Bum Wanna-be, Incorporated
+Nntp-Posting-Host: buckie.hsc.colorado.edu
+Lines: 595
+
+In article <1993Dec23.024718.595@buckie.hsc.colorado.edu>, dwing@uh01.Colorado.EDU (Dan Wing) writes:
+>In article <2fb5u7$hf@ub.d.umn.edu>, cbusch@ub.d.umn.edu (Chris) writes:
+>>I dislike the stupid "$" prompt on my VMS account.  How can I change
+>>my prompt to look like "[DIR] $" or something.
+>
+>  $ SET PROMPT "[DIR] $ or something."
+>might be too long; if so, try:
+>  $ SET PROMPT "[DIR] $"
+>
+>While there are all sorts of methods of changing your DCL prompt when 
+>you change directories, none of them work like MS-DOSs -- there can be 
+>delays between when timers are fired and you've changed directories (which
+>is one implementation I've seen), 
+
+In private Email, Brian Schenkenberger, <VAXman@Monmouth-ETDL1.Army.MIL>,
+wrote, in part:
+
+>[...] a discussion on Hunter's MACRO32 list on intercepting system service
+>vectors.  To demo it, I intercept the SYS$SETDDIR service and have it
+>modify the default string. (will change the prompt to current default or,
+>at least, the last 32 characters of the default.) 
+>
+>The second ditty is a Loadable Executive Image from my DSJ article on the
+>same.  This rewrites the functionality of the SYS$SETDDIR service routine
+>RMS$SETDDIR to modify the prompt to reflect the default.  This will do so
+>on a system-wide basis (of course).
+>
+>And... as usual, both program are needlessly over commented because MACRO
+>is self-documenting...  ;-)
+>[...]
+
+Hope this helps.  
+
+-Dan Wing, Systems Administrator, University Hospital, Denver
+ dwing@uh01.colorado.edu or wing@eisner.decus.org
+
+-----
+
+============================================================================
+;------------------------------------------------------------------------------
+; Hook SYS$SETDDIR to provide the "Nick DeSmith" set prompt capability without
+; the continual TQE expiration and subsequent delivery of an exec. mode AST.
+;------------------------------------------------------------------------------
+; After 'HOOK'ing the system service vector table, a call to the service will:
+; 1) mask the registers as before
+; 2) encounter the 'new' JMP instruction and branch to the code segment we
+;    have loaded in P1 space.
+; 3) will execute the CHME instruction copied from the original vector
+; 4) check the status returned from the dispatched routine
+; 5) if error, then return immediately.  Else...
+; 6) Assign a user mode channel to the temporary mailbox (more on this later)
+; 7) write a null string to the mailbox to set off the executive mode write
+;    attention AST.
+; 8) Executive mode AST modifies prompt string (UREW) and requeues the write
+;    attention AST for next time around.
+;------------------------------------------------------------------------------
+; Copyright © 1993 by Brian Schenkenberger and TMESIS Consulting, Jackson, NJ
+;                            All rights reserved.                            
+;                         -------------------------
+; This software is provided "as is" and is supplied for informational purpose
+; only.  No warranty is expressed or implied and no liability can be accepted
+; for any actions or circumstances incurred from the use of this software or 
+; from the information contained herein.  The author makes no claim as to the
+; suitablilty or fitness of this software or information contain herein for a
+; particular purpose.
+;                         -------------------------
+; This software may be copied and distributed only with the inclusion of this
+; copyright notice.
+;--
+; Author: /Brian Schenkenberger/Ind. Consult./TMESIS Consulting/Jackson, NJ/
+;------------------------------------------------------------------------------
+        .TITLE  SSHOOK  Demo of System service vector 'HOOK' technique
+        .IDENT  "VMS v5.x%3.070"
+
+        .LIBRARY        "SYS$LIBRARY:LIB"       ; check this library too
+        .LINK           "SYS$SYSTEM:SYS.STB"    ; link w/ system symbol table
+        .LINK           "SYS$SYSTEM:DCLDEF.STB" ; link with DCL symbol table
+;------------------------------------------------------------------------------
+        $DVIDEF         ; $GETDVI item list codes
+        $IPLDEF         ; IPL definitions
+        $OPDEF          ; VAX opcode definitions
+        $PRTDEF         ; VAX page protections
+;----------------------------------------------------------------------------
+; Mailbox file protection access - user class offset definitions
+;----------------------------------------------------------------------------
+SYSTEM  = 0     ;    15141312 1110 9 8  7 6 5 4  3 2 1 0
+OWNER   = 4     ;   ,--------,--------,--------,--------.
+GROUP   = 8     ;   | World  | Group  | Owner  | System |
+WORLD   = 12    ;   `--------`--------`--------`--------'
+                ;     L P W R  L P W R  L P W R  L P W R
+;----------------------------------------------------------------------------
+; Mailbox file protection access - privilege mask definitions
+;----------------------------------------------------------------------------
+READ    = ^b0001
+WRITE   = ^b0010
+PHYSICAL= ^b0100        ; * not used in mailbox I/O.  Merely a placeholder.
+LOGICAL = ^b1000
+;----------------------------------------------------------------------------
+MBXPRO  = <<READ!WRITE!LOGICAL>@OWNER>
+;------------------------------------------------------------------------------
+        .PSECT  $$DATA,PIC,USR,CON,REL,SHR,NOEXE,RD,WRT,NOVEC,PAGE
+SS.PAGE:        .BLKB   512             ; System Service vector page storage
+VECTOR:         .QUAD   0               ; address range
+VECTOR2:        .QUAD   0               ; address range
+BWPAGE:         .LONG   0               ; byte offset to System Service
+;---
+SS.HOOK:                                ; System Service vector 'HOOK'
+SS.MASK:        .WORD   0               ; .ENTRY <system service>,^M<mask>
+SS.JMP:         .BYTE   OP$_JMP         ; VAX JMP instruction
+SS.OPERAND_SPEC:.BYTE   ^X9F            ; Operand specifier, Absolute addr.
+SS.ABSOLUTE_ADR:.LONG   0               ; 'HOOK' routine address goes here
+;---
+DVI.ITMLST:     .WORD   10,DVI$_DEVNAM  ; GETDVI item list to obtain the
+                .LONG   0               ; mailbox device name string
+                .LONG   0,0
+
+;------------------------------------------------------------------------------
+; The 'HOOK' routine assumes that the process will not have CMEXEC privilege
+; to modify the UREW page where the prompt string is stored.  Therefore, in
+; order to have exec. access privilege, an exec. mode AST is delivered to the
+; process to change the prompt.  This is accomplished with a mailbox write
+; attention (executive mode) AST which is enabled on a temporary mailbox.  To
+; keep the AST and the mailbox 'alive' after image rundown, the mailbox is
+; created and a channel is assigned at exec. mode.  The write attention AST
+; is also queued at exec. mode so that it will have the elevated access mode
+; necessary to modify the UREW page.
+; ---
+; Do to the protection schemes of VMS, a user mode I/O request can not be
+; posted to a channel assigned at a more privileged access mode.  However, a
+; User mode channel _can_ be assigned to the mailbox.  The routine assigns a
+; channel to the mailbox and then, issues a write to deliver the executive
+; mode write attention AST.
+;------------------------------------------------------------------------------
+SS_HOOK_RTN:                            ; Start of 'HOOK' routine
+CHME:   .LONG   0                       ; we'll load current CMMx #<#> here
+        BLBS    R0,10$                  ; check system service return status
+        RET                             ; something's wrong... tell user
+;---
+10$:    MOVAL   -(SP),R0                ; stk sp. for chan #, save adr. in r0
+        $ASSIGN_S       DEVNAM=L^MBXNAM,-       ; assign a user mode channel
+                        CHAN=(R0)               ; to the exec mode held mbx
+        MOVL    (SP),R0                 ; get channel number from the stack
+        $QIOW_S EFN=#45,CHAN=R0,-       ; write to mbx to trigger the exec
+                FUNC=#IO$_WRITEVBLK,-   ; mode write attention AST
+                P1=#0,P2=#0             ; which will modify the prompt string
+        CALLS   #1,G^SYS$DASSGN         ; can the channel and clean up stack
+        MOVL    #RMS$_NORMAL,R0         ; tell caller everything's alright
+        RET     ; we return now to the previous program already in progress!
+;---
+PMTAST: .WORD   ^M<R2,R3,R4,R5,R6,R7,R8>; save'em trashed registers
+        MOVAB   @#CTL$AG_CLIDATA,R7     ; get base of the CLI data area
+        IFNORD  #4,PPD$L_PRC(R7),30$    ; is the PPD area accessible!?
+        MOVL    PPD$L_PRC(R7),R7        ; get base of proc. perm. data area
+        IFNOWRT #PRC_S_PROMPT,-         ; is prompt string area writeable??
+                PRC_G_PROMPT(R7),30$    ;==- if not, get outta here!
+
+        MOVAB   @#PIO$GT_DDSTRING,R8    ; get the def dir (ascic) string
+
+        MOVZBL  (R8)+,R6                ; get the length of the ddstring
+        CMPL    R6,#PRC_S_PROMPT-1      ; will it fit in the prompt?
+        BLSSU   20$                     ; branch 20$ if it fits
+        SUBL2   #PRC_S_PROMPT-1,R6      ; how much wont fit in the prompt?
+        ADDL2   R6,R8                   ; chop that much off the beginning
+        MOVL    #PRC_S_PROMPT-1,R6      ; output all that we got.
+
+20$:    MOVC3   R6,(R8),PRC_G_PROMPT(R7)        ; copy ddstring to prompt
+        ADDB3   #4,R6,PRC_B_PROMPTLEN(R7)       ; update the prompt length
+        MOVB    #^a/ /,PRC_G_PROMPT(R7)[R6]     ; add space to end of prompt
+
+30$:    $QIOW_S EFN=#45,CHAN=L^CHAN_E,-         ; read mailbox data.
+                FUNC=#IO$_READVBLK!IO$M_NOW,-   ; flushes previous write
+                P1=#0,P2=#0
+        $QIO_S  EFN=#45,CHAN=L^CHAN_E,-         ; requeue the write attention
+                FUNC=#IO$_SETMODE!IO$M_WRTATTN,-        ; AST in EXEC mode
+                P1=L^PMTAST,P2=#0
+        MOVL    #RMS$_NORMAL,R0         ; tell caller everything's alright
+        RET                             ; done in executive mode
+;---
+.ALIGN LONG
+CHAN_E: .LONG   0       ; storage for the executive mode channel number
+MBXNAM: .LONG   10      ; mbx name descriptor.  Length of 10 characters.
+NAMPTR: .LONG   0       ; filled in later. .address not PIC in loaded code
+NAMBUF: .ASCII  /_MBAxxxx: /    ; buffer for mbx name.  filled by $GETDVI
+;---
+ROUTINE_LEN=.-SS_HOOK_RTN               ; size o' routine to be P1 loaded
+;------------------------------------------------------------------------------
+        .PSECT  $$CODE,PIC,USR,CON,REL,SHR,EXE,RD,NOWRT,NOVEC,PAGE
+        .ENTRY  INSTALL$SS_HOOK,0
+        CMPL    G^SYS$SETDDIR,G^RMS$SETDDIR     ; Already loaded?
+        BEQL    10$                             ; If EQL... NO
+        MOVL    #SS$_ILLSELF,R0         ; signal reference to itself
+        RET
+
+10$:    MOVAB   G^SYS$SETDDIR,R0        ; Get VA of the SYS$SETDDIR vector
+        BICL3   #^X1FF,R0,VECTOR        ; First VA in the associated page
+        ADDL3   #^X1FF,VECTOR,VECTOR+4  ; Last VA in the associated page
+        BICL3   #^C^X1FF,R0,BWPAGE      ; BYTE within page offset
+
+        MOVW    (R0)+,SS.MASK           ; New vector should preserve mask
+        MOVL    (R0),CHME               ; new routine needs current CHME #
+
+        MOVC3   #^X200,@VECTOR,SS.PAGE  ; Save contents of SYS$SETDDIR page
+
+        $CMEXEC_S       ROUTIN=EXEC$ROUTINE     ; to executive mode
+        BLBS    R0,20$
+        RET
+
+20$:    MOVL    BWPAGE,R0               ; byte offset to service vector
+        MOVAB   SS.PAGE[R0],R0          ; locate it in the copied page
+        MOVQ    SS.HOOK,(R0)            ; replace original with 'HOOK'
+
+        $CMKRNL_S       ROUTIN=KRNL$ROUTINE     ; to kernel mode
+        RET                             ; all done!
+;------------------------------------------------------------------------------
+        .ENTRY  EXEC$ROUTINE,^M<R2,R3,R4,R5>
+        MOVL    #ROUTINE_LEN,R1                 ; place length of code in r1
+        JSB     G^EXE$ALOP1PROC                 ; allocate that much p1 space
+        BLBS    R0,10$                          ; return if error occurred
+        RET
+
+10$:    MOVL    R2,SS.ABSOLUTE_ADR              ; need to know where to jump
+        MOVC3   #ROUTINE_LEN,SS_HOOK_RTN,(R2)   ; move code into p1 area
+        MOVL    SS.ABSOLUTE_ADR,R2      ; recover base of P1 allocation
+
+_CHAN_E=CHAN_E-SS_HOOK_RTN      ; base relative offset to exec channel storage
+_PMTAST=PMTAST-SS_HOOK_RTN      ; base relative offset to write attention AST
+_NAMPTR=NAMPTR-SS_HOOK_RTN      ; base relative offset to mbx descr. pointer
+_NAMBUF=NAMBUF-SS_HOOK_RTN      ; base relative offset to mbx descr. buffer
+
+        $CREMBX_S       CHAN=_CHAN_E(R2),-      ; create temp. mbx.  Assigning
+                        PROMSK=#^C<MBXPRO>      ; channel at exec mode to keep
+        BLBC    R0,20$                          ; mbx alive after image rundown
+        MOVAB   _NAMBUF(R2),_NAMPTR(R2) ; move address of buffer into pointer
+        MOVAB   _NAMBUF(R2),DVI.ITMLST+4; move address of buffer into itmlst
+
+        $GETDVI_S       CHAN=_CHAN_E(R2),-      ; get the mbx device name.
+                        ITMLST=DVI.ITMLST
+        BLBC    R0,20$
+
+        $QIO_S  EFN=#45,CHAN=_CHAN_E(R2),-      ; queue the executive mode
+                        FUNC=#IO$_SETMODE!IO$M_WRTATTN,-        ; write
+                        P1=_PMTAST(R2),P2=#0    ; attention AST
+        MOVL    #SS$_NORMAL,R0                  ; done in executive mode
+20$:    RET
+;------------------------------------------------------------------------------
+; The vector we want to 'hook' is in a page of virtual address space that was
+; PFN mapped.  (Note: Window bit (#21) is set in PTE
+;---
+;SDA> SHOW PROCESS/PAGE_TABLE SYS$SETDDIR;0
+;Process page table
+;------------------
+;        ADDRESS     SVAPTE    PTE **    TYPE  PROT  BITS PAGTYP    LOC STATE
+;       7FFEE200    8095FFC4 FC202469    VALID UR   M   K
+;                                ****
+;SDA> EVALUATE/PTE FC2024B4      .-- Page was PFN mapped (Window bit set)
+;                                |
+;|31       28|27       24|23     | 20|19       16|15       12|11        8|7
+;+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+-->
+;|1 |  1 1 1 1  |1 |--| 0 0 |--| 1|                          002469
+;+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+-->
+;Vld  Prot= UR   M     Own=K     W                      Page Frame Number
+;       Page is Active and Valid                                 Y
+;---                                                             |
+; This page frame number is used by all processes which have the |same VA pages
+; PFN mapped into the process.  It is also the PFN of the S0 service vector.
+;---                                                             |
+;SDA> SHOW PAGE_TABLE RMS$SETDDIR;1                              |
+;System page table                                               |-(Same PFN!)
+;-----------------                                               |
+;        ADDRESS     SVAPTE    PTE **    TYPE  PROT  BITS PAGTYP |  LOC STATE
+;       80000400    80B26A08 FC002469    VALID UR   M   K        |
+;                                ****                            |
+;SDA> EVALUATE/PTE FC0024B4                                      |
+;                                                                |
+;|31       28|27       24|23       20|19       16|15       12|11 v      8|7
+;+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+-->
+;|1 |  1 1 1 1  |1 |--| 0 0 |--| 0|                          002469
+;+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+-->
+;Vld  Prot= UR   M     Own=K     W                      Page Frame Number
+;       Page is Active and Valid
+;---
+; To modify the system service vector on a per-process basis, we need the VA
+; page to be mapped by a unique PFN.  To do this, we will save the contents
+; of the current VA page (previously copied to SS.PAGE in user mode) and then,
+; delete this VA page.  A new PFN mapping is created using the $CRETVA system
+; service, specifying the original page's VAs.  The saved contents (SS.PAGE)
+; are copied to this newly created demand zero (DZRO) page and protection is
+; set to that of other pages in the system service vector table.  NOTE: Since
+; we have deleted the VA page containing the system service vectors from the
+; process, we can NOT use the system service macros or reference the vectors
+; in the P1 table until the contents are copied back into the new VA Page.
+; Therefore, we will call the service vectors from the S0 table.
+;------------------------------------------------------------------------------
+; RTFM: VAX/VMS IDSM v5.2, Ruth Goldenberg, EY-C171E-DP, Ch.15, Mem. Mgt. S.S.
+; Sec: 15.4.1.2 PFN-Mapped Process Section, Sec: 15.7 $SETPRT System Service,
+; Sec: 15.3.1  $CRETVA System Service,  Sec: 15.5.3  $DELTVA System Service,
+;------------------------------------------------------------------------------
+        .ENTRY  KRNL$ROUTINE,^M<R2,R3,R4,R5>
+        MOVAB   KRNL$ROUTINE,VECTOR2    ; lock KRNL$ROUTINE in the working
+        MOVAB   KRNL$RTN_END,VECTOR2+4  ; set to prevent page faulting with
+        $LKWSET_S       INADR=VECTOR2   ; IPL>=IPL$_ASTDEL
+        BLBS    R0,10$
+        RET
+
+10$:    MOVAB   VECTOR,VECTOR2          ; lock page containing VECTOR in the
+        MOVAB   VECTOR+4,VECTOR2+4      ; working set.  We will be touching
+        $LKWSET_S       INADR=VECTOR2   ; this also at IPL>=IPL$_ASTDEL
+        BLBS    R0,20$
+        RET
+;------------------------------------------------------------------------------
+; Raise IPL to IPL$_ASTDEL to block AST delivery.  Specifically, kernel mode
+; ASTs which reference the system service vector table in process P1 space.
+; There may be no system service vector page available then AST is delivered!
+; Ouch! Access violation in kernel mode.  System shuts down, _REAL_ _FAST_!!!
+;---
+; For similar reasons, the newly created DZRO page is LOCKed into the working
+; set to avoid problems of faulting in the page should the page _NOT_ be valid
+; when/if it is referenced at elevated IPLs.  Ouch! Nasty PGFIPLHI bugcheck!!!
+;------------------------------------------------------------------------------
+20$:    SETIPL  #IPL$_ASTDEL            ; block AST delivery
+                                        ; out with the old; in with the new
+30$:    CLRQ    -(SP)                   ; acmode & retadr (not specified)
+        PUSHAB  VECTOR                  ; inadr
+        CALLS   #3,G^EXE$CRETVA         ; create DZRO page for S.S. vectors
+        BLBS    R0,50$                  ; if an error occurs here, we'd best
+                                        ; $#!+can the process!
+40$:    SETIPL  #0                      ; lower IPL or we'll crash on $EXIT
+        PUSHL   #SS$_NORMAL
+        CALLS   #1,G^EXE$EXIT           ; bye bye
+
+50$:    CLRQ    -(SP)                   ; acmode & retadr (not specified)
+        PUSHAB  VECTOR                  ; inadr
+        CALLS   #3,G^EXE$LKWSET         ; lock 'em down
+        BLBC    R0,40$                  ; Error? Should'nt be! Outta here!
+
+        MOVC3   #^X200,SS.PAGE,@VECTOR  ; put the table back!
+;------------------------------------------------------------------------------
+; Without an intervening REI, it is unwise use a modified instruction stream!
+; Therefore, we'll call SETPRT in the S0 table.
+;------------------------------------------------------------------------------
+        PUSHL   #0                      ; prvprt (not specified)
+        PUSHL   #PRT$C_UR               ; prot
+        CLRQ    -(SP)                   ; acmode & retadr (not specified)
+        PUSHAB  VECTOR                  ; inadr
+        CALLS   #5,G^EXE$SETPRT         ; set page prot. like rest of table
+        RET
+KRNL$RTN_END:
+;------------------------------------------------------------------------------
+; The new service vector table now has the look and feel of the original with
+; two exceptions. 1) The vector for SYS$SETDDIR has been modified to call the
+; 'HOOK' routine. 2) The Virtual Page is mapped through a unique PFN.
+;---
+;SDA> SHOW PROCESS/PAGE_TABLE SYS$SETDDIR;0
+;Process page table
+;------------------
+;        ADDRESS     SVAPTE    PTE       TYPE  PROT  BITS PAGTYP    LOC STATE
+;       7FFEE200    809307C4 F8001E7A    VALID UR     L K PROCESS ACTIVE  87
+;
+;SDA> EVALUATE/PTE F8001E7A
+;
+;|31       28|27       24|23       20|19       16|15       12|11        8|7
+;+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+-->
+;|1 |  1 1 1 1  |0 |--| 0 0 |--| 0|                          001E7A
+;+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+-->
+;Vld  Prot= UR   M     Own=K     W                      Page Frame Number
+;       Page is Active and Valid
+;------------------------------------------------------------------------------
+        .END    INSTALL$SS_HOOK
+
+============================================================================
+
+$ X=F$verify(1)
+$ MACRO/OBJECT=PMTDDIR/LIST=PMTDDIR SYS$INPUT
+;.-----------------------------------------------------------------------------.
+;|  ***** LOADABLE IMAGE (Example #2.)                                         |
+;|  This program demonstrates use of a loadable image as a means of enhancing  |
+;|  the functionality of a VMS system service.                                 |
+;|  ---                                                                        |
+;|  This code accompanied an article in the January/February 1993 issue of the |
+;|  Digital Systems Journal entitled: OpenVMS VAX Loadable Executive Images:   |
+;|  What They Are and How to Use Them.                                         |
+;|  ---                                                                        |
+;|  Author: Brian Schenkenberger/Indep. Consult./TMESIS Consulting/Jackson NJ  |
+;`-----------------------------------------------------------------------------'
+	.TITLE	SETDDIR_WTH_PROMPT	Define $SETDDIR to change DCL prompt
+	.IDENT	'VMS 5.4-2%2.251'
+;------------------------------------------------------------------------------
+	.LIBRARY /SYS$LIBRARY:LIB/	; Search this library during assembly.
+	$SYSVECTORDEF			; Define system service vector offsets.
+	$LDRIMGDEF			; Loadable executive image block defs.
+	$CCBDEF				; Channel Control Block definitions
+	$IHDDEF				; Image header descriptor definitions
+	$IHSDEF				; Image debug/symbol table definitions
+	$OBJDEF				; Symbol table record definitions
+	$PSLDEF				; Processor Status definitions
+	$WCBDEF				; Window control block definitions
+;------------------------------------------------------------------------------
+; This image and its initialization routine assume that it is being called
+; in (or after) the SYSINIT phase of the system bootstrap. Ergo, the image
+; RMS.EXE has been loaded just prior to the loading and invocation of this
+; image by LDR$ALTERNATE_LOAD.  (or later by: SYSLDR_DYN/LDR$LOAD_IMAGE)
+;------------------------------------------------------------------------------
+	DECLARE_PSECT	EXEC$INIT_CODE
+
+	INITIALIZATION_ROUTINE	SETDDIR_WTH_PROMPT_INIT
+
+SETDDIR_WTH_PROMPT_INIT:
+	PUSHR	#^M<R2,R3,R4,R5>	; save registers trashed by init rtn.
+	MOVAB	@#LDR$GQ_IMAGE_LIST,R4	; get loadable image listhead address
+	MOVL	R4,R5			; put in r5 so we can walk-the-list
+10$:	MOVL	(R5),R5			; get an entry from the list
+	CMPL	R4,R5			; check if its the 'end-of-the-line'
+	BEQL	40$			; list exhausted? ('end-of-the-line')
+	CMPB	LDRIMG$B_IMGNAMLEN(R5),-; could this be the one? check if the
+		#RMSIMGNMLEN		;==- image name is the right size
+	BNEQU	10$			; better luck next time around
+	CMPC3	#RMSIMGNMLEN,RMSIMGNAM,-; length checked out ok! now check if
+		LDRIMG$T_IMGNAM(R5)	;==- the image name is correct
+	BNEQU	10$			; better luck next time around	
+	BSBB	GET_IMGVAL		; get image value of RMS$SETDDIR
+	BLBC	R0,20$			; branch 20$ if bad news
+	MOVL	LDRIMG$L_BASE(R5),R5	; get the base address of RMS.EXE
+	MOVAB	(R5)[R3],-		; put the address of RMS$SETDDIR into
+		RMS$SETDDIR_ENTRY_PT	;==- RMS$SETDDIR_ENTRY_PT
+	MOVL	#1,R0			; return with success.
+20$:	POPR	#^M<R2,R3,R4,R5>	; restore saved registers
+	BBSS	#INIRTN$V_NO_RECALL,-	; invoke init routine one time only!
+		(R5),30$		
+30$:	RSB
+40$:	CLRL	R0
+	BRB	20$
+
+;------------------------------------------------------------------------------
+; At the point within the SYSINIT process where the alternate loader loads
+; this image, the system has not yet been initialized to the point where a 
+; full checking $ASSIGN service will function.  The following instructions
+; perform the 'bare-bones' task of building a CCB and assigning a channel 
+; number.  (First 9 instructions) (Consult the VAX/VMS v5.2 IDSM Ch. 30,31
+; for more intimate details of the system initialization process.)
+;------------------------------------------------------------------------------
+GET_IMGVAL:
+	JSB	@#IOC$FFCHAN		; get hold of a free CCB
+	BLBS	R0,.+2			; if ok??? go build the CCB
+	RSB				; bad news again!
+
+	MOVL	@#EXE$GL_SYSUCB,-	; put system device UCB address in
+		CCB$L_UCB(R2)		;==- CCB$L_UCB (*thank EXE$INIT*)
+	CLRL	CCB$L_WIND(R2)		; no associated WCB
+	MOVB	#CCB$M_RDCHKDON,-	; signify reads on this channel
+		CCB$B_STS(R2) 		;==- should be ok
+	ADDB3	#1,#PSL$C_KERNEL,-	; mark channel as a kernel mode
+		CCB$B_AMOD(R2)		;==- accessed channel
+	CLRL	CCB$L_DIRP(R2)		; no deaccess i/o
+
+	MOVW	R1,CHAN			; channel # (we'll need this again)
+
+	MOVL	LDRIMG$L_WCB(R5),R4	; get window control block address
+	CMPW	WCB$W_NMAP(R4),#1	; is file mapped in 1 extent?
+	BEQL	10$			; branch 10$ if a single extent
+	CLRL	R0			; looks like trouble
+	RSB				
+					; - let's get the image header -
+10$:	MOVL	WCB$L_P1_LBN(R4),R3	; get LBN of the start of RMS.EXE
+	MOVAB	IMGDATA,R2		; get address of local data store
+	$SETAST_S	ENBFLG=#0	; if call by SYSLDR_DYN/LOAD_IMAGE
+	SETIPL	IPL=#0			;==- disble kernel asts & lower IPL
+	$QIOW_S	FUNC=#IO$_READLBLK,-	; read the image header at LBN=R3
+		CHAN=CHAN,IOSB=IOSB,-	;==- into the local data storage
+		P1=(R2),P2=#512,P3=R3	; 
+	BLBS	R0,30$			; check the ss completion status
+20$:	PUSHL	R0			; preserve current status cond.
+	SETIPL	IPL=#2			; raise IPL back to 2
+	$SETAST_S	ENBFLG=#1	; enable kernel asts
+	POPL	R0			; restore saved status cond.
+	RSB				; back to meet your maker...
+30$:	MOVZWL	IOSB,R0			; extract the i/o completion status
+	BLBC	R0,20$			; check the i/o completion status
+
+					; - let's find those goodies -
+	MOVZWL	IHD$W_SYMDBGOFF(R2),R2	; get offset to symbol table header
+	MOVAB	IMGDATA[R2],R2		; get base of symbol table header
+	MOVL	IHS$L_GSTVBN(R2),R2	; get VBN of the Global Symbol table    
+	ADDL2	R2,R3			; calculate the GST's LBN 
+	SUBW3	R2,WCB$W_P1_COUNT(R4),R2; how big is it? <IMGLEN - GST LBN>
+	CMPL	R2,#8			; is the IMGDATA area big enough?
+	BLSSU	40$			; branch 20$ if it is
+	MOVL	#8,R2			; limit to 8 pgs. hope symbol's there   
+40$:	ASHL	#9,R2,R2		; turn blocks into bytes. (alchemy!)
+
+	$QIOW_S	FUNC=#IO$_READLBLK,-	; read the GST starting at LBN=R3
+		CHAN=CHAN,IOSB=IOSB,-	;==- into the local store
+		P1=IMGDATA,P2=R2,P3=R3
+	BLBC	R0,20$			; check the ss completion status
+	MOVZWL	IOSB,R0			; extract the i/o completion status
+	BLBC	R0,20$			; check the i/o completion status
+					; - time to make the doughnuts! -
+	MATCHC	#SETDDIR_LEN,SETDDIR,-	; look for the symbol name in the
+		R2,IMGDATA		;==- retrieved table data
+	BEQL	50$			; branch 50$ if we found it
+	CLRL	R0			; bad news!!
+	BRW	20$
+
+50$:	MOVAB	-<SETDDIR_LEN+1>(R3),R3	; backup to beginning of symbol name
+	MOVL	-<OBJ$T_EPMV_NAME-OBJ$L_EPMV_VALUE>(R3),- ; backup from symbol
+		R3			;==- name to start of symbol value
+	MOVL	#1,R0			; ...and there was great rejoicing!
+	BRW	20$
+		
+		.ALIGN	LONG	; start data on a LONG boundary. 
+CHAN:		.WORD	0
+		.WORD	0 	; filler to align the IOSB on a LW
+IOSB:		.QUAD	0
+
+RMSIMGNAM:	.ASCII	/[SYS$LDR]RMS.EXE/
+RMSIMGNMLEN=	.-RMSIMGNAM
+SETDDIR:	.ASCII	/RMS$SETDDIR/
+SETDDIR_LEN=	.-SETDDIR
+
+		.ALIGN	LONG	; start data on a LONG boundary.  using init
+IMGDATA:	.BLKB	512*8	; psect for work, deleted after image loaded.
+;------------------------------------------------------------------------------
+	DECLARE_PSECT	EXEC$PAGED_DATA
+
+RMS$SETDDIR_ENTRY_PT:	.LONG	0
+;------------------------------------------------------------------------------
+	DECLARE_PSECT	EXEC$PAGED_CODE
+
+	SYSTEM_SERVICE	SETDDIR, <R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>,-
+			MODE=EXEC, NARG=3, PREFIX=RMS$
+
+	CALLG	(AP),@RMS$SETDDIR_ENTRY_PT  ; invoke original SETDDIR code
+	BLBS	R0,10$			; modify DCL prompt if all is well
+	RET				; something went wrong! tell caller
+
+10$:	MOVAB	@#CTL$AG_CLIDATA,R7	; get base of the CLI data area
+	IFNORD	#4,PPD$L_PRC(R7),30$	; is the PPD area accessible!?  
+	MOVL	PPD$L_PRC(R7),R7	; get base of proc. perm. data area  
+	IFNOWRT	#PRC_S_PROMPT,-		; is prompt string area writeable??
+		PRC_G_PROMPT(R7),30$	;==- if not, get outta here!
+
+	MOVAB	@#PIO$GT_DDSTRING,R8	; get the def dir (ascic) string 
+	
+	MOVZBL	(R8)+,R6		; get the length of the ddstring
+	CMPL	R6,#PRC_S_PROMPT-1	; will it fit in the prompt? 
+	BLSSU	20$			; branch 20$ if it fits
+	SUBL2	#PRC_S_PROMPT-1,R6	; how much wont fit in the prompt?
+	ADDL2	R6,R8			; chop that much off the beginning
+	MOVL	#PRC_S_PROMPT-1,R6	; output all that we got.
+
+20$:	MOVC3	R6,(R8),PRC_G_PROMPT(R7)	; copy ddstring to prompt
+	ADDB3	#4,R6,PRC_B_PROMPTLEN(R7)	; update the prompt length
+	MOVB	#^a/ /,PRC_G_PROMPT(R7)[R6]	; add space to end of prompt
+30$:	MOVL	#RMS$_NORMAL,R0		; tell caller everything's alright
+	RET
+
+	.END
+;------------------------------------------------------------------------------
+
+$ LINK	/NOSYSSHR/NOTRACEBACK/SHAREABLE=SYS$LOADABLE_IMAGES:PMTDDIR -
+	/MAP=PMTDDIR/FULL/CROSS_REFERENCE/SYMBOL_TABLE=PMTDDIR -
+	SYS$INPUT/OPTION
+
+PMTDDIR,SYS$LIBRARY:STARLET/INCLUDE:(SYS$DOINIT),-
+SYS$SYSTEM:SYS.STB/SELECTIVE,SYS$SYSTEM:DCLDEF.STB/SELECTIVE
+
+VECTOR_TABLE=SYS$SYSTEM:SYS.STB
+COLLECT=NONPAGED_READONLY_PSECTS/ATTRIBUTES=RESIDENT,EXEC$NONPAGED_CODE
+COLLECT=NONPAGED_READWRITE_PSECTS/ATTRIBUTES=RESIDENT,EXEC$NONPAGED_DATA
+COLLECT=PAGED_READONLY_PSECTS,EXEC$PAGED_CODE
+COLLECT=PAGED_READWRITE_PSECTS,EXEC$PAGED_DATA
+COLLECT=INITIALIZATION_PSECTS/ATTRIBUTES=INITIALIZATION_CODE,-
+	EXEC$INIT_CODE,-
+	EXEC$INIT_000,EXEC$INIT_001,EXEC$INIT_002,-
+	EXEC$INIT_PFNTBL_000,EXEC$INIT_PFNTBL_001,EXEC$INIT_PFNTBL_002,-
+	EXEC$INIT_SSTBL_000,EXEC$INIT_SSTBL_001,EXEC$INIT_SSTBL_002
+
+$
+$ EXIT	! Comment out 'EXIT' to allow execution of subsequent commands
+$ 	! which install the L.E.I for load by SYSINIT process during 
+$	! bootstrap
+$
+$ MCR SYSMAN 	SYS_LOADABLE ADD _TMESIS_ PMTDDIR.EXE -
+		/LOAD_STEP = SYSINIT 	/SEVERITY  = WARNING -
+		/MESSAGE   = "Failure to load PMTDDIR.EXE" 
+$
+$ @SYS$UPDATE:VMS$SYSTEM_IMAGES.COM
+$
+$! REBOOT THE SYSTEM
+$!----------------------------------------------------------------------------
+$! FYI... For anyone actually wishing to use this loadable.  The LOGINOUT.EXE
+$! image builds the P1 region itself.  To have the prompt reflect the process
+$! default at login, a SET DEFAULT or SHOW DEFAULT command should be executed 
+$! in SYLOGIN.COM or LOGIN.COM.
+$!----------------------------------------------------------------------------
+
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 

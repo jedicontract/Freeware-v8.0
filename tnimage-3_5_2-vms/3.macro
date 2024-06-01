@@ -1,0 +1,12 @@
+# 3.macro
+# Demonstration of string handling and string-function conversion in macros
+# Answer "gray" to next question
+a=getstring("Please enter filename");
+whatis(a);
+set(a="gray");
+open(a);
+down(100);
+set(b="right");
+b(100);
+abouttheimage(a);
+message("Macro finished");

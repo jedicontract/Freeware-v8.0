@@ -1,0 +1,1170 @@
+	.TITLE MBU8	- utility routines
+	.IDENT /V01-006/
+;+
+; Utility routines for MBU
+; COPYRIGHT NOTICE
+;
+; This software is COPYRIGHT (c) 1994,2004, Ian Miller. ALL RIGHTS RESERVED.
+; Permission is granted for not-for-profit redistribution, provided all source
+; and object code remain unchanged from the original distribution, and that all
+; copyright notices remain intact.
+;
+; DISCLAIMER
+;
+; This software is provided "AS IS". The author makes no representations or
+; warranties with respect to the software and specifically disclaim any implied
+; warranties of merchantability or fitness for any particular purpose.
+;
+;
+; HISTORY
+; =======
+; 18-Feb-1994	01-000	Created.
+; 08-Dec-1994	01-001	Add setmbx,setmbk
+; 01-May-2004	01-002	Alpha port
+; 15-Jun-2004	01-003	get lnm info in getmbx
+; 29-Jun-2004	01-004	get rdrq info in getmbx
+; 01-Jul-2004	01-005	get wrtwq, rdrwq, etc
+; 19-Aug-2005	01-006	fix bug in getmbx so success status is returned
+;			if lnm not wanted.
+;_
+        .library        "sys$Library:lib.mlb"                   ; find $xxxdefs
+        .link           "sys$system:sys.stb"/selective_search   ; find xxx$x_xs
+
+; define TRACE to get trace messages (use SDA TR commands to see)
+; note this does result in a warning from the linker about conflicting
+; attributes for the $LITERAL$ psect but the program works anyway.
+; (one day VMS Engineering may fix this)
+;;;;;;	TRACE = 1
+ 
+        $ccbdef         ; Channel Control Block offsets (to get UCB)
+        $ssdef          ; System Service status values (for normal status)
+        $ucbdef         ; Unit Control Block offsets (miscellaneous)
+	$lnmstrdef	; logical name definitions
+	$irpdef		; IRP defs
+	$acbdef		; acb defs
+	$dyndef
+;
+; External routines
+;
+	.external ioc$verifychan		; Verify channel number
+;
+; structure to hold info about an IRP (matches C struct IRPI )/
+;
+	$DEFINI irpi
+	$DEF	irpi_l_ipid	.long	; internal pid of requestor
+	$DEF	irpi_l_func	.long	; I/O function code
+	$DEF	irpi_l_bcnt	.long	; byte count
+	$DEF	irpi_b_efn	.byte	; efn
+	$DEF	irpi_b_mode	.byte	; mode 	
+				.byte	; padding
+				.byte
+	$DEF	irpi_l_ast	.long	; AST address
+	$DEF	irpi_l_astprm	.long	; AST parameter
+		irpi_k_len = .		; length of this structure
+	$DEFEND
+;
+; structure to hold info from a ACB about an AST 
+; 
+	$DEFINI	asti
+	$DEF	asti_l_ipid	.long	; internal pid of requestor
+	$DEF	asti_l_ast	.long	; AST address
+	$DEF	asti_l_astprm	.long	; AST parameter
+	$DEF	asti_b_rmod	.byte	; request access mode 
+				.byte	; pad
+	$DEF	asti_w_chan	.word
+		asti_k_len = .		; length of this structure
+	$DEFEND
+
+.PAGE
+	.PSECT	mbu_CODE,RD,NOWRT,EXE,PIC,SHR
+	.SUBTITLE lockcode
+;+
+; LOCKCODE - code etc into working set
+;-
+	.CALL_ENTRY label=lockcode, max_args=0, output=<r0>, preserve=<r2>
+	$LOCK_PAGE_INIT
+	ret
+
+.PAGE
+	.SUBTITLE getmbx
+;+
+; GETMBX - get mailbox info
+;
+;       4(ap)   chan
+;       8(ap)   address of longword to hold iniquo
+;       12(ap)  address of longword to hold bufquo
+;	16(ap)	address of descriptor for buffer to hold mbx logical name
+;	20(ap)	address of word to hold length of logical name
+;	24(ap)	address of descriptor for buffer to hold logical name table name
+;	28(ap)	address of word to hold length of logical name table name
+;	32(ap)	address of longword to hold reader ref count
+;	36(ap)	address of longword to hold writer ref count
+;	40(ap)  address of buffer for reader Q IRP info
+;	44(ap)  address of longword for rdr Q bufsize - updated to be No.IRPs
+;	48(ap)	address of buffer for read attn AST queue
+;	52(ap)	address of longword for read attn Q bufsize - updated to be count
+;	56(ap)	address of buffer for write attn AST queue
+;	60(ap)	address of longword for write attn Q bufsize - updated to be count
+;	64(ap)	address of buffer for room notify AST queue
+;	68(ap)	address of longword for room notify AST Q bufsize - updated to be count
+;-
+	$defini	; define argument list offsets
+	$def	argcnt	.long	; argument count
+	$def	chan	.long	; chan
+	$def 	iniquo	.long	; address of longword to hold iniquo
+	$def	bufquo	.long	; address of longword to hold bufquo
+	$def	lnm	.long	; address of descriptor for buffer to hold mbx logical name
+	$def	lnmlen 	.long	; address of word to hold length of logical name
+	$def	lnt 	.long	; address of descriptor for buffer to hold logical name table name
+	$def	lntlen	.long	; address of word to hold length of logical name table name
+	$def	rrefc	.long	; address of longword to hold reader ref count
+	$def	wrefc	.long	; address of longword to hold writer ref count
+	$def 	rdrq	.long	; address of buffer for reader Q IRP info
+	$def	rdrqlen	.long	; address of longword for rdr Q bufsize - updated
+	$def 	wrwq	.long	; address of buffer for writer wait Q IRP info
+	$def	wrwqlen .long	; address of longword for wr wait Q bufsize - updated
+	$def 	rdwq	.long	; address of buffer for reader wait Q IRP info
+	$def	rdwqlen .long	; address of longword for rd wait Q bufsize - updated
+	$def	rstq	.long	; address of buffer for read attn AST queue
+	$def 	raqlen	.long	; address of longword for read attn Q bufsize - updated
+	$def	wstq	.long	; address of buffer for write attn AST queue
+	$def 	waqlen	.long	; address of longword for write attn Q bufsize - updated
+	$def	nstq	.long	; address of buffer for room notify AST queue
+	$def 	naqlen	.long	; address of longword for room notify AST Q bufsize - updated
+		nargs = ./4
+	$defend
+;
+	.CALL_ENTRY label=getmbx, home_args=TRUE, max_args=nargs, output=<r0>, preserve=<r2,r5>
+;
+; first validate the args
+;
+        movl    #ss$_accvio, r0  	; assume bad news
+	.if	df VAX
+	prober	#0, #<nargs+1>*4, (ap)	; Probe argument list
+	beql	100$			; Can't read argument list
+	.endc
+	movl	iniquo(ap), r1		; get iniquo addr
+	probew	#0, #4, (r1)		; make sure can write iniquo
+	beql	100$			; quit if not
+	movl	bufquo(ap), r1	     	; get iniquo addr
+	probew	#0, #4, (r1)		; make sure can write iniquo
+	beql	100$			; quit if not
+	movl	rrefc(ap), r1		; get reader refc addr
+	beql	3$			; br if none
+	probew	#0, #4, (r1)		; make sure can write rrefc
+	beql	100$			; quit if not
+	clrl	(r1)
+3$:
+	movl	wrefc(ap), r1		; get writer refc addr
+	beql	4$			; br if none
+	probew	#0, #4, (r1)		; make sure can write wrefc
+	beql	100$			; quit if not
+	clrl	(r1)
+4$:
+	movl	lnm(ap), r1		; getlnm descriptor addr
+	beql	10$			; lnm not wanted
+	jsb	g^exe$probew_dsc	; probe the descriptor
+.if df TRACE
+	tr_print <GETMBX: status %X, lnm adr %X, len+ %x>,r0, r2, r1
+.endc
+	blbc	r0, 100$		; quit if no good
+	movl	lnmlen(ap), r1		; get lnmlen addr
+	probew	#0, #4, (r1)		; make sure can write lnmlen
+	beql	100$			; quit if not
+	movl	lntlen(ap), r1		; get lnmlen addr
+	probew	#0, #4, (r1)            ; make sure can write lnmlen
+	beql	100$			; quit if not
+	movl	lnt(ap), r1		; lnt descriptor addr
+	jsb	g^exe$probew_dsc	; probe the descriptor
+.if df TRACE
+	tr_print <GETMBX: status %X, lnt adr %X, len+ %x>,r0, r2, r1
+.endc
+	blbc	r0, 100$		; quit if no good
+10$:
+	movl	rdrq(ap), r2		; addr of buffer for rdrq
+	beql	20$			; br if none
+	movl	rdrqlen(ap), r1
+	probew	#0, #4, (r1)		; check we can update the length
+	beql	100$			; quit if not
+	movl	(r1), r1		; len of buffer for rdrq
+.if df TRACE
+	tr_print <GETMBX: rdrq buffer adr %X, len %d>, r2, r1
+.endc
+	probew	#0, r1, (r2)		; check buffer is writeable
+	beql	100$			; quit if no good
+	cmpl	r1, #irpi_k_len
+	blss	100$			; quit if too short
+;
+; lock rdrq buffer in working set
+;
+	addl3	r1, r2, r1		; end address of buffer
+	pushl	r1			; end address of buffer
+	pushl	r2              	; start address of buffer
+	movl	sp, r2			; addr of arglist
+	$lkwset_s inadr = (r2), retadr=(r2)
+	addl2	#8, sp			; clear arg list from stack
+	blbc	r0, 100$		; quit if failed to lock buffer
+;
+20$:
+	movl	wrwq(ap), r2		; addr of buffer for wrwq
+	beql	30$			; br if none
+	movl	wrwqlen(ap), r1
+	probew	#0, #4, (r1)		; check we can update the length
+	beql	100$			; quit if not
+	movl	(r1), r1		; len of buffer for wrwq
+.if df TRACE
+	tr_print <GETMBX: wrwq buffer adr %X, len %d>, r2, r1
+.endc
+	probew	#0, r1, (r2)		; check buffer is writeable
+	beql	100$			; quit if no good
+	cmpl	r1, #irpi_k_len
+	blss	100$			; quit if too short
+;
+; lock wrwq buffer in working set
+;
+	addl3	r1, r2, r1		; end address of buffer
+	pushl	r1			; end address of buffer
+	pushl	r2              	; start address of buffer
+	movl	sp, r2			; addr of arglist
+	$lkwset_s inadr = (r2), retadr=(r2)
+	addl2	#8, sp			; clear arg list from stack
+	blbc	r0, 100$		; quit if failed to lock buffer
+;
+30$:
+	movl	rdwq(ap), r2		; addr of buffer for rdwq
+	beql	40$			; br if none
+	movl	rdwqlen(ap), r1
+	probew	#0, #4, (r1)		; check we can update the length
+	beql	100$			; quit if not
+	movl	(r1), r1		; len of buffer for rdwq
+.if df TRACE
+	tr_print <GETMBX: rdwq buffer adr %X, len %d>, r2, r1
+.endc
+	probew	#0, r1, (r2)		; check buffer is writeable
+	beql	100$			; quit if no good
+	cmpl	r1, #irpi_k_len
+	blss	100$			; quit if too short
+;
+; lock rdwq buffer in working set
+;
+	addl3	r1, r2, r1		; end address of buffer
+	pushl	r1			; end address of buffer
+	pushl	r2              	; start address of buffer
+	movl	sp, r2			; addr of arglist
+	$lkwset_s inadr = (r2), retadr=(r2)
+	addl2	#8, sp			; clear arg list from stack
+	blbc	r0, 100$		; quit if failed to lock buffer
+40$:
+	movl	rstq(ap), r2		; addr of buffer for rstq
+	beql	50$			; br if none
+	movl	raqlen(ap), r1
+	probew	#0, #4, (r1)		; check we can update the length
+	beql	100$			; quit if not
+	movl	(r1), r1		; len of buffer for rstq
+.if df TRACE
+	tr_print <GETMBX: rstq buffer adr %X, len %d>, r2, r1
+.endc
+	probew	#0, r1, (r2)		; check buffer is writeable
+	beql	100$			; quit if no good
+	cmpl	r1, #asti_k_len
+	blss	100$			; quit if too short
+;
+; lock rstq buffer in working set
+;
+	addl3	r1, r2, r1		; end address of buffer
+	pushl	r1			; end address of buffer
+	pushl	r2              	; start address of buffer
+	movl	sp, r2			; addr of arglist
+	$lkwset_s inadr = (r2), retadr=(r2)
+	addl2	#8, sp			; clear arg list from stack
+	blbc	r0, 100$		; quit if failed to lock buffer
+50$:
+	movl	wstq(ap), r2		; addr of buffer for wstq
+	beql	60$			; br if none
+	movl	waqlen(ap), r1
+	probew	#0, #4, (r1)		; check we can update the length
+	beql	100$			; quit if not
+	movl	(r1), r1		; len of buffer for wstq
+.if df TRACE
+	tr_print <GETMBX: wstq buffer adr %X, len %d>, r2, r1
+.endc
+	probew	#0, r1, (r2)		; check buffer is writeable
+	beql	100$			; quit if no good
+	cmpl	r1, #asti_k_len
+	blss	100$			; quit if too short
+;
+; lock wstq buffer in working set
+;
+	addl3	r1, r2, r1		; end address of buffer
+	pushl	r1			; end address of buffer
+	pushl	r2              	; start address of buffer
+	movl	sp, r2			; addr of arglist
+	$lkwset_s inadr = (r2), retadr=(r2)
+	addl2	#8, sp			; clear arg list from stack
+	blbc	r0, 100$		; quit if failed to lock buffer
+60$:
+	movl	nstq(ap), r2		; addr of buffer for nstq
+	beql	70$			; br if none
+	movl	naqlen(ap), r1
+	probew	#0, #4, (r1)		; check we can update the length
+	beql	100$			; quit if not
+	movl	(r1), r1		; len of buffer for nstq
+.if df TRACE
+	tr_print <GETMBX: nstq buffer adr %X, len %d>, r2, r1
+.endc
+	probew	#0, r1, (r2)		; check buffer is writeable
+	beql	100$			; quit if no good
+	cmpl	r1, #asti_k_len
+	blss	100$			; quit if too short
+;
+; lock nstq buffer in working set
+;
+	addl3	r1, r2, r1		; end address of buffer
+	pushl	r1			; end address of buffer
+	pushl	r2              	; start address of buffer
+	movl	sp, r2			; addr of arglist
+	$lkwset_s inadr = (r2), retadr=(r2)
+	addl2	#8, sp			; clear arg list from stack
+	blbc	r0, 100$		; quit if failed to lock buffer
+70$:
+;
+;
+;
+        movzwl  chan(ap),r1            	; Get channel number
+	jsb	get_mbx_ucb             ; get ucb of mailbox in r5
+	blbc	r0, 100$		; quit if error
+; build arg list for kernal mode routine on the stack
+	movl	naqlen(ap), -(sp)
+	movl	nstq(ap), -(sp)
+	movl	waqlen(ap), -(sp)
+	movl	wstq(ap), -(sp)
+	movl	raqlen(ap), -(sp)
+	movl	rstq(ap), -(sp)
+	movl	rdwqlen(ap), -(sp)
+	movl	rdwq(ap), -(sp)
+	movl	wrwqlen(ap), -(sp)
+	movl	wrwq(ap), -(sp)
+	movl	rdrqlen(ap), -(sp)
+	movl	rdrq(ap), -(sp)
+	movl	wrefc(ap), -(sp)
+	movl	rrefc(ap), -(sp)
+	movl	lntlen(ap), -(sp)
+	movl	lnt(ap), -(sp)
+	movl	lnmlen(ap), -(sp)
+	movl	lnm(ap), -(sp)
+        movl  	bufquo(ap), -(sp)     	
+        movl   	iniquo(ap), -(sp)       
+        movl   	r5, -(sp)     		; UCB address
+        movl   	#nargs, -(sp)       	; arg count
+	movl	sp, r2			; get address of arg list 
+;
+;       go get the info
+;
+        $cmkrnl_s routin=getbuf_k, arglst= (r2)
+	addl2	#4*4, sp		; clear arg list from stack
+100$:
+        ret
+
+.PAGE
+.SUBTITLE       getbuf_k
+	.enable lsb
+;+
+; GETBUF_K - get buf kernel mode part
+;
+;       4(ap)   UCB address
+;	rest are same as getmbx
+;
+; register usage
+;	r0	status and other things
+;	r1	various
+;	r2	various
+;	r3	various
+;	r4	PCB
+;	r5 	UCB
+;	r6	LNMB addr
+; 	r7	length of buffer for logical name
+;	r8	addr of buffer for logical name
+;	r9	length of buffer for logical name table name (lnt)
+;	r10	addr of buffer for logical name table name (lntlen)
+;-
+	$LOCKED_PAGE_START 				; lock following code in WS
+	.CALL_ENTRY label=getbuf_k, output=<r0>, home_args=TRUE,max_args=nargs,preserve=<r3,r3,r4,r5,r6,r7,r8,r9,r10>
+	movl	4(ap), r5				; get UCB address
+	jsb chk_mbx_ucb					; check its a mailbox
+	blbc r0, 100$
+        DEVICELOCK-
+                LOCKADDR=ucb$l_dlck(r5),-
+                LOCKIPL=ucb$b_dipl(r5),-
+                SAVIPL=-(sp),-
+                PRESERVE=NO				; don't presrve r0
+	movl	ucb$l_logadr(r5), r6			; get address of lnm
+.if df TRACE
+	tr_print <GETMBK:ucb %X, logadr %X>,r5, r6
+.endc
+        movzwl  ucb$w_iniquo(r5), @iniquo(ap)		; get iniquo
+        movzwl  ucb$w_bufquo(r5), @bufquo(ap)		; get bufquo
+.if df ucb$l_mb_iniquo
+	cmpw	#^Xffff, ucb$w_iniquo(r5)		; check for flag value
+	bneq	20$					; br if not
+	movl	ucb$l_mb_iniquo(r5), @iniquo(ap)	; get longword iniquo
+	movl	ucb$l_mb_bufquo(r5), @bufquo(ap)	; and bufquo
+20$:
+.endc
+.if df ucb$l_mb_readerrefc
+	tstl	rrefc(ap)				; check if reader refc wanted
+	beql	30$					; br if not
+	movl	ucb$l_mb_readerrefc(r5), @rrefc(ap)	; save rrefc
+30$:
+.endc
+.if df ucb$l_mb_writerrefc
+	tstl	wrefc(ap)				; check if writer refc wanted
+	beql	40$					; br if not
+	movl	ucb$l_mb_writerrefc(r5), @wrefc(ap)	; save wrefc
+40$:
+.endc
+;
+; get information about reader queue
+;
+	movl	rdrq(ap), r7				; check if rdrq wanted
+	beql	60$					; br if not
+	movl	rdrqlen(ap), r8
+	movl	(r8), r8				; get buf length
+
+	.if	df VAX
+.error ; its a vax - need to do something with ucb$l_irp and ioqfl
+	.endc
+
+.if df TRACE
+	tr_print <GETMBK: rdrq buffer adr %X, len %d>, r7, r8
+.endc
+	moval	ucb$l_mb_readqfl(r5), r2		; addr of queue header
+.if df TRACE
+	tr_print <GETMBK: addr of readqfl %X>, r2
+.endc
+	bsbb	copy_irpq				; copy rdrq
+	movl	rdrqlen(ap), r8
+	movl	r3, (r8)				; save count of irpi
+60$:
+;
+; get information about writer wait queue
+;
+	movl	wrwq(ap), r7				; check if wrwq wanted
+	beql	70$					; br if not
+.if df ucb$l_mb_writerwaitqfl
+	movl	wrwqlen(ap), r8
+	movl	(r8), r8				; get buf length
+.if df TRACE
+	tr_print <GETMBK: wrwq buffer adr %X, len %d>, r7, r8
+.endc
+	moval	ucb$l_mb_writerwaitqfl(r5), r2		; addr of queue header
+.if df TRACE
+	tr_print <GETMBK: addr of wrwqfl %X>, r2
+.endc
+	bsbb	copy_irpq				; copy wrwq
+	movl	wrwqlen(ap), r8
+.if df TRACE
+	tr_print <GETMBK: addr of wrwqlen %X, qlen %d>, r8, r3
+.endc
+	movl	r3, (r8)				; save count of irpi
+.iff
+	movl	wrwqlen(ap), r8
+	clrl	(r8)					; none
+.endc
+70$:
+;
+; get information about reader wait queue
+;
+	movl	rdwq(ap), r7				; check if rdwq wanted
+	beql	80$					; br if not
+.if df ucb$l_mb_readerwaitqfl
+	movl	rdwqlen(ap), r8
+	movl	(r8), r8				; get buf length
+.if df TRACE
+	tr_print <GETMBK: rdwq buffer adr %X, len %d>, r7, r8
+.endc
+	moval	ucb$l_mb_readerwaitqfl(r5), r2		; addr of queue header
+.if df TRACE
+	tr_print <GETMBK: addr of rdwqfl %X>, r2
+.endc
+	bsbb	copy_irpq				; copy rdwq
+	movl	rdwqlen(ap), r8
+.if df TRACE
+	tr_print <GETMBK: addr of rdwqlen %X, qlen %d>, r8, r3
+.endc
+	movl	r3, (r8)				; save count of irpi
+.iff
+	movl	wrwqlen(ap), r8
+	clrl	(r8)					; none
+.endc
+80$:
+;
+; get information about read attn AST queue
+;
+	movl	rstq(ap), r7				; check if rstq wanted
+	beql	90$					; br if not
+.if df ucb$l_mb_r_ast
+	movl	raqlen(ap), r8
+	movl	(r8), r8				; get buf length
+.if df TRACE
+	tr_print <GETMBK: rstq buffer adr %X, len %d>, r7, r8
+.endc
+	moval	ucb$l_mb_r_ast(r5), r2		; addr of queue header
+.if df TRACE
+	tr_print <GETMBK: addr of rstqfl %X>, r2
+.endc
+	bsbb	copy_astq				; copy rstq
+	movl	raqlen(ap), r8
+.if df TRACE
+	tr_print <GETMBK: addr of raqlen %X, qlen %d>, r8, r3
+.endc
+	movl	r3, (r8)				; save count of ASTI
+.iff
+	movl	raqlen(ap), r8
+	clrl	(r8)					; none
+.endc
+90$:
+;
+; get information about write attn AST queue
+;
+	movl	wstq(ap), r7				; check if wstq wanted
+	beql	91$					; br if not
+.if df ucb$l_mb_w_ast
+	movl	waqlen(ap), r8
+	movl	(r8), r8				; get buf length
+.if df TRACE
+	tr_print <GETMBK: wstq buffer adr %X, len %d>, r7, r8
+.endc
+	moval	ucb$l_mb_w_ast(r5), r2		; addr of queue header
+.if df TRACE
+	tr_print <GETMBK: addr of wstqfl %X>, r2
+.endc
+	bsbb	copy_astq				; copy wstq
+	movl	waqlen(ap), r8
+.if df TRACE
+	tr_print <GETMBK: addr of waqlen %X, qlen %d>, r8, r3
+.endc
+	movl	r3, (r8)				; save count of ASTI
+.iff
+	movl	waqlen(ap), r8
+	clrl	(r8)					; none
+.endc
+91$:
+;
+; get information about room notify AST queue
+;
+	movl	nstq(ap), r7				; check if nstq wanted
+	beql	92$					; br if not
+.if df ucb$l_mb_room_notify
+	movl	naqlen(ap), r8
+	movl	(r8), r8				; get buf length
+.if df TRACE
+	tr_print <GETMBK: nstq buffer adr %X, len %d>, r7, r8
+.endc
+	moval	ucb$l_mb_room_notify(r5), r2		; addr of queue header
+.if df TRACE
+	tr_print <GETMBK: addr of nstqfl %X>, r2
+.endc
+	bsbb	copy_astq				; copy nstq
+	movl	naqlen(ap), r8
+.if df TRACE
+	tr_print <GETMBK: addr of naqlen %X, qlen %d>, r8, r3
+.endc
+	movl	r3, (r8)				; save count of ASTI
+.iff
+	movl	naqlen(ap), r8
+	clrl	(r8)					; none
+.endc
+92$:
+95$:
+        DEVICEUNLOCK-
+                LOCKADDR=ucb$l_dlck(r5),-
+                NEWIPL=(sp)+,-
+		CONDITION=RESTORE,-
+                PRESERVE=YES
+; get logical name (if any)
+	tstl	lnm(ap)				; check if wanted
+	beql	99$				; br if not
+	clrw	@lnmlen(ap)			; assume none
+	clrw	@lntlen(ap)
+	tstl	r6				; check addr of lnm
+	beql	99$				; quit if none
+	movl	lnm(ap), r1			; get lnm descriptor addr
+	jsb	g^exe$probew_dsc		; check the descriptor (and set r1=len,r2=adr and r3 messed up)
+	blbc	r0, 100$			; quit if bad
+	movzwl	r1, r7				; get len 
+	movl	r2, r8				; get address of buffer
+	movl	lnt(ap), r1			; desc for table
+	jsb	g^exe$probew_dsc		; check the descriptor (and set r1=len,r2=adr, and r3 messed up)
+	blbc	r0, 100$			; quit if bad
+	movzwl	r1, r9				; get table name len 
+	movl	r2, r10				; get table name adr
+.if df TRACE
+	tr_print <GETMBX: lnm %X, lnm adr %X, len %d, lnt adr %X, len %d>,r6,r8,r7,r10, r9
+.endc
+	movl	g^ctl$gl_pcb, r4		; get my pcb addr for next step
+	jsb	g^lnm$lockr			; lock logical name table
+	movl	r6, r0				; get address of lnmb
+	pushl	r6				; save for later
+	movl	lnmlen(ap), r6			; addr for len
+	movl	r7, r2				; lnm buf len
+	movl	r8, r3				; lnm buf adr
+	bsbb	copy_logical_name		; copy lnm
+	popl	r0				; recover address of lnmb
+.if df TRACE
+	tr_print <GETMBX: lnmb %X>,r0
+.endc
+	movl	lnmb$l_table(r0), r0		; Skip to table header
+.if df TRACE
+	tr_print <GETMBX: lnmth %X>,r0
+.endc
+	movl	lnmth$l_name(r0), r0		; Skip to name block
+	movl	lntlen(ap), r6			; addr for log name table name len
+	movl	r9, r2				; log name table buf len
+	movl	r10, r3				; log name table buf adr
+	bsbb	copy_logical_name		; copy lnm
+	movl	g^ctl$gl_pcb, r4		; Get current PCB address
+	jsb	g^lnm$unlock			; UnLock logical name table
+99$:
+        movl    #ss$_normal, r0
+100$:
+        ret
+	.disable lsb
+
+.PAGE
+.SUBTITLE copy_irpq
+;+
+; copy information from a queue of IRPs
+;
+; INPUT
+;	r2	queue header address
+;	r7	IRPI buffer address
+;	r8	IRPI buffer length
+; OUTPUT
+;	r3	number of entries copied
+;-
+	.enable lsb
+copy_irpq:
+	.if	ndf VAX
+	.jsb_entry input = <r1,r7,r8>, output=<r3>
+	.endc
+	clrl	r3					; set IRP count = 0
+	movl	r2, r1					; copy queue header
+.if df TRACE
+	tr_print <COPY_IRPQ: addr of IRP Q header %X>, r2
+.endc
+10$:
+	movl	(r1), r1				; get next entry
+	cmpl	r1, r2					; back at start
+	beql	100$					; quit if yes
+; here r1 = IRP, r7 = irpi bufadr, r8 = irpi buf len
+.if df TRACE
+	tr_print <COPY_IRPQ: IRP %X, IRPI buf %X, len %d, count %d>,r1,r7,r8,r3
+.endc
+	subl2	#irpi_k_len, r8                         ; update len
+	blss	100$					; quit if no room
+	movl	irp$l_pid(r1), irpi_l_ipid(r7)		; save pid
+	movl	irp$l_func(r1), irpi_l_func(r7)		; save I/O func
+	movb	irp$b_efn(r1), irpi_b_efn(r7)		; save efn
+	movl	irp$l_bcnt(r1), irpi_l_bcnt(r7)		; save bcnt
+	extzv	#irp$v_mode, #irp$s_mode, -
+		irp$b_rmod(r1), r4			; Get access mode
+	movb	r4, irpi_b_mode(r7)
+	; get astadr and astprm
+	.if	ndf VAX
+	.if	df irp$l_ast
+	movl	irp$l_ast(r1), irpi_l_ast(r7)	
+	movl	irp$l_astprm(r1), irpi_l_astprm(r7)
+	.if_false
+	movl	irp$pq_acb64_ast(r1), irpi_l_ast(r7);
+	movl	irp$q_acb64_astprm(r1), irpi_l_astprm(r7)
+	.endc
+	.if_false					; VAX
+	movl	irp$l_ast(r1), irpi_l_ast(r7)	
+	movl	irp$l_astprm(r1), irpi_l_astprm(r7)
+	.endc
+	addl2	#irpi_k_len, r7				; update irpi bufadr
+	incl	r3					; count one more
+	brb	10$					; loop
+100$:
+.if df TRACE
+	tr_print <COPY_IRPQ: count %d>,r3
+.endc
+	rsb
+	.disable lsb
+
+.PAGE
+.SUBTITLE copy_astq
+;+
+; copy information from a queue of ASTs
+;
+; The Mailbox Driver uses an extended ACB in a non-standard way
+; to record information about the attn ast
+;	ACB$B_RMOD 	= IPL$_QUEUEAST
+;	ACB$L_KAST 	= AST PC
+;	ACB$L_KAST+4 	= AST PARAMETER (P2)
+;	ACB$L_KAST+8 	= ACCESS MODE OF REQUEST
+;	ACB$L_KAST+10 	= CHANNEL NUMBER
+;	ACB$L_KAST+12 	= PID OF REQUEST
+;
+; INPUT
+;	r2	queue header address
+;	r7	ASTI buffer address
+;	r8	ASTI buffer length
+; OUTPUT
+;	r3	number of entries copied
+;-
+	.enable lsb
+copy_astq:
+	.if	ndf VAX
+	.jsb_entry input = <r1,r7,r8>, output=<r3>
+	.endc
+	clrl	r3					; set AST count = 0
+	movl	r2, r1					; copy queue header
+.if df TRACE
+	tr_print <COPY_ASTQ: addr of AST Q header %X>, r2
+.endc
+10$:
+	movl	(r1), r1				; next next entry
+	beql	100$					; br if none
+; here r1 = ACB, r7 = asti bufadr, r8 = asti buf len
+.if df TRACE
+	tr_print <COPY_ASTQ: AST %X, ASTI buf %X, len %d, count %d>,r1,r7,r8,r3
+.endc
+	subl2	#asti_k_len, r8                         ; update len
+	blss	100$					; quit if no room
+	movl	acb$l_kast+12.(r1), asti_l_ipid(r7)	; save pid
+	movb	acb$l_kast+8(r1), asti_b_rmod(r7)	; save request mode etc
+	movl	acb$l_kast(r1), asti_l_ast(r7)		; AST 
+	movl	acb$l_kast+4(r1), asti_l_astprm(r7)	; AST param
+	movw	acb$l_kast+10.(r1), asti_w_chan(r7)	; channel
+	addl2	#asti_k_len, r7				; update irpi bufadr
+	incl	r3					; count one more
+	brb	10$					; loop
+100$:
+.if df TRACE
+	tr_print <COPY_ASTQ: count %d>,r3
+.endc
+	rsb
+	.disable lsb
+
+
+.PAGE
+.subtitle copy_logical_name
+; (borrowed from Niel Clift's MBOX prgram)
+; Copy a logical name from a logical name block to user buffer.
+; Input:
+;    R0: LNMB block address.
+;    R2: Length of user buffer
+;    R3: Address of user buffer
+;    R6: Address of user return length word
+;
+copy_logical_name:
+	.if	ndf VAX
+	.jsb_entry input = <r0,r2,r3,r6>, preserve=<r0,r1,r2,r3,r4,r5>
+	.endc
+.if df TRACE
+	tr_print <COPY_LOGICAL_NAME: lnmb %X, len %d, adr %X, lenadr %X>,r0,r2,r3,r6
+.endc
+	movzbl	lnmb$b_type(r0), r1
+.if df TRACE
+	tr_print <COPY_LOGICAL_NAME: lnmb %X, block type %d>, R0, r1
+.endc
+	cmpb	#dyn$c_lnm, lnmb$b_type(r0)	; check block type
+	beql    10$                             ; br if ok
+	clrw	(r6)				; not a lnmb - no string returned
+	brb	100$				; quit	
+10$:
+	.if	ndf VAX
+	assume	<lnmb$l_namelen+4> eq lnmb$t_name
+	moval	lnmb$l_namelen(r0), r1		; Get address of string
+	movl	(r1)+, r0
+	.if_false
+	movab	lnmb$t_name(r0), r1		; Get address of string
+	movzbl	(r1)+, r0			; Get size of string
+	.endc
+	cmpw	r2, r0				; Users buffer big enough?
+	bgequ	20$				; Branch if big enough
+	movl	r2, r0				; Reduce to maximum
+20$:	movzbw	r0, (r6)			; Save length
+.if df TRACE
+	tr_print <COPY_LOGICAL_NAME: from len %d, adr %X to len %d adr>,r0, r1, r2, r3
+.endc
+	movc5	r0, (r1), #^A/ /, r2, (r3)	; Copy string to buffer
+100$:
+	rsb
+	$LOCKED_PAGE_END			; end of locked code
+
+.PAGE
+.SUBTITLE setmbx
+;+
+; SETMBX - set mailbox info
+;
+;       4(ap)   chan
+;       8(ap)   new iniquo (unsigned longword)
+;       12(ap)  new max msg size (unsigned longword)
+;-
+	.CALL_ENTRY label=setmbx, home_args=TRUE, max_args=4, output=<r0>, preserve=<r2,r5>
+.if df TRACE
+	tr_print <SETMBX: entry>
+.endc
+	cmpb	#3, (ap)		; check argcount
+	beql	20$			; br if ok
+	movl	#ss$_insfarg, r0	; wrong !
+	brw	100$			;
+20$:
+        movzwl  4(ap),r1                ; Get channel number
+	jsb	get_mbx_ucb             ; get ucb of mailbox in r5
+	blbc	r0, 100$		; br if error
+	movl	12(ap), -(sp)		; new max msg size
+	movl	8(ap), -(sp)		; new iniquo
+	movl	r5, -(sp)               ; UCB address
+	movl	#3, -(sp)		; 3 args
+;
+;       go set the info
+;
+	movl	sp, r2
+        $cmkrnl_s routin=setmbk, arglst=(r2)
+	addl2	#4*4, sp		; clear arg list from stack
+100$:
+.if df TRACE
+	tr_print <SETMBX: result 0x%x>,r0
+.endc
+        ret
+
+.PAGE
+.SUBTITLE       setmbk
+;+
+; SETMBK - set mbx kernel mode part
+;
+;       4(ap)   UCB address
+;       8(ap)   new iniquo (unsigned longword)
+;       12(ap)  new max msg size (unsigned word)
+;
+;  register use
+;	r6	new initial quota
+; 	r5	UCB address
+;	r4	quota increase
+;	r3	remaining quota
+;	r2	current inital quota
+;	r1	not used
+;	r0	status
+;-
+	.enable lsb
+	$LOCKED_PAGE_START 			; lock following code in WS
+	.CALL_ENTRY label=setmbk, home_args=TRUE, max_args=4, output=<r0>, preserve=<r2,r3,r4,r5,r6>
+        movl    4(ap), r5               	; get UCB address
+.if df TRACE
+	tr_print <SETMBK: ucb addr %x>,r5
+.endc
+	jsb chk_mbx_ucb				; check its a mailbox
+	blbc r0, 100$				; quit if not
+        DEVICELOCK-				; synch with driver
+                LOCKADDR=ucb$l_dlck(r5),-
+                LOCKIPL=ucb$b_dipl(r5),-
+                SAVIPL=-(sp),-
+                PRESERVE=NO
+	movl	8(ap), r6			; get new quota
+	beql	40$				; skip if none
+.if df ucb$l_mb_iniquo	; if longword quotas are supported (V7.3-1 and later)
+	cmpl	#^Xffff, r6			; if new quota = flag value
+	bneq	10$                             ; then
+	incl	r6				; make it 65536 to avoid trouble
+10$:
+.if df TRACE
+	tr_print <SETMBK: new quota %d>,r6
+.endc
+	movzwl	ucb$w_iniquo(r5), r2		; get current quota
+	cmpl	#^XFFFF, r2			; if flag value
+	bneq	20$
+	movl	ucb$l_mb_iniquo(r5), r2		; get current quota (longword)
+.if df TRACE
+	tr_print <SETMBK: current longword quota %d>,r2
+.endc
+	subl3	r2, r6, r4			; calc how much more
+	bvs	40$				; skip if less
+	movl	r6, ucb$l_mb_iniquo(r5)		; set new quota
+	addl2	r4, ucb$l_mb_bufquo(r5)		; increase remaining quota
+.if df TRACE
+	tr_print <SETMBK: updated longword iniquo %d increment %d>,r6,r4
+.endc
+	brb	40$
+20$:
+	cmpl	r6, #^Xffff	 		; is new quota > ^Xffff
+	blssu	30$				; br if not
+.if df TRACE
+	tr_print <SETMBK: new quota is long word>	
+.endc
+	subl3	r2, r6, r4			; calc how much more
+	bvs	40$				; skip if less
+	movl	r6, ucb$l_mb_iniquo(r5)		; set new quota
+	movw	#^Xffff, ucb$w_iniquo(r5)	; set flag value
+	movzwl	ucb$w_bufquo(r5), r3       	; get old remaining quota
+	addl3	r3, r4, ucb$l_mb_bufquo(r5)	; increase remaining quota
+.if df TRACE
+	tr_print <SETMBK: updated longword iniquo %d increment %d>,r6,r4
+.endc
+	brb	40$	
+30$:
+.if df TRACE
+	tr_print <SETMBK: new quota is word>	
+.endc
+	subl3	r2, r6, r4			; calc how much more
+	bvs	40$				; skip if less
+	movw	r6, ucb$w_iniquo(r5)		; increase quota
+	addw2	r4, ucb$w_bufquo(r5)		; and remaining quota by same 
+.if df TRACE
+	tr_print <SETMBK: updated word iniquo %d increment %d>,r6,r4
+.endc
+.iff ;df ucb$l_mb_iniquo				
+	subw3	ucb$w_iniquo(r5), r6, r4	; calc how much more
+	bvs	40$				; skip if less
+	movw	r6, ucb$w_iniquo(r5)		; increase quota
+	addw2	r4, ucb$w_bufquo(r5)		; and remaining quota 
+.endc	
+40$:
+	tstw	12(ap)				; if new max message size 
+	beql	50$
+	movw	12(ap), ucb$w_devbufsiz(r5)	; then set it
+50$:
+.if df TRACE
+	tr_print <SETMBK: all done>
+.endc
+;
+        DEVICEUNLOCK-				; all done 
+                LOCKADDR=ucb$l_dlck(r5),-
+                NEWIPL=(sp)+,-
+		CONDITION=RESTORE,-
+                PRESERVE=NO
+        movl    #ss$_normal, r0
+.if df TRACE
+	tr_print <SETMBK: sucess status 0x%x>,r0
+.endc
+100$:
+.if df TRACE
+	tr_print <SETMBK: final status 0x%x>,r0
+.endc
+        ret
+	.disable lsb
+	$LOCKED_PAGE_END 			
+
+.PAGE
+.SUBTITLE get_mbx_ucb
+;+
+; GET_MBX_UCB - Gets the ucb of a mailbox from its channel number
+;
+; Inputs:
+;    R1: Channel number
+; Outputs:
+;    R0: Status
+;    R1: CCB
+;    R5: UCB
+;-
+get_mbx_ucb:
+	.if	ndf VAX
+	.jsb_entry get_mbx_ucb input = <r1>, output = <r0,r1,r5>, preserve=<r2,r3>
+	.endc
+	movl	r1, r0				; load channel No.
+	jsb	g^ioc$verifychan		; validiate chan & get CCB addr
+	blbc	r0, 100$			; Quit with error
+;
+; R1 now contains CCB address.
+;
+	movl	ccb$l_ucb(r1), r5		; Get UCB address
+	movl	#ss$_normal, r0			; success
+100$:
+	rsb
+
+.PAGE
+.SUBTITLE chk_mbx_ucb
+;+
+; CHK_MBX_UCB - validates device is a mailbox
+; Inputs:
+;    R5: UCB
+; Outputs:
+;    R0: Status
+;-
+chk_mbx_ucb:
+	.if	ndf VAX
+	.jsb_entry chk_mbx_ucb input = <r5>, output = <r0>
+	.endc
+	movzbl	#ss$_devnotmbx, r0		; Assume bad device
+	cmpb	ucb$b_devclass(r5), #dc$_mailbox; This a mailbox?
+	bneq	100$				; Quit with error
+	tstb	ucb$b_devtype(r5)		; The built-in mailboxes 
+	beql	10$				;  have a type of zero
+	cmpb	ucb$b_devtype(r5), #dt$_mbx	; This a mailbox?
+	bneq	100$				; Quit with error
+10$:	
+	movl	#ss$_normal, r0			; success
+100$:	rsb
+
+.PAGE
+.SUBTITLE       getmsg
+;+
+; GETMSG - get mailbox messages
+;
+;       4(ap)   mailbox channel 
+;       8(ap)   address of buffer for messages
+;       12(ap)  size of buffer for messages (unsigned longword)
+;	16(ap)	addr of longword to store message count
+;
+;  register use
+;	r2	arglist
+;	r1	
+;	r0	status
+;-
+	.enable lsb
+	.CALL_ENTRY label=getmsg, home_args=TRUE, max_args=4,output=<r0>,preserve=<r2,r3,r5>
+	cmpb	#4, (ap)			; check argcount
+	beql	10$				; br if ok
+	movl	#ss$_insfarg, r0		; wrong !
+	brw	100$				;
+10$:	
+	movl	#ss$_accvio, r0			; Assume access violation
+	movl	16(ap), r1			; message count location
+	probew	#0, #4, (r1)			; check message count location
+	beql	100$				; Nope so quit
+	clrl	(r1)				; zero message count
+	movl	12(ap), r1			; get buffer size
+	movl	8(ap), r2			; buffer address
+	probew	#0, r1, (r2)			; check message buffer
+	beql	100$				; quit if no good
+;
+; lock message buffer in working set
+;
+	addl3	r1, r2, r1			; end address of buffer
+	pushl	r1				; end address of buffer
+	pushl	r2              		; start address of buffer
+	movl	sp, r2
+	$lkwset_s inadr = (r2), retadr=(r2)
+	addl2	#8, sp				; clear arg list from stack
+	blbc	r0, 100$
+;
+        movzwl  4(ap),r1                	; Get channel number
+	bsbw	get_mbx_ucb             	; get ucb of mailbox in r5
+	blbc	r0, 100$			; br if error
+;
+; setup arg list for kernel mode code on stack
+        movl    16(ap), -(sp)			; message count addr
+	movl	12(ap), -(sp)			; message buffer size
+	movl	8(ap), -(sp)			; message buffer addr
+	movl	r5, -(sp)               	; UCB address
+	movl	#4, -(sp)			; 4 args
+;
+;       go set the messages
+;
+	movl	sp, r2
+        $cmkrnl_s routin=getmsg_k, arglst=(r2)
+	addl2	#4*5, sp		; clear arg list from stack
+100$:
+        ret
+
+.PAGE
+.SUBTITLE       getmsg_k
+;+
+; GETMSG - get mailbox messages
+;
+;       4(ap)   mailbox UCB
+;       8(ap)   address of buffer for messages
+;       12(ap)  size of buffer for messages (unsigned longword)
+;	16(ap)	addr of longword to store message count
+;
+;  register use
+;	r9	current message buffer
+;	r8	current message buffer size
+;	r7	message buffer size/bytes remaining
+;	r6	message buffer address
+; 	r5	UCB address
+;	r4	start of message queue
+;	r3	message count
+;	r2	
+;	r1	
+;	r0	status
+;-
+	.enable lsb
+	$LOCKED_PAGE_START
+	.CALL_ENTRY label=getmsg_k, home_args=TRUE, max_args=4, output=<r0>, preserve=<r2,r3,r4,r5,r6,r7,r8>
+;
+	movl	4(ap), r5			; get UCB address
+	jsb chk_mbx_ucb				; check its a mailbox
+	blbc r0, 100$				; quit if not
+	movl	8(ap), r6			; get message buffer address
+	movl	12(ap), r7			; get message buffer size
+	clrl	r3				; no messages so far
+;
+        DEVICELOCK-				; synch with driver
+                LOCKADDR=ucb$l_dlck(r5),-
+                LOCKIPL=ucb$b_dipl(r5),-
+                SAVIPL=-(sp),-
+                PRESERVE=NO
+;
+	moval	ucb$l_mb_msgqfl(r5), r4		; start of message queue
+	movl	r4, r9
+;
+10$:
+	movl	(r9), r9			; get addr of msgbuf from flink
+	cmpl	r9, r4				; if back to start 
+	beql	99$				; then done
+;
+	movzwl	ucb$w_size(r9), r8		; get message buffer size
+.if df TRACE
+	tr_print <GETMBX: message %X, size %D, buf %X, bufsiz %d>,r9,r8,r6,r7
+.endc
+	pushr	#^m<r0,r1,r2,r3,r4,r5>		; save registers over move
+	movc5	r8, (r9), #0, r7, (r6)		; copy message
+	popr	#^m<r0,r1,r2,r3,r4,r5>		; Restore registers
+	addl2	r8, r6				; update buffer ptr
+	subl2	r8, r7				; update buffer space remaining
+      	incl	r3				; one more message in buffer
+.if df TRACE
+	tr_print <GETMBX: count %d, buf %X, bufsiz %d>,r3,r6,r7
+.endc
+	tstl	r7
+	bgtr	10$				; br if space remaining
+;
+99$:
+        DEVICEUNLOCK-				; all done 
+                LOCKADDR=ucb$l_dlck(r5),-
+                NEWIPL=(sp)+,-
+		CONDITION=RESTORE,-
+                PRESERVE=NO
+	movl	16(ap), r1
+	movl	r3, (r1)			; store number of messages
+        movl    #ss$_normal, r0
+100$:
+        ret
+	.disable lsb
+	$LOCKED_PAGE_END
+
+.PAGE
+.SUBTITLE       cvtpid
+;+
+; CVTPID - convert ipid to epid
+;
+;       4(ap)   ipid
+;
+;  register use
+;	r2	arglist
+;	r1	
+;	r0	status
+;
+; returns epid as result
+;-
+	$LOCKED_PAGE_START 			; lock following code in WS
+	.enable lsb
+	.CALL_ENTRY label=cvtpid, max_args=2,output=<r0>,preserve=<r2>
+	clrl	r0
+	cmpb	#1, (ap)			; check argcount
+	bneq	100$				;
+	movl	4(ap), r0			; get ipid
+	.if	ndf VAX
+	jsb	g^exe$cvt_ipid_to_epid		; convert to epid
+	.if_false
+	jsb	g^exe$ipid_to_epid		; convert to epid
+	.endc
+100$:
+        ret					; epid in r0
+	.disable lsb
+	$LOCKED_PAGE_END
+
+        .end

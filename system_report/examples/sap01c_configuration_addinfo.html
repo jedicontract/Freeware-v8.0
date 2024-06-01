@@ -1,0 +1,914 @@
+<h1>SAP01C: Additional Information</h1>
+<a name="APP_1"></a><h2>SAP23 $ TCPIP SHOW SERVICE</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+FINGER                79  TCP      TCPIP$FINGER     0.0.0.0             Disabled
+FTP                   21  TCP      TCPIP$FTP        0.0.0.0             Enabled
+LPD                  515  TCP      TCPIP$LPD        0.0.0.0             Disabled
+NTP                  123  UDP      TCPIP$NTP        0.0.0.0             Disabled
+POP                  110  TCP      TCPIP$POP        0.0.0.0             Enabled
+PORTMAPPER           111  TCP,UDP  TCPIP$PORTM      0.0.0.0             Enabled
+RDBSERVER            611  TCP      RDB80            0.0.0.0             Disabled
+REXEC                512  TCP      TCPIP$REXEC      0.0.0.0             Enabled
+RLOGIN               513  TCP      not defined      0.0.0.0             Enabled
+RSH                  514  TCP      TCPIP$RSH        0.0.0.0             Enabled
+SMTP                  25  TCP      TCPIP$SMTP       0.0.0.0             Enabled
+TELNET                23  TCP      not defined      0.0.0.0             Enabled
+TFTP                  69  UDP      TCPIP$TFTP       0.0.0.0             Enabled
+</pre>
+<a name="APP_2"></a><h2>SAP01 $ TCPIP SHOW SERVICE</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+BIND                  53  TCP,UDP  UCX$BIND         0.0.0.0             Disabled
+BOOTP                 67  UDP      UCX$BOOTP        0.0.0.0             Disabled
+ESNMP                705  UDP      ESNMP            0.0.0.0             Disabled
+FINGER                79  TCP      TCPIP$FINGER     0.0.0.0             Disabled
+FTP                   21  TCP      TCPIP$FTP        0.0.0.0             Enabled
+FTSO                1995  TCP      UCX$FTSOD        0.0.0.0             Disabled
+IMAP                 143  TCP      TCPIP$IMAP       0.0.0.0             Enabled
+LPD                  515  TCP      TCPIP$LPD        0.0.0.0             Enabled
+MOUNT                 10  TCP,UDP  TCPIP$MOUNTD     0.0.0.0             Disabled
+NFS                 2049  UDP      TCPIP$NFS        0.0.0.0             Disabled
+NTP                  123  UDP      TCPIP$NTP        0.0.0.0             Enabled
+PCNFS               5151  TCP,UDP  TCPIP$PCNFSD     0.0.0.0             Disabled
+POP                  110  TCP      TCPIP$POP        0.0.0.0             Enabled
+PORTMAPPER           111  TCP,UDP  TCPIP$PORTM      0.0.0.0             Enabled
+RDBSERVER              1  TCP      RDB              0.0.0.0             Enabled
+REXEC                512  TCP      TCPIP$REXEC      0.0.0.0             Enabled
+RLOGIN               513  TCP      not defined      0.0.0.0             Enabled
+RSH                  514  TCP      TCPIP$RSH        0.0.0.0             Enabled
+SMTP                  25  TCP      TCPIP$SMTP       0.0.0.0             Enabled
+SNMP                 161  UDP      TCPIP$SNMP       0.0.0.0             Disabled
+SSH                   22  TCP      TCPIP$SSH        0.0.0.0             Enabled
+TELNET                23  TCP      not defined      0.0.0.0             Enabled
+TFTP                  69  UDP      UCX$TFTP         0.0.0.0             Disabled
+XDM                  177  UDP      TCPIP$XDM        0.0.0.0             Enabled
+</pre>
+<a name="APP_3"></a><h2>SAP01 $ MCR LATCP SHOW NODE | SHOW NODE /STATUS | SHOW PORTS</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Node Name:   SAP01                          LAT Protocol Version:      5.3
+Node State:  On               
+Node Ident:   - SAP01 -
+
+Incoming Connections:  Enabled              Incoming Session Limit:   None
+Outgoing Connections:  Enabled              Outgoing Session Limit:   None
+Service Responder:     Disabled             Announcements:         Enabled
+
+Circuit Timer (msec):        80             Keepalive Timer (sec):      20
+Retransmit Limit (msg):     120             Node Limit (nodes):       None
+Multicast Timer (sec):       60             CPU Rating:                  0
+Maximum Unit Number:       9999             Extra Datalink Buffers:      9
+Queue Limit:                 24             Forward Session Limit:      16
+
+User Groups:     0, 200
+Service Groups:  0, 200
+Service Classes: 1, 3-4
+
+Service Name     Status      Rating  Identification
+SAP01            Available     27 D   - SAP01 -
+SAP01C           Available     27 D   - SAP01C -
+
+
+Node Name:   SAP01                          LAT Protocol Version:      5.3
+Node State:  On               
+Node Ident:   - SAP01 -
+
+                           Current   Highest   Maximum
+                           -------   -------   -------
+Active Circuits:                 0         0      1023
+Connected Sessions:              0         0    260865
+Incoming Queue Entries:          0         0        24
+Outgoing Queue Entries:          0         0     32767
+Unprocessed Announcements:       0         1       500
+Unprocessed Solicits:            0         0       250
+
+Local Services:                  2         2       255
+Available Services:             24        24       N/A
+Reachable Nodes:                 4         4       N/A
+
+Discarded Nodes:                 0
+
+
+Port Name  Port Type    Status         Remote Target (Node/Port/Service)
+---------  -----------  -------------  -----------------------------------------
+_LTA2:     Fwd. (NonQ)  Inactive       //
+_LTA197:   Fwd. (NonQ)  Inactive       LATCP$MGMT_PORT//
+
+</pre>
+<a name="APP_4"></a><h2>SAP23 $ MCR LATCP SHOW NODE | SHOW NODE /STATUS | SHOW PORTS</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Node Name:   SAP23                          LAT Protocol Version:      5.3
+Node State:  On               
+Node Ident:   - SAP23 -
+
+Incoming Connections:  Enabled              Incoming Session Limit:   None
+Outgoing Connections:  Enabled              Outgoing Session Limit:   None
+Service Responder:     Disabled             Announcements:         Enabled
+
+Circuit Timer (msec):        80             Keepalive Timer (sec):      20
+Retransmit Limit (msg):     120             Node Limit (nodes):       None
+Multicast Timer (sec):       60             CPU Rating:                  0
+Maximum Unit Number:       9999             Extra Datalink Buffers:      9
+Queue Limit:                 24             Forward Session Limit:      16
+
+User Groups:     0, 200, 210
+Service Groups:  0, 210
+Service Classes: 1
+
+Service Name     Status      Rating  Identification
+SAP23            Available     32 D   - SAP23 -
+
+
+Node Name:   SAP23                          LAT Protocol Version:      5.3
+Node State:  On               
+Node Ident:   - SAP23 -
+
+                           Current   Highest   Maximum
+                           -------   -------   -------
+Active Circuits:                 0         0      1023
+Connected Sessions:              0         0    260865
+Incoming Queue Entries:          0         0        24
+Outgoing Queue Entries:          0         0     32767
+Unprocessed Announcements:       0        18       500
+Unprocessed Solicits:            0         1       250
+
+Local Services:                  1         1       255
+Available Services:             26        26       N/A
+Reachable Nodes:                 6         6       N/A
+
+Discarded Nodes:                 0
+
+
+Port Name  Port Type    Status         Remote Target (Node/Port/Service)
+---------  -----------  -------------  -----------------------------------------
+_LTA246:   Fwd. (NonQ)  Inactive       LATCP$MGMT_PORT//
+_LTA247:   Fwd. (NonQ)  Inactive       LATCP$MGMT_PORT//
+
+</pre>
+<a name="APP_5"></a><h2>SHOW DEVICE /FULL _DSA0:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA0:, device type RF72, is online, mounted, file-oriented device,
+    shareable, available to cluster, error logging is enabled, device supports
+    bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed             742118
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             8380008    Sectors per track                   113
+    Total cylinders             3708    Tracks per cylinder                  20
+    Logical Volume Size      8380008    Expansion Size Limit            8589312
+
+    Volume label        "VAX_SYSTEM"    Relative volume number                0
+    Cluster size                   9    Transaction count                     1
+    Free blocks              5232186    Maximum files allowed            419000
+    Extend quantity               90    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache   523218
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+  Volume is also mounted on SAP23.
+
+Disk $1$DIA1110:, device type RF72, is online, member of shadow set DSA0:,
+    shadow set virtual unit, served to cluster via MSCP Server, error logging is
+    enabled.
+
+    Error count                    0    Shadow member operation count    421772
+    Current preferred CPU Id       0    Fastpath                              0
+    Host name                "HSD01"    Host type, avail              RF72, yes
+    Alternate host name      "SAP23"    Alt. type, avail     VAX 4000-105A, yes
+    Allocation class               1
+
+Disk $1$DIA1210:, device type RF72, is online, member of shadow set DSA0:,
+    shadow set virtual unit, served to cluster via MSCP Server, error logging is
+    enabled.
+
+    Error count                    0    Shadow member operation count    421745
+    Current preferred CPU Id       0    Fastpath                              0
+    Host name                "HSD02"    Host type, avail              RF72, yes
+    Alternate host name      "SAP23"    Alt. type, avail     VAX 4000-105A, yes
+    Allocation class               1
+
+</pre>
+<a name="APP_6"></a><h2>SHOW DEVICE /FULL _DSA1:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA1:, device type DEC RZ1EF-CB, is online, mounted, file-oriented device,
+    shareable, available to cluster, error logging is enabled, device supports
+    bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed           10403604
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count             1369    Default buffer size                 512
+    Total blocks            35565080    Sectors per track                   254
+    Total cylinders             7001    Tracks per cylinder                  20
+    Logical Volume Size     35565080    Expansion Size Limit         2147549184
+
+    Volume label        "AXP_SYSTEM"    Relative volume number                0
+    Cluster size                   9    Transaction count                   889
+    Free blocks             25316379    Maximum files allowed           1777352
+    Extend quantity               90    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  2531637
+    File ID cache size           500    Blocks in extent cache            10179
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, protected subsystems enabled, file high-water marking, write-
+      through caching enabled, access dates enabled, hard links enabled.
+  Volume is also mounted on SAP23.
+
+Disk $1$DKE300:, device type DEC RZ1EF-CB, is online, member of shadow set
+    DSA1:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   4860793
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+Disk $1$DKF300:, device type DEC RZ1EF-CB, is online, member of shadow set
+    DSA1:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   4858403
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+</pre>
+<a name="APP_7"></a><h2>SHOW DEVICE /FULL _DSA2:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA2:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed           11430594
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count              135    Default buffer size                 512
+    Total blocks            17773524    Sectors per track                   168
+    Total cylinders             5290    Tracks per cylinder                  20
+    Logical Volume Size     17773524    Expansion Size Limit           17879040
+
+    Volume label          "CNC_DISK"    Relative volume number                0
+    Cluster size                   9    Transaction count                   169
+    Free blocks             10020924    Maximum files allowed           1777352
+    Extend quantity               90    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  1002092
+    File ID cache size           500    Blocks in extent cache            52452
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled, access
+      dates enabled, hard links enabled.
+  Volume is also mounted on SAP23.
+
+Disk $1$DKB400:, device type DEC RZ1DB-CA, is online, member of shadow set
+    DSA2:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   9775652
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+Disk $1$DKD400:, device type DEC RZ1DB-CA, is online, member of shadow set
+    DSA2:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   9775411
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+</pre>
+<a name="APP_8"></a><h2>SHOW DEVICE /FULL _DSA3:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA3:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed            6556702
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count               38    Default buffer size                 512
+    Total blocks            35565080    Sectors per track                   254
+    Total cylinders             7001    Tracks per cylinder                  20
+    Logical Volume Size     35565080    Expansion Size Limit         2147549184
+
+    Volume label              "USER"    Relative volume number                0
+    Cluster size                   9    Transaction count                    36
+    Free blocks             21836547    Maximum files allowed            250000
+    Extend quantity               90    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  2183654
+    File ID cache size           500    Blocks in extent cache          1171773
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+  Volume is also mounted on SAP23.
+
+Disk $1$DKE100:, device type DEC RZ1EF-CB, is online, member of shadow set
+    DSA3:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   5665506
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+Disk $1$DKF100:, device type DEC RZ1EF-CB, is online, member of shadow set
+    DSA3:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   5666531
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+</pre>
+<a name="APP_9"></a><h2>SHOW DEVICE /FULL _DSA9:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA9:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed            3675466
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count              111    Default buffer size                 512
+    Total blocks            71132000    Sectors per track                   254
+    Total cylinders            14003    Tracks per cylinder                  20
+    Logical Volume Size     71132000    Expansion Size Limit           72167424
+
+    Volume label       "APPLICATION"    Relative volume number                0
+    Cluster size                  21    Transaction count                   120
+    Free blocks             48046719    Maximum files allowed           1616636
+    Extend quantity              210    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  4804671
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+  Volume is also mounted on SAP23.
+
+Disk $1$DKE500:, device type COMPAQ BA03611C9B, is online, member of shadow set
+    DSA9:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   2538015
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+Disk $1$DKF500:, device type COMPAQ BA03611C9B, is online, member of shadow set
+    DSA9:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   2540067
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+</pre>
+<a name="APP_10"></a><h2>SHOW DEVICE /FULL _DSA13:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA13:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed            2330068
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                2    Default buffer size                 512
+    Total blocks            71132000    Sectors per track                   254
+    Total cylinders            14003    Tracks per cylinder                  20
+    Logical Volume Size     71132000    Expansion Size Limit          131608576
+
+    Volume label              "KITS"    Relative volume number                0
+    Cluster size                 127    Transaction count                    26
+    Free blocks             14464792    Maximum files allowed            277859
+    Extend quantity              381    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  1446479
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+  Volume is also mounted on SAP23.
+
+Disk $1$DKB600:, device type COMPAQ BA03611C9B, is online, member of shadow set
+    DSA13:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   1586757
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+Disk $1$DKD600:, device type COMPAQ BA03611C9B, is online, member of shadow set
+    DSA13:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   1585958
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+</pre>
+<a name="APP_11"></a><h2>SHOW DEVICE /FULL _DSA19:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA19:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed            1180693
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                2    Default buffer size                 512
+    Total blocks            71132000    Sectors per track                   254
+    Total cylinders            14003    Tracks per cylinder                  20
+    Logical Volume Size     71132000    Expansion Size Limit           71319552
+
+    Volume label        "BAX_CL_1_1"    Relative volume number                1
+    Cluster size                  12    Transaction count                     1
+    Free blocks             60095700    Maximum files allowed           2735846
+    Extend quantity              120    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  6009570
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+  Volume is also mounted on SAP23.
+  Members of this volume set are DSA19: (rvn 1), DSA6000: (rvn 2).
+
+Disk DSA6000:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed            2434345
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks            71132000    Sectors per track                   254
+    Total cylinders            14003    Tracks per cylinder                  20
+    Logical Volume Size     71132000    Expansion Size Limit           71319552
+
+    Volume label        "BAX_CL_1_2"    Relative volume number                2
+    Cluster size                  12    Transaction count                     2
+    Free blocks             53835072    Maximum files allowed            250000
+    Extend quantity              120    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  5383507
+    File ID cache size           500    Blocks in extent cache          4623888
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+  Volume is also mounted on SAP23.
+  Members of this volume set are DSA19: (rvn 1), DSA6000: (rvn 2).
+
+Disk $1$DKB0:, device type COMPAQ BD036635C5, is online, member of shadow set
+    DSA6000:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   2435191
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+Disk $1$DKB200:, device type COMPAQ BA03611C9B, is online, member of shadow set
+    DSA19:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   1181597
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+</pre>
+<a name="APP_12"></a><h2>SHOW DEVICE /FULL _DSA20:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk DSA20:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed            2715411
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count               17    Default buffer size                 512
+    Total blocks            71132000    Sectors per track                   254
+    Total cylinders            14003    Tracks per cylinder                  20
+    Logical Volume Size     71132000    Expansion Size Limit           71319552
+
+    Volume label        "BAX_CL_2_1"    Relative volume number                1
+    Cluster size                  12    Transaction count                    14
+    Free blocks             53898660    Maximum files allowed           2735846
+    Extend quantity              120    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  5389866
+    File ID cache size           500    Blocks in extent cache           105540
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Min ret. period    7-00:00:00.00    Max ret. period          14-00:00:00.00
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+  Volume is also mounted on SAP23.
+  Members of this volume set are DSA20: (rvn 1), DSA6001: (rvn 2).
+
+Disk DSA6001:, device type Generic SCSI disk, is online, mounted, file-oriented
+    device, shareable, available to cluster, error logging is enabled, device
+    supports bitmaps (no bitmaps active).
+
+    Error count                    0    Operations completed            2664859
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks            71132000    Sectors per track                   254
+    Total cylinders            14003    Tracks per cylinder                  20
+    Logical Volume Size     71132000    Expansion Size Limit           71319552
+
+    Volume label        "BAX_CL_2_2"    Relative volume number                2
+    Cluster size                  12    Transaction count                     3
+    Free blocks             49556568    Maximum files allowed            250000
+    Extend quantity              120    Mount count                           2
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache  4955656
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+  Volume is also mounted on SAP23.
+  Members of this volume set are DSA20: (rvn 1), DSA6001: (rvn 2).
+
+Disk $1$DKD0:, device type COMPAQ BD036635C5, is online, member of shadow set
+    DSA6001:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   2726503
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+Disk $1$DKD200:, device type COMPAQ BD036635C5, is online, member of shadow set
+    DSA20:, served to cluster via MSCP Server, error logging is enabled.
+
+    Error count                    0    Shadow member operation count   2802404
+    Current preferred CPU Id       0    Fastpath                              1
+    Allocation class               1
+
+</pre>
+<a name="APP_13"></a><h2>SHOW DEVICE /FULL _$1$LDA100:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA100: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                219
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1251192    Sectors per track                    33
+    Total cylinders             1149    Tracks per cylinder                  33
+    Logical Volume Size      1250000    Expansion Size Limit            1277952
+    Allocation class               1
+
+    Volume label      "AXPDOCSEP041"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks               310290    Maximum files allowed            156250
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache    31029
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC  [DEFAULT,SYSTEM]
+                                        Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_14"></a><h2>SHOW DEVICE /FULL _$1$LDA101:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA101: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                235
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1251192    Sectors per track                    33
+    Total cylinders             1149    Tracks per cylinder                  33
+    Logical Volume Size      1250000    Expansion Size Limit            1277952
+    Allocation class               1
+
+    Volume label      "AXPDOCSEP042"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks                12048    Maximum files allowed            156250
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache     1204
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC  [DEFAULT,SYSTEM]
+                                        Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_15"></a><h2>SHOW DEVICE /FULL _$1$LDA102:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA102: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                202
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1251192    Sectors per track                    33
+    Total cylinders             1149    Tracks per cylinder                  33
+    Logical Volume Size      1250000    Expansion Size Limit            1277952
+    Allocation class               1
+
+    Volume label      "AXPDOCSEP043"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks               695235    Maximum files allowed            156250
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache    69523
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC  [DEFAULT,SYSTEM]
+                                        Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_16"></a><h2>SHOW DEVICE /FULL _$1$LDA103:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA103: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                263
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1100000    Sectors per track                    32
+    Total cylinders             1075    Tracks per cylinder                  32
+    Logical Volume Size      1100000    Expansion Size Limit            1130496
+    Allocation class               1
+
+    Volume label        "VMSDOC0732"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks                74148    Maximum files allowed            156250
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache     7414
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC  [DEFAULT,SYSTEM]
+                                        Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_17"></a><h2>SHOW DEVICE /FULL _$1$LDA104:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA104: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                332
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             2230000    Sectors per track                    38
+    Total cylinders             1505    Tracks per cylinder                  39
+    Logical Volume Size      2230000    Expansion Size Limit            2236416
+    Allocation class               1
+
+    Volume label        "FREEWARE50"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks                77775    Maximum files allowed            278750
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache     7777
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_18"></a><h2>SHOW DEVICE /FULL _$1$LDA106:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA106: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                238
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1500000    Sectors per track                    35
+    Total cylinders             1261    Tracks per cylinder                  34
+    Logical Volume Size      1500000    Expansion Size Limit            1503232
+    Allocation class               1
+
+    Volume label        "FREEWARE60"    Relative volume number                0
+    Cluster size                   1    Transaction count                     1
+    Free blocks                43844    Maximum files allowed            375000
+    Extend quantity                3    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache     4384
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, write-back caching enabled.
+
+</pre>
+<a name="APP_19"></a><h2>SHOW DEVICE /FULL _$1$LDA107:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA107: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed               3427
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             3000000    Sectors per track                    41
+    Total cylinders             1743    Tracks per cylinder                  42
+    Logical Volume Size      3000000    Expansion Size Limit            3010560
+    Allocation class               1
+
+    Volume label        "FREEWARE70"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks                58815    Maximum files allowed            250000
+    Extend quantity               32    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache     5881
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-5, subject to mount verification, do not unload on
+      dismount, write-back caching enabled, access dates enabled, hard links
+      enabled.
+
+</pre>
+<a name="APP_20"></a><h2>SHOW DEVICE /FULL _$1$LDA108:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA108: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                286
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1200000    Sectors per track                    33
+    Total cylinders             1102    Tracks per cylinder                  33
+    Logical Volume Size      1200000    Expansion Size Limit            1204224
+    Allocation class               1
+
+    Volume label          "ALPHA082"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks                92706    Maximum files allowed            150000
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache     9270
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_21"></a><h2>SHOW DEVICE /FULL _$1$LDA109:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA109: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed               7360
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1000000    Sectors per track                    32
+    Total cylinders             1009    Tracks per cylinder                  31
+    Logical Volume Size      1000000    Expansion Size Limit            1019904
+    Allocation class               1
+
+    Volume label         "VMSDOC082"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks                70647    Maximum files allowed            156250
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache     7064
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC  [DEFAULT,SYSTEM]
+                                        Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_22"></a><h2>SHOW DEVICE /FULL _$1$LDA110:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA110: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                718
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1300000    Sectors per track                    33
+    Total cylinders             1159    Tracks per cylinder                  34
+    Logical Volume Size      1300000    Expansion Size Limit            1302528
+    Allocation class               1
+
+    Volume label      "OVMS-BSOL-05"    Relative volume number                0
+    Cluster size                   1    Transaction count                     1
+    Free blocks                12728    Maximum files allowed            325000
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache     1272
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_23"></a><h2>SHOW DEVICE /FULL _$1$LDA111:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA111: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                192
+    Owner process                 ""    Owner UIC              [DEFAULT,SYSTEM]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks              750000    Sectors per track                    29
+    Total cylinders              892    Tracks per cylinder                  29
+    Logical Volume Size       750000    Expansion Size Limit             761856
+    Allocation class               1
+
+    Volume label          "ALP082LP"    Relative volume number                0
+    Cluster size                   3    Transaction count                     1
+    Free blocks               128256    Maximum files allowed             93750
+    Extend quantity                5    Mount count                           1
+    Mount status              System    Cache name             "_DSA1:XQPCACHE"
+    Extent cache size            500    Maximum blocks in extent cache    12825
+    File ID cache size           500    Blocks in extent cache                0
+    Quota cache size               0    Maximum buffers in FCP cache       4038
+    Volume owner UIC           [1,1]    Vol Prot    S:RWCD,O:RWCD,G:RWCD,W:RWCD
+
+  Volume Status:  ODS-2, subject to mount verification, do not unload on
+      dismount, file high-water marking, write-back caching enabled.
+
+</pre>
+<a name="APP_24"></a><h2>SHOW DEVICE /FULL _$1$LDA112:</h2><pre style={background-color:blanchedalmond;font-weight:normal;}>
+
+Disk $1$LDA112: (SAP01), device type Foreign disk type 1, is online, mounted,
+    software write-locked, file-oriented device, shareable, available to
+    cluster.
+
+    Error count                    0    Operations completed                674
+    Owner process                 ""    Owner UIC                         [0,0]
+    Owner process ID        00000000    Dev Prot            S:RWPL,O:RWPL,G:R,W
+    Reference count                1    Default buffer size                 512
+    Total blocks             1500000    Sectors per track                    35
+    Total cylinders             1261    Tracks per cylinder                  34
+    Allocation class               1
+
+    Volume label       "AXPDOCMAR05"    Relative volume number                1
+    Cluster size                   0    Transaction count                     1
+    Free blocks                    0    Maximum files allowed                 0
+    Extend quantity                0    Mount count                           1
+    Mount status              System    ACP process name           "LDA112CACP"
+
+  Volume Status:  ISO 9660, do not unload on dismount.
+  Members of this volume set are $1$LDA112: (rvn 1).
+
+</pre>

@@ -1,0 +1,1373 @@
+	.TITLE CNTRPRC
+	.IDENT /V03-001/
+; 1-001	1993		PB	Creation
+; 1-002 13-aug-1995	PB	Added debug code
+; 1-003	15-aug-1995	PB	As a result of above, fixed 2 bugs:
+;				1. On detection of record that should be in
+;				DB and is not the create rec sequence is
+;				called. This always resulted in a DUP key as
+;				the routine used the address of the key rather
+;				than the key. This now fixed.
+;			        2. On new rec we used EXE$GL_ABSTIM as the
+;				unique key. This tics over every second and
+;				on many recs in a row, dup keys and retries
+;				were prevalent. Now use ABSTIM_TICS which
+;				updates every 10 ms and shoul lower number
+;				of retries.
+; Version 2: 	Feb-2002	PB
+; Carved out of the EMU system and made useful for other purposes:
+;	All calculations are now in Ffloat format. That is all inputs,
+;	outputs are Ffloat.
+;	Time is now stored as .quad - Finaly survives reboot!
+;	Time may now be input - allows historical data to be loaded
+;	and processed correctly.		
+; Version 3: 	Jan-2004	PB
+;	Broke code up into 3 seperate routines to handle .long (integer),
+;	.float (F) and .quad inputs. Changed rules on input to allow
+;	caller to specify datatype.
+;	Datatypes can be mixed in database.
+;
+;	Changed processing such that a single file now carries the 
+;	database rather than an index and the database. All required
+;	data is now in one file (CNTRPRC.DAT). One consequence of this
+;	is that each entry now corresponds to one data item rather than
+;	each entry linking a number of related components together.
+;	Display routines now are required to find related items rather
+;	than simply processing the array.
+;
+;	The indexing (RMS Keys) are set to allow any number of facilities
+;	to share this processing/database. Any facility must be recorded
+;	in _CNTRPRCDEF.MAR and is free to use as much or as little of the 
+;	record keys avaialble with the following restrictions:
+;	NODE, Facility and CODE must be present.
+;	The entire 112 key is used as primary and must be unique 
+;++
+;1 CNTRPRC
+; This routine keeps a list of counters, processing them into a table 
+; showing short and long term performance.
+;
+; The routine provides the following functions:
+; 1. Create a counter record.
+;	Determines format and size of record and creates appropriately
+; 2. Process counter input and return status
+;     Status return is based on threasholds set by this routine. The
+;     threasholds are calculated based on input samples and the 'allowed
+;     movement' is changed as conditions warrant.
+;	
+;2 Inputs
+; Calling sequence (Calling order - numbers are offsets from (AP)
+;     	CTP_L_FUNC	4	; .long Function code
+;	CTP_A_SMPLE	8	; .addres of sample
+;	CTP_L_DTYPE	12	; .long datatype of SAMPLE (Below for defs)
+;	CTP_A_CNTID	16	; .address of Record Key            
+;	CTP_L_OUTP	20	; .address of 8 byte output area
+;	CTP_A_TIME	24	; .address of .quad VMS absolute time.
+;				; optional. If not present current time is
+;				; used. Note time field is NOT reordered.
+;				; You put these in out of order, that is the
+;				; way they come out!
+;3 Function_codes
+; Function codes, may take on the following values: 
+;		CTP_V_FNCR 	1	; Create counter record
+;		CTP_V_RECA	2	; Return address of rec in OUTP 
+;		CTP_V_FNPR	3	; Process counter
+;		CTP_V_FNDL	4	; Delete Record
+; 		Any other value is invalid
+;3 Data_Types_Supported
+; DTYPE may take on the following values: 
+;		CTP_V_INT 	1	; 32 Bit unsigned integer
+;		CTP_V_QUAD	2	; 64 Bit unsigned integer
+;		CTP_V_FLT	3	; F-float
+; Second byte of DTYPE is processing options for this item:
+;		CTP_V_INCR 	8	; Incrementer - process increase from last sam
+;      		CTP_V_GUAGE 	9	; Guage - process as presented
+;      		CTP_V_ARRAY 	10	; Item is array - special processing
+; 		Any other value is invalid
+; CTP_A_SMPLE: The address of value to be processed into the table and compared
+; 		with recent values recieved for this CNTID
+; CTP_A_CNTID:
+; Points to the record key. The record key is made from Node name,facility and 
+; factility code. Must be present (and correct) in all calls. 
+; For create there is minimal error checking.
+;CTP_A_SMPLE:
+; 	Must be .ge 0. This is the most recent value received for this
+;	counter. 
+;2 Outputs
+;	CTP_L_OUTP Status block always written.
+;  
+;2 Returns
+;	SS$_NORMAL      Success 
+;	SS$_BADPARAM	Number of params was .NE. 5 or 6
+;			One of the following is not true:
+;			Sample not .ge. 0 
+;			Function code is out of valid range (1-4)
+;			Data Type is out of valid range (1-3)
+;	SS$_ACCVIO	Can't read/write inpt/outp parms 
+;	Any return from RMS
+;3 Status_Block
+; If the function called is Process a status block is written:
+; CTP_A_OUTP:
+; Address of 8 byte array this routine writes to. (Offsets):
+;       CTP_W_OSTS     0       ; Additional status return
+;       CTP_W_TRSH     4       ; Threashold that was exceeded
+;       CTP_W_ESTS     6       ; Final error status
+; For Process function:
+;   CTP_W_OSTS: 
+;               SS$_NORMAL      ; No threasholds exceedeed
+;               SS$_NODATA      ; Not enough info stored ( < 8 samples)
+;               SS$_DATACHECK   ; At least 1 threshold exceeded
+;   CTP_W_TRSH:
+;		The Threashold exceeded
+;		1 = Short term Hi
+;		2 = Short term Lo
+;		3 = Long term Hi
+;		4 = Long term Lo
+;		5 = Max
+;		6 = Min
+;   CTP_W_ESTS:
+;		Final error status
+; 		A factor showing the amount TRSH was exceeded. It is a value 
+;		that grows (with limits) with the amount the threashold was
+;		exceeded. 
+; In the case of multiple violations TRSH is the last ID to be exceeded
+; and ESTS is the accumulation of all errors. 
+;2 Record_formats
+; There are 2 main record formats with Long and floats sharing one and 
+; quad having another. The overall record sizes are controlled by 
+; symbol CTP_C_MAXSMPL. (see _CNTRPRCDEF.MAR)
+;
+;3 Record_format
+;  Symbols in _CNTRPRCDEF.MAR
+;   Symbol	Offset		Desc
+; Key
+; CTP_Q_NODE	0	; Node name (space padded) 
+; CTP_L_FAC	8	; Facility (Below)
+; CTP_L_CODE	12	; RMI,QUOMON etc. Code
+; CTP_AR_SPEC	16	; Facility specific (96 bytes)
+; CTP_C_KEYSIZ	112	; Total Key Size
+; Data
+; CTP_L_DTYP	CTP_C_KEYSIZ	; Data Type
+; CTP_L_CATGRY	CTP_C_KEYSIZ+4	; Category (bit pattern)
+; CTP_X_LTCNT	CTP_C_KEYSIZ+8	;  Long term sample count  ;
+; CTP_X_LTTOT	CTP_C_KEYSIZ+12	;  Long term total;
+; CTP_X_LTRNG	CTP_C_KEYSIZ+16	;  Long term range (% movement);
+; CTP_X_STRNG	CTP_C_KEYSIZ+20	;  Short term range (% movement);
+; CTP_X_STCNT	CTP_C_KEYSIZ+24	;  Short term sample count;
+; CTP_X_MAX	CTP_C_KEYSIZ+28	; Max Value seen;
+; CTP_X_MIN	CTP_C_KEYSIZ+32	; Min Value seen;
+; CTP_Q_LASTSN	CTP_C_KEYSIZ+36	; Last time sample rec'ed  
+; CTP_F_SLOPE	CTP_C_KEYSIZ+44	; Calculated Slope of line
+; CTP_L_SPARE	CTP_C_KEYSIZ+48	; Spare/Align
+; CTP_L_TBLPNT	CTP_C_KEYSIZ+52	; Index to tables    ;
+  
+; Tables within records ;
+; CTP_TQ_TIMTBL	CTP_C_KEYSIZ+56	; System time this sample (EXE$GQ_SYSTIME)    ;
+; CTP_TF_SAMTBL	CTP_C_MAXSMPL*8+CTP_TQ_TIMTBL ; Last MAXSMPL samples ;
+; CTPRECSIZE	CTP_C_MAXSMPL*12+CTP_TQ_TIMTBL ; Rec size (bytes);
+;3 Notes
+; LTCNT and LTTOT are respectively, the count of samples received and the 
+; total of those samples. There is a mechanism for overflows.
+; LTRNG and STRNG are values to be interpreted as the percentage from current
+; averages this counter has moved recently.To arrive at 'normal or expected'
+; values for any regular sample received, this number is a range, expressed as
+; a percentage of the current average, that the current sample is expected to 
+; be wihin.
+; If it is not, a warning status is returned and the number adjusted upward.
+; If it is, a normal status is returned and the number is adjusted down.   
+; Over time, a widly varying counter will have a large number and a counter
+; with relatively stable values will have a proportionaly smaller number.
+; What we are after here is a measure of the amount of variation a stream of
+; values normally exhibits and detect abnormal variations.
+; See usage_notes for more detail. 
+; STCNT counts the entries the tables.It rises to the max and stays there.
+; See the table desc.
+; MIN, MAX are simply the Lowest and Highest values recorded for the sample.
+; Tables:
+; TIMTBL is the VMS standard absolute time and is either the input time or
+; if input is absent, the time the sample was processed.
+; SAMTBL is the last x samples received (longs or floats). 
+; Both are indexed by TBLPNT which counts to MAXSMPL and cycles back to 0.
+; We thus have two circular buffers in lock-step that describe a counter's 
+; change in value over a known period of time.
+;
+;2 Usage_Note 
+; This routine provides 'back-end' support to the
+; current counter processors (GET_RMI, QUOMON) which
+; preprocess raw counter info and post process the results from this routine.
+; It is the results of those routines, passed to this routine on a regular,
+; periodic basis that will yeild the best results.
+; While this routine may be called  and used from anywhere, it is
+; not intended to provide usefulness outside this context. 
+;
+;3 Calculations:
+; Short term :
+;	If STCNT < 8:               ; Less than 8 samples not useful
+;		OSTS = SS$_NODATA
+;		Skip to all_cases
+;	Add  STCNT samples together and divide by STCNT   
+;	Average + Range * Average /100  = Hi threash  
+;	Average - Range * Average /100  = Lo threash
+; 	Factor = Hi - Sample
+;	If factor is negative:
+;		Factor = factor*-1 (Make positive)
+;		Error severity = Factor/10+5 Limited to Max = 50
+;		STRNG = (STRNG/10)+STRNG - (increase by 10%)
+; 	Factor = Sample - Lo 
+;	If factor is negative:
+;		Factor = factor*-1 (Make positive)
+;		Error severity = Factor/10+5 Limited to Max = 50
+;		STRNG = (STRNG/10)+STRNG - (increase by 10%)
+;	Else:
+;		Decr STRNG   		; Lower allowed variation
+; In all_cases:
+;		Replace LASTSN with INPUT time
+;		Put Sample in next table location[STCNT]
+;		Put current (or input)time in next table location[STCNT]
+;		Increment STCNT
+;	If STCNT > 48:
+;		STCNT = 0
+;	
+; Long Term :
+;		If OSTS = SS$_NODATA:
+;			Do All_Cases calc
+;			If Sample > Max then Max = Sample
+;			If Sample < Min then Min = Sample
+;			Finish
+;		Else:
+;			OSTS = SS$_NORMAL
+;			Skip to Min/Max	
+;	ELSE:	
+;	Average = Total/Count  
+;	Average + Range * Average /100  = Hi threash  
+;	Average - Range * Average /100  = Lo threash
+; 	Factor = Hi - Sample
+;	If factor is negative:
+;		Factor = factor*-1 (Make positive)
+;		Error = Error +(Factor/10+5 Limited to Max = 100)
+;		ESTS = ESTS + Error
+; 	Factor = Sample - low
+;	If factor is negative:
+;		Factor = factor*-1 (Make positive)
+;		Error = Error +(Factor/10+5 Limited to Max = 100)
+;		ESTS = ESTS + Error
+;   All_Cases:
+;   	Total = Total+Sample
+;	Count = Count+1	
+; 	If Total overflows:
+;		Total = Add  STCNT samples from table together    
+;		Count = STCNT
+;
+; Max/Min:
+;	Factor = Max-sample
+;	If Factor < 0 
+;		Error = Error +(Factor/10 limited to Max = 100)
+;		ESTS = ESTS + Error
+;		Max = Sample
+;	Factor = Sample - Min 
+;	If Factor < 0 :
+;		Factor = factor*-1 (Make positive)
+;		Error = Error +(Factor/10 limited to Max = 100)
+;		ESTS = ESTS + Error
+;	
+;--
+	.library	/CNTPRC.MLB/
+
+	$SSDEF		; System Services
+        $RMIDEF
+	CNTRPRCDEF	; 
+	.PSECT	CNTRPRC_D,WRT,NOEXE,PIC,NOSHR,QUAD
+
+	.ALIGN 	LONG
+File:
+CNTRPRCFAB:	$FAB  FAC = <DEL,UPD,GET,PUT>,-        	; Access
+		SHR = <DEL,UPD,GET,PUT>,- ; Share with readers
+		FOP = CIF,-
+		ORG = IDX,-			; Keyed file (Finally)
+		FNM = <CNTRPRC>,-      ; Filename 
+		DNM = <PFM_ROOT:[000000]CNTRPRC.DAT.>,-      ; Filename 
+		MRS = CTPRECSIZE,-
+		XAB = CNTRPRCXAB
+CNTRPRCRAB:	
+		$RAB  FAB = CNTRPRCFAB,-            ; Record 
+ 		RBF = CNTRPRCREC,-
+		UBF = CNTRPRCREC,-
+		USZ = CTPRECSIZE,-
+		RSZ = CTPRECSIZE,-
+		RAC = KEY,-		; KEY access
+		KBF = KEY_BUF,-
+		KSZ = 112
+CNTRPRCXAB:
+	  	$XABKEY	REF = 0,-  	; Primary key
+		DTP = STG,-             ; Key = 12 Bytes
+		POS = 0,-               ; Key position
+		SIZ = 112,-             ; Key len
+                NXT = CNTRPRCXAB1
+CNTRPRCXAB1:
+	  	$XABKEY	REF = 1,-  	; Second key
+		DTP = STG,-             ; Key = 8 Bytes(node name space padded)
+		POS = 0,-               ; Key position
+		SIZ = 8,-               ; Key len
+                FLG = <DUP>,-           ; Duplicates, changes allowed
+                NXT = CNTRPRCXAB2
+CNTRPRCXAB2:
+	  	$XABKEY	REF = 2,-  	; 
+		DTP = BN4,-             ; FACILITY
+		POS = 8,-               ; Key position
+		SIZ = 4,-               ; Key len
+                FLG = <DUP>,-           ; Duplicates, changes allowed
+                NXT = CNTRPRCXAB3
+CNTRPRCXAB3:
+	  	$XABKEY	REF = 3,-  	; 
+		DTP = BN4,-             ; Code
+		POS = 12,-              ; Key position
+		SIZ = 4,-               ; Key len
+                FLG = <DUP>,-           ; Duplicates, changes allowed
+                NXT = CNTRPRCXAB4
+CNTRPRCXAB4:
+	  	$XABKEY	REF = 4,-  	 ; 
+		DTP = STG,-              ; Facility specific
+		POS = 16,-               ; Key position
+		SIZ = 96,-               ; Key len
+                FLG = <DUP>              ; Duplicates, changes allowed
+
+;
+	.ALIGN	QUAD
+KEY_BUF:		
+CNTRPRCREC:             .BLKB	CTPRECSIZE
+
+
+; Temporary Symbols   
+QSAMPLE:	.QUAD	0
+INPTTIME:	.QUAD	0
+SYSTIM:		.QUAD	0	; Systime at start
+QSUM:		.QUAD
+QTIME:		.QUAD	0
+QRESULT:	.QUAD	0
+ABSTIM:		.LONG	0	; Time in TICS at start
+RTIME:		.LONG	0
+FTIME:		.FLOAT	0
+LSMPL:		.LONG	0
+;
+F50:	.FLOAT 50
+F1:	.FLOAT	1
+F8:	.FLOAT 	8
+F100:	.FLOAT	100
+F2:	.FLOAT	2
+F10:	.FLOAT	10
+FMAXSMPL:  .FLOAT	0.0
+	.psect	CNTRPRC_code,nowrt,exe,shr,pic,long
+	.CALL_ENTRY	MAX_ARGS=12, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=CNTRPRC
+
+
+	MOVAB	CNTRPRC_HANDLER,(FP)	; condition handler
+	
+; Verify we can access params
+	PROBEW	#0,#8,@CTP_A_OUTP(AP)  		; Write Outp?
+	BNEQ	20$				; Yes
+	MOVL	#SS$_ACCVIO,R0
+	RET
+; Check if this is 1st call. If so Initilise.
+20$:
+	TSTL	ABSTIM			; 
+	BNEQU	30$			; Initilisation done
+	BSBW	INITIALISE		; Initialise 
+30$:
+; Determine what time to use (input or current)
+	CMPL	#6,(AP)			; Input present?
+	BEQLU	35$			; Br YES
+	MOVQ	EXE$GQ_SYSTIME,INPTTIME ; Use current
+	BRW	40$			;
+35$:
+	MOVQ	@24(AP),INPTTIME 	; Use Input
+; Determine function called. If this is a create function, create record 
+; then process.
+; Else, get record indicated by Key and process.
+40$:			;
+
+	CMPL	CTP_L_FUNC(AP),#CTP_C_FNCR      ; Create?
+	BNEQU	500$				; Br if not
+; Create this record.
+
+; Determine record type and branch
+45$:	
+; If this is an array, branch out for special processing ...
+
+	BBS	#CTP_V_INT,CTP_L_DTYPE(AP),50$
+	BBS	#CTP_V_QAD,CTP_L_DTYPE(AP),70$
+	BBS	#CTP_V_FLT,CTP_L_DTYPE(AP),60$
+	MOVL	#SS$_BADPARAM,R0
+	RET                             ; Return
+50$:
+; Records rely on previous samples to process. Therefore on create
+; simply create the record and exit - no processing on first call.
+; Create Integer record
+	MOVAL	CNTRPRCREC,R6
+	MOVC5	#0,#0,#0,#CTPRECSIZE,(R6) ; Clear new rec
+        MOVC3	#CTP_C_KEYSIZ,@CTP_A_CNTID(AP),CTP_Q_NODE(R6)
+	MOVL	#50,CTP_X_LTRNG(R6)		; Set Long term range (50%)    
+	MOVL	#50,CTP_X_STRNG(R6)		; Set Short term range (50%)    
+	MOVQ	INPTTIME,CTP_Q_LASTSN(R6)	; Set time
+	MOVL	@8(AP),CTP_Q_LASTSM(R6)	        ; Store current sample
+	MOVL	CTP_L_DTYPE(AP),CTP_L_DTYP(R6)  ; Set type and options
+	MOVW	#CTPRECSIZE,CNTRPRCRAB+RAB$W_RSZ
+	$PUT    RAB=CNTRPRCRAB         ; Allocate record
+	RET
+
+
+60$:
+; Create FLOAT record
+	MOVAL	CNTRPRCREC,R6
+	MOVC5	#0,#0,#0,#CTPRECSIZE,(R6) ; Clear new rec
+        MOVC3	#CTP_C_KEYSIZ,@CTP_A_CNTID(AP),CTP_Q_NODE(R6)
+	MOVF	F50,CTP_X_LTRNG(R6)		; Set Long term range (50%)    
+	MOVF	F50,CTP_X_STRNG(R6)		; Set Short term range (50%)    
+	MOVQ	INPTTIME,CTP_Q_LASTSN(R6)	; Set time
+	MOVL	CTP_L_DTYPE(AP),CTP_L_DTYP(R6)  ; Set type and options
+	MOVF	@8(AP),CTP_Q_LASTSM(R6)	        ; Store current sample
+	MOVW	#CTPRECSIZE,CNTRPRCRAB+RAB$W_RSZ
+	$PUT    RAB=CNTRPRCRAB         ; Allocate record
+	RET
+70$:
+
+; Create Quad record
+	MOVAL	CNTRPRCREC,R6
+	MOVC5	#0,#0,#0,#CTPRECSIZE,(R6) ; Clear new rec
+        MOVC3	#CTP_C_KEYSIZ,@CTP_A_CNTID(AP),CTP_Q_NODE(R6)
+	MOVQ	#50,CTP_X_LTRNG(R6)		; Set Long term range (50%)    
+	MOVQ	#50,CTP_X_STRNG(R6)		; Set Short term range (50%)    
+	MOVQ	INPTTIME,CTP_Q_LASTSN(R6)	; Set time
+	MOVQ	@8(AP),CTP_Q_LASTSM(R6)	        ; Store current sample
+	BISL	#CTP_M_QAD,CTP_L_DTYP(R6)       ; Set as QUAD
+	MOVW	#CTPRECSIZE,CNTRPRCRAB+RAB$W_RSZ
+	$PUT    RAB=CNTRPRCRAB         ; Allocate record
+90$:	RET
+
+500$:
+	MOVAL	CNTRPRCREC,R6
+        MOVC3	#CTP_C_KEYSIZ,@CTP_A_CNTID(AP),CTP_Q_NODE(R6)
+	MOVW	#CTPRECSIZE,CNTRPRCRAB+RAB$W_RSZ
+	MOVW	#CTPRECSIZE,CNTRPRCRAB+RAB$W_USZ
+	$GET	RAB=CNTRPRCRAB
+	BLBS	R0,510$
+	CMPL    R0,#RMS$_RNF		; Record not found?
+	BEQLU	45$                     ; Create if so
+	RET				; Else exit
+510$:
+	BBS	#CTP_V_INT,CTP_L_DTYP(R6),550$
+	BBS	#CTP_V_QAD,CTP_L_DTYP(R6),570$
+	BBS	#CTP_V_FLT,CTP_L_DTYP(R6),560$
+	MOVL	#SS$_BADPARAM,R0
+	RET                             ; Return
+550$:
+	PUSHAL	INPTTIME		; Time
+	PUSHL	20(AP)			; OUTP
+	PUSHL	R6			; Record
+	PUSHL	8(AP)			; Sample
+	CALLS	#4,G^CNTRPRC_INT32	; Process 32 bit integer
+	RET
+
+560$:
+	PUSHAL	INPTTIME		; Time
+	PUSHL	20(AP)			; OUTP
+	PUSHL	R6			; Record
+	PUSHL	8(AP)			; Sample
+	CALLS	#4,G^CNTRPRC_FFLOAT	; Process F-floating
+	RET
+
+570$:
+	PUSHAL	INPTTIME		; Time
+	PUSHL	20(AP)			; OUTP
+	PUSHL	R6			; Record
+	PUSHL	8(AP)			; Sample
+	CALLS	#4,G^CNTRPRC_INT64	; Process 64 bit integer
+	RET
+
+
+	.CALL_ENTRY	MAX_ARGS=12, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=CNTRPRC_FFLOAT 
+;++
+;2 CNTRPRC_FFLOAT 
+; Process a floating point number into the database
+;3 Inputs
+;  Sample		Ref     Sample to processs
+;  CNTRPRC Record       Ref     Record sample processed into
+;  Output status	Ref     Status returns
+;  Time			Ref     Time to record this sample against
+; See Description for details.
+;--
+
+; Process existing counter
+; Error checking:
+; SAMPL must be >= 0
+	MOVL	8(AP),R6			; Addr of rec
+	MOVL	12(AP),R11 			; Addr of outp
+	CLRQ	(R11)				; Init outp
+; Sample must be .ge. Last sample. If not, make 0 (no increment)
+	SUBF3	CTP_Q_LASTSM(R6),@4(AP),LSMPL		
+        BGEQ	20$
+	CLRF	LSMPL
+
+
+20$:
+; Calculate Time difference
+
+	PUSHAL	RTIME			; Result
+	ADDL3   #CTP_Q_LASTSN,R6,-(SP)  ; Time (Stored)
+	PUSHL	16(AP)			; Time (current)
+        CALLS	#3,G^TIMEDIFF
+	BLBS	R0,30$
+	RET
+30$:
+	CVTLF	RTIME,FTIME
+; Calculate rate
+; CHECK: If RTIME .eq. 0 then make it 1
+	TSTF	FTIME
+	BNEQ	40$
+	MOVF	F1,FTIME
+40$:
+        DIVF	FTIME,LSMPL
+; Store current sample 
+	MOVF	@4(AP),CTP_Q_LASTSM(R6)		
+
+200$:
+;Regs:
+;R11 = (OUTP)
+;R10 = Destroyed
+;R9 = Avg
+;R8 = Accumulator (hi)
+;R7 = Accumulator (lo)
+;R6 = (Counter record)
+;R5 = Sample Table pointer
+;R4 = Loop Control
+;R3 = Index
+	MOVW	#SS$_NORMAL,CTP_W_OSTS(R11)		; Set init status 
+; Add sample to table
+	MOVL	CTP_L_TBLPNT(R6),R3		        ; Index pointer
+	ADDL3	#CTP_TQ_TIMTBL,R6,R4 			; Time table start
+ 	ADDL3	#CTP_TF_SAMTBL,R6,R5 			; Sample table start
+ 	MOVQ	@16(AP),(R4)[R3]     			; Time
+235$:
+	MOVQ	@16(AP),CTP_Q_LASTSN(R6)		; Current time
+ 	MOVF	LSMPL,(R5)[R3]      		; Put Sample in table
+	ADDF	F1,CTP_X_STCNT(R6)			; Count sample
+	CVTLF	#CTP_C_MAXSMPL,FMAXSMPL	       		; Convert for comparison
+	CMPF	CTP_X_STCNT(R6),FMAXSMPL                ; Max Samples Exceeded?
+	BLSS	237$                           		; Br no
+        MOVF	FMAXSMPL,CTP_X_STCNT(R6)		; Set Max ST samples
+237$:
+	INCL	CTP_L_TBLPNT(R6)		 	; Count index
+	CMPL	CTP_L_TBLPNT(R6),#CTP_C_MAXTBL		; Is table fully loaded?
+	BLEQU	240$					; No
+	CLRL	CTP_L_TBLPNT(R6) 		        ; Reset to table begin
+; Add sample to LT calcs
+240$:
+	ADDF	F1,CTP_X_LTCNT(R6)			;
+	ADDF2	LSMPL,CTP_X_LTTOT(R6)		; Accumulate
+	BCC	247$                            	; Br no overflow
+; On overflow replace LTTOT and CNT with total of short term samples and TOT.
+	ADDL3   #CTP_TF_SAMTBL,R6,R5 			; Point to table head
+        CVTFL	CTP_X_STCNT(R6),R4	                ; No of samples
+	SUBL3	#1,CTP_L_TBLPNT(R6),R3	            	; Start at last sample
+	CLRQ	R7
+242$:
+	TSTL	R3                		; End of table?
+	BNEQ	243$                            ; No
+	CLRL	R3				; Yes - reset to begin
+243$:
+	ADDF	(R5)[R3],R7                     ; Add samples
+	BCC	245$				; Br if overflow
+	DECL	R3                              ; Bump index
+	SOBGTR	R4,243$	                        ; Loop for all samples
+	MOVF	R7,CTP_X_LTTOT(R6)		; No - mov in tot
+	MOVF	CTP_X_STCNT(R6),CTP_X_LTCNT(R6) ;   and count
+	BRB	247$				; OK
+245$:
+	MOVF	LSMPL,CTP_X_LTTOT(R6)		; Mov in This sample
+	MOVF	F1,CTP_X_LTCNT(R6)	 		; Count = 1
+247$:
+	CMPF	F8,CTP_X_STCNT(R6)			; Do we have enough samples?
+	BLEQ	246$                            ; Yes
+        CMPF	LSMPL,CTP_X_MAX(R6)		; Sample > MAX?
+	BLEQ	4271$	 			; Br if not exceeded
+        MOVF	LSMPL,CTP_X_MAX(R6)		; Reset
+;; Mess - debug code
+        BRB	4271$
+246$:	BRW	250$
+;;
+4271$:
+	CMPF	F1,CTP_X_STCNT(R6)                        ; 
+	BNEQ	4273$
+        MOVF	LSMPL,CTP_X_MIN(R6)		; Reset
+4273$:
+        CMPF	LSMPL,CTP_X_MIN(R6)		; Sample < MIN?
+	BGEQ	4272$	 			; Br if not 
+        MOVF	LSMPL,CTP_X_MIN(R6)		; Reset
+4272$:
+	$UPDATE	RAB=CNTRPRCRAB
+	BLBS	R0,248$
+	RET
+248$:
+	MOVL	#SS$_NORMAL,R0			; No - signal in outp status 
+	RET
+250$:
+        CLRQ	R7
+        CVTFL	CTP_X_STCNT(R6),R4 	                ; No of samples
+	SUBL3	#1,CTP_L_TBLPNT(R6),R3            	; Start at last sample
+260$:
+	TSTL	R3                		; Past Begin of table?
+	BGEQ	270$                            ; No
+	MOVL	#CTP_C_MAXTBL,R3		; Yes - reset to end
+270$:
+	ADDF	(R5)[R3],R7                     ; Add samples
+	DECL	R3                              ; Bump index
+	SOBGTR	R4,260$	                        ; Loop for all samples
+	DIVF3	CTP_X_STCNT(R6),R7,R9			; R9 = Current avg
+; Calc hi threash
+	MULF3	CTP_X_STRNG(R6),R9,R10  			; 
+	DIVF	F100,R10			; R10 = Factor
+	ADDF3	R9,R10,R2 			; R2 = hi Threash
+	SUBF3	LSMPL,R2,R1		; Calc factor
+	BGEQ	290$				; Br if not exceeded
+	CVTFL	R1,R1				; Make integer
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make > 0
+	CMPL	#50,R1				; Max allowed
+	BGEQU	280$				; OK
+	MOVL	#50,R1				; Set Max
+280$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11) ; Error return
+	MOVW	#1,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+	BRB	300$
+290$:
+; Calc lo threash
+	SUBF	R10,R9 				; R9 = LO Threash
+	SUBF3	R9,LSMPL,R1		; Calc factor
+	BGEQ	300$				; Br if not exceeded
+	CVTFL	R1,R1
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make > 0
+	CMPL	#50,R1				; Max allowed
+	BGEQU	295$				; OK
+	MOVL	#50,R1				; Set Max
+295$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11) ; Error return
+	MOVW	#2,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+300$:
+; Adjust allowed range
+	SUBF	F1,CTP_X_STRNG(R6)		; Assume not exceeded
+	CMPW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Was it?
+	BNEQU	310$				; No - Br
+	DIVF3	F10,CTP_X_STRNG(R6),R1          ; Add 10%
+	ADDF	R1,CTP_X_STRNG(R6)		; 
+310$:
+; Ensure range is not set < 10(%)
+	CMPF	F10,CTP_X_STRNG(R6)
+	BLEQ	315$
+	MOVF	F10,CTP_X_STRNG(R6)
+315$:
+; Long term check
+; Calc Lo threash
+	DIVF3	CTP_X_LTCNT(R6),CTP_X_LTTOT(R6),R8			; Average
+	MULF3	CTP_X_LTRNG(R6),R8,R10		; 
+	DIVF	F100,R10			; R10 = factor
+	SUBF3	R10,R8,R2			; R2 = lo threash
+	SUBF3	R2,LSMPL,R1		; Calc factor
+	BGEQ	320$				; Br if not exceeded
+	CVTFL	R1,R1
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make > 0
+	CMPL	#100,R1				; Max allowed
+	BGEQU	317$				; OK
+	MOVL	#100,R1				; Set Max
+317$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Error return
+	MOVW	#4,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+ 	BRB	350$
+320$:
+; Calc Hi threash
+	ADDF	R10,R8 				; R8 = HI Threash
+	SUBF3	LSMPL,R8,R1		; Calc factor
+	BGEQ	350$				; Br if not exceeded
+	CVTFL	R1,R1
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make > 0
+	CMPL	#100,R1				; Max allowed
+	BGEQU	325$				; OK
+	MOVL	#100,R1				; Set Max
+325$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11) ; Error return
+	MOVW	#3,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+350$:
+	SUBF	F1,CTP_X_LTRNG(R6)		  		; Assume within range.
+	CMPW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; No error?
+	BNEQ	352$				; No
+	DIVF3	F10,CTP_X_LTRNG(R6),R1          ; Add 10%
+	ADDF	R1,CTP_X_LTRNG(R6)		; 
+
+352$:
+	CMPF	F10,CTP_X_LTRNG(R6)		  	; Not allowed to < 10 (%)
+	BLSS	400$				; OK
+	MOVF	F10,CTP_X_LTRNG(R6)		  	; Make 10
+
+400$:
+;Check Min/Max not exceeded
+        SUBF3	LSMPL,CTP_X_MAX(R6),R1	;
+	BGEQ	420$	 			; Br if not exceeded
+        MOVL	LSMPL,CTP_X_MAX(R6)		; Reset
+	CVTFL	R1,R1
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make >0
+	CMPL	#100,R1				; Max allowed
+	BGEQU	410$				; OK
+	MOVL	#100,R1				; Set at max
+410$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11) ; Error return
+	MOVW	#5,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+	BRW	440$				; Finish
+420$:
+        SUBF3	CTP_X_MIN(R6),LSMPL,R1		;
+	BGEQ	440$				; Br if not exceeded
+        MOVF	LSMPL,CTP_X_MIN(R6)		; Reset
+	CVTFL	R1,R1
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make >0
+	CMPL	#100,R1				; Max allowed
+	BGEQU	430$				; OK
+	MOVL	#100,R1				; Set at max
+430$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Error return
+	MOVW	#6,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+440$:
+	PUSHL	R6				; Record
+	CALLS	#1,G^CALC_SLOPE			; Calculate current slope
+	$UPDATE	RAB=CNTRPRCRAB
+	RET
+
+
+	.CALL_ENTRY	MAX_ARGS=12, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=CNTRPRC_INT32 
+;++
+;2 CNTRPRC_INT32 
+; Process a 32 Bit Integer into the database. 
+;3 Inputs
+;  Sample		Ref     Sample to processs
+;  CNTRPRC Record       Ref     Record sample processed into
+;  Output status	Ref     Status returns
+;  Time			Ref     Time to record this sample against
+; See Description for details.
+;--
+
+; Process existing counter
+; Error checking:
+; SAMPL must be >= 0
+	MOVL	8(AP),R6			; Addr of rec
+	MOVL	12(AP),R11 			; Addr of outp
+	CLRQ	(R11)				; Init outp
+10$:
+; If this is a quad sample, skip calculation (been done)
+	BBS	#CTP_V_QAD,CTP_L_DTYP(R6),150$
+; If this is a GUAGE sample, skip rate calculation 
+	BBS	#CTP_V_GUAGE,CTP_L_DTYP(R6),150$
+; Sample must be .ge. Last sample. If not, make 0 (no increment)
+	SUBL3	CTP_Q_LASTSM(R6),@4(AP),LSMPL
+	BGEQ	20$				; Br if .ge 0
+	CLRL	LSMPL				; Make 0
+20$:
+; Calculate Time difference
+
+	PUSHAL	RTIME			; Result
+	ADDL3   #CTP_Q_LASTSN,R6,-(SP)  ; Time (Stored)
+	PUSHL	16(AP)			; Time (current)
+        CALLS	#3,G^TIMEDIFF
+	BLBS	R0,30$
+	RET
+30$:
+; Calculate rate
+; CHECK: If RTIME .eq. 0 then make it 1
+	TSTL	RTIME
+	BNEQ	40$
+	MOVL	#1,RTIME
+40$:
+        DIVL	RTIME,LSMPL
+; Store current sample 
+	MOVL	@4(AP),CTP_Q_LASTSM(R6)		
+	BRW	200$
+
+150$:
+	MOVL	@4(AP),LSMPL		; Sample to process
+
+
+200$:
+; Process
+;Regs:
+;R11 = (OUTP)
+;R10 = Destroyed
+;R9 = Avg
+;R8 = Accumulator (hi)
+;R7 = Accumulator (lo)
+;R6 = (Counter record)
+;R5 = Sample Table pointer
+;R4 = Loop Control
+;R3 = Index
+	MOVW	#SS$_NORMAL,CTP_W_OSTS(R11)		; Set init status 
+; Add sample to table
+	MOVL	CTP_L_TBLPNT(R6),R3		        ; Index pointer
+	ADDL3	#CTP_TQ_TIMTBL,R6,R4 			; Time table start
+ 	ADDL3	#CTP_TF_SAMTBL,R6,R5 			; Sample table start
+ 	MOVQ	@16(AP),(R4)[R3]     			; Time
+235$:
+	MOVQ	@16(AP),CTP_Q_LASTSN(R6)		; Current time
+ 	MOVL	LSMPL,(R5)[R3]      			; Put Sample in table
+	INCL	CTP_X_STCNT(R6)				; Count sample
+	CMPL	CTP_X_STCNT(R6),#CTP_C_MAXSMPL          ; Max Samples Exceeded?
+	BLSS	237$                           		; Br no
+        MOVL	#CTP_C_MAXSMPL,CTP_X_STCNT(R6)		; Set Max ST samples
+237$:
+	INCL	CTP_L_TBLPNT(R6)		 	; Count index
+	CMPL	CTP_L_TBLPNT(R6),#CTP_C_MAXTBL		; Is table fully loaded?
+	BLEQU	240$					; No
+	CLRL	CTP_L_TBLPNT(R6) 		        ; Reset to table begin
+; Add sample to LT calcs
+240$:
+	INCL	CTP_X_LTCNT(R6)				;
+	ADDL2	LSMPL,CTP_X_LTTOT(R6)			; Accumulate
+	BCC	247$                            	; Br no overflow
+; On overflow replace LTTOT and CNT with total of short term samples and TOT.
+	ADDL3   #CTP_TF_SAMTBL,R6,R5 			; Point to table head
+        MOVL	CTP_X_STCNT(R6),R4	                ; No of samples
+	SUBL3	#1,CTP_L_TBLPNT(R6),R3	            	; Start at last sample
+	CLRQ	R7
+242$:
+	TSTL	R3                		; End of table?
+	BNEQ	243$                            ; No
+	CLRL	R3				; Yes - reset to begin
+243$:
+	ADDL	(R5)[R3],R7                     ; Add samples
+	BCC	245$				; Br if overflow
+	DECL	R3                              ; Bump index
+	SOBGTR	R4,243$	                        ; Loop for all samples
+	MOVL	R7,CTP_X_LTTOT(R6)		; No - mov in tot
+	MOVL	CTP_X_STCNT(R6),CTP_X_LTCNT(R6) ;   and count
+	BRB	247$				; OK
+245$:
+	MOVL	LSMPL,CTP_X_LTTOT(R6)		; Mov in This sample
+	MOVL	#1,CTP_X_LTCNT(R6)	 	; Count = 1
+247$:
+	CMPL	#8,CTP_X_STCNT(R6)		; Do we have enough samples?
+	BLEQ	246$                            ; Yes
+        CMPL	LSMPL,CTP_X_MAX(R6)		; Sample > MAX?
+	BLEQ	4271$	 			; Br if not exceeded
+        MOVL	LSMPL,CTP_X_MAX(R6)		; Reset
+;; Mess - debug code
+        BRB	4271$
+246$:	BRW	250$
+;;
+4271$:
+	CMPL	#1,CTP_X_STCNT(R6)              ; 
+	BNEQ	4273$
+        MOVL	LSMPL,CTP_X_MIN(R6)		; Reset
+4273$:
+        CMPL	LSMPL,CTP_X_MIN(R6)		; Sample < MIN?
+	BGEQ	4272$	 			; Br if not 
+        MOVL	LSMPL,CTP_X_MIN(R6)		; Reset
+4272$:
+	$UPDATE	RAB=CNTRPRCRAB
+	BLBS	R0,248$
+	RET
+248$:
+	MOVL	#SS$_NORMAL,R0			; No - signal in outp status 
+	RET
+250$:
+        CLRQ	R7
+        MOVL	CTP_X_STCNT(R6),R4 	        ; No of samples
+	SUBL3	#1,CTP_L_TBLPNT(R6),R3          ; Start at last sample
+260$:
+	TSTL	R3                		; Past Begin of table?
+	BGEQ	270$                            ; No
+	MOVL	#CTP_C_MAXTBL,R3		; Yes - reset to end
+270$:
+	ADDL	(R5)[R3],R7                     ; Add samples
+	BVS	500$				; Br on overflow
+	DECL	R3                              ; Bump index
+	SOBGTR	R4,260$	                        ; Loop for all samples
+	DIVL3	CTP_X_STCNT(R6),R7,R9		; R9 = Current avg
+; Calc hi threash
+	MULL3	CTP_X_STRNG(R6),R9,R10  			; 
+	DIVL	#100,R10			; R10 = Factor
+	ADDL3	R9,R10,R2 			; R2 = hi Threash
+	SUBL3	LSMPL,R2,R1			; Calc factor
+	BGEQ	290$				; Br if not exceeded
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make > 0
+	CMPL	#50,R1				; Max allowed
+	BGEQU	280$				; OK
+	MOVL	#50,R1				; Set Max
+280$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Error return
+	MOVW	#1,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+	BRB	300$
+290$:
+; Calc lo threash
+	SUBL	R10,R9 				; R9 = LO Threash
+	SUBL3	R9,LSMPL,R1			; Calc factor
+	BGEQ	300$				; Br if not exceeded
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make > 0
+	CMPL	#50,R1				; Max allowed
+	BGEQU	295$				; OK
+	MOVL	#50,R1				; Set Max
+295$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11) 	; Error return
+	MOVW	#2,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+300$:
+; Adjust allowed range
+	DECL	CTP_X_STRNG(R6)		   	; Assume not exceeded
+	CMPW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Was it?
+	BNEQU	310$				; No - Br
+;	DIVL3	#10,CTP_X_STRNG(R6),R1          ; Add 10%
+	ADDL	R1,CTP_X_STRNG(R6)		; 
+310$:
+; Ensure range is not set < 10(%)
+	CMPL	#10,CTP_X_STRNG(R6)
+	BLEQ	315$
+	MOVL	#10,CTP_X_STRNG(R6)
+315$:
+; Long term check
+; Calc Lo threash
+	DIVL3	CTP_X_LTCNT(R6),CTP_X_LTTOT(R6),R8	; Average
+	MULL3	CTP_X_LTRNG(R6),R8,R10			; 
+	DIVL	#100,R10		       		; R10 = factor
+	SUBL3	R10,R8,R2		       		; R2 = lo threash
+	SUBL3	R2,LSMPL,R1	       			; Calc factor
+	BGEQ	320$			       		; Br if not exceeded
+	MNEGL	R1,R1			       		; Make +
+	DIVL	#10,R1			       		; Get 10%
+	ADDL	#5,R1			       		; Make > 0
+	CMPL	#100,R1			       		; Max allowed
+	BGEQU	317$			       		; OK
+	MOVL	#100,R1			       		; Set Max
+317$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Error return
+	MOVW	#4,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+ 	BRB	350$
+320$:
+; Calc Hi threash
+	ADDL	R10,R8 				; R8 = HI Threash
+	SUBL3	LSMPL,R8,R1			; Calc factor
+	BGEQ	350$				; Br if not exceeded
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make > 0
+	CMPL	#100,R1				; Max allowed
+	BGEQU	325$				; OK
+	MOVL	#100,R1				; Set Max
+325$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Error return
+	MOVW	#3,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+350$:
+	DECL	CTP_X_LTRNG(R6)		  	; Assume within range.
+	CMPW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; No error?
+	BNEQ	352$				; No
+; Ensure error set was one of Long term counts
+	CMPW	#3,CTP_W_TRSH(R11)		; Threash ID
+	BEQL	351$				; If this one, br
+	CMPW	#5,CTP_W_TRSH(R11)		; Threash ID
+	BNEQ	352$				; If NOT this one, br
+351$:
+;	DIVL3	#10,CTP_X_LTRNG(R6),R1          ; Add 10%
+	ADDL	R1,CTP_X_LTRNG(R6)		; 
+352$:
+	CMPL	#10,CTP_X_LTRNG(R6)		; Not allowed to < 10 (%)
+	BLSS	400$				; OK
+	MOVL	#10,CTP_X_LTRNG(R6)		; Make 10
+
+400$:
+;Check Min/Max not exceeded
+        SUBL3	LSMPL,CTP_X_MAX(R6),R1	;
+	BGEQ	420$	 			; Br if not exceeded
+        MOVL	LSMPL,CTP_X_MAX(R6)		; Reset
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make >0
+	CMPL	#100,R1				; Max allowed
+	BGEQU	410$				; OK
+	MOVL	#100,R1				; Set at max
+410$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Error return
+	MOVW	#5,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+	BRW	440$
+420$:
+        SUBL3	CTP_X_MIN(R6),LSMPL,R1	;
+	BGEQ	440$				; Br if not exceeded
+        MOVL	LSMPL,CTP_X_MIN(R6)		; Reset
+	MNEGL	R1,R1				; Make +
+	DIVL	#10,R1				; Get 10%
+	ADDL	#5,R1				; Make >0
+	CMPL	#100,R1				; Max allowed
+	BGEQU	430$				; OK
+	MOVL	#100,R1				; Set at max
+430$:
+	MOVW	#SS$_DATACHECK,CTP_W_OSTS(R11)  ; Error return
+	MOVW	#6,CTP_W_TRSH(R11)		; Threash ID
+	ADDW	R1,CTP_W_ESTS(R11) 		; Add severity
+440$:
+	PUSHL	R6				; Record
+	CALLS	#1,G^CALC_SLOPE			; Calculate current slope
+	$UPDATE	RAB=CNTRPRCRAB
+	RET
+500$:
+; Here when calculating short term average causes overflow.
+; In all cases change to CTP_M_INCR and clear all samples.
+; If already INCR (unlikely) this simply prevents bad results.
+	MULL3	#CTP_C_MAXSMPL,#4,R11		; Size of sample area
+	MOVC5	#0,#0,#0,R11,CTP_TF_SAMTBL(R6) 	; Clear samples
+	MULL	#2,R11				; Size of timtbl
+	MOVC5	#0,#0,#0,R11,CTP_TQ_TIMTBL(R6) 	; Clear times
+	CLRL	CTP_X_LTCNT(R6)
+	CLRL	CTP_X_STCNT(R6)
+	CLRL	CTP_X_LTTOT(R6)
+	CLRL	CTP_X_MAX(R6)
+	CLRL	CTP_X_MIN(R6)
+	CLRL	CTP_L_TBLPNT(R6)
+	CLRF	CTP_F_SLOPE(R6)
+	MOVL	#50,CTP_X_LTRNG(R6)		; Set Long term range (50%)    
+	MOVL	#50,CTP_X_STRNG(R6)		; Set Short term range (50%)    
+	MOVQ	@16(AP),CTP_Q_LASTSN(R6)	; Set time
+	MOVL	@4(AP),CTP_Q_LASTSM(R6)	        ; Store current sample
+	BICL	#CTP_M_GUAGE,CTP_L_DTYP(R6)  	; Clear option
+	BISL	#CTP_M_INCR,CTP_L_DTYP(R6)  	; Set option
+	MOVW	#CTPRECSIZE,CNTRPRCRAB+RAB$W_RSZ
+	$UPDATE RAB=CNTRPRCRAB         		; Update record
+	RET
+
+ 
+; 
+
+	.CALL_ENTRY	MAX_ARGS=12, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=CNTRPRC_INT64 
+;++
+;2 CNTRPRC_INT64 
+; Process a 64 Bit Integer into the database. The QUAD sample is subtracted
+; from the previous value stored, calculated as a .long increments per second
+; since last sample and then processed as a .long sample.
+;3 Inputs
+;  Sample		Ref     Sample to processs
+;  CNTRPRC Record       Ref     Record sample processed into
+;  Output status	Ref     Status returns
+;  Time			Ref     Time to record this sample against
+; See Description for details.
+;--
+
+200$:
+; Process existing counter
+; Error checking:
+; SAMPL must be >= 0
+	MOVL	8(AP),R6			; Addr of rec
+	MOVL	12(AP),R11 			; Addr of outp
+	CLRQ	(R11)				; Init outp
+; Sample must be .ge. 0
+	MOVQ	@4(AP),QSAMPLE			; Retrieve sample
+	TSTL	QSAMPLE				; Sample (low .long) 
+	BGEQ	230$				; Br. if OK
+	TSTL	QSAMPLE+4			; Sample (hi .long) 
+	BGEQ	230$				; Br. if OK
+	MOVL	#SS$_BADPARAM,R0
+	RET
+230$:
+; Calculate the increments per second from the last sample, produce this
+; as a .long. Result must be .ge 0 and fit in a .long. If so, process though 
+; CNTRPRC_INT32. If not
+; reject result, update with new sample and exit (SS$_BADPARAM).
+;	
+	PUSHAL	QRESULT
+	PUSHAL	QSAMPLE
+	ADDL3   #CTP_Q_LASTSM,R6,-(SP)
+	CALLS	#3,G^CTP_SUBQ
+
+	TSTL	QRESULT+4	;If any bit set, result out of Range
+	BEQL	240$
+	MOVL	#SS$_BADPARAM,R0
+	RET
+240$:
+; Calculate Time difference
+
+	PUSHAL	RTIME			; Result
+	ADDL3   #CTP_Q_LASTSN,R6,-(SP)  ; Time (Stored)
+	PUSHL	16(AP)			; Time (current)
+        CALLS	#3,G^TIMEDIFF
+	BLBS	R0,250$
+	RET
+250$:
+; Calculate rate
+; CHECK: If RTIME .eq. 0 then make it 1
+	TSTL	RTIME
+	BNEQ	260$
+	MOVL	#1,RTIME
+260$:
+        DIVL3	RTIME,QRESULT,LSMPL
+; Store current sample 
+	MOVQ	@4(AP),CTP_Q_LASTSM(R6)		
+
+; Pass to integer processing
+	PUSHL	16(AP)			; Time
+	PUSHL	12(AP)			; OUTP
+	PUSHL	R6			; Record
+	PUSHAL	LSMPL			; Sample
+	CALLS	#4,G^CNTRPRC_INT32	; Process 32 bit integer
+	RET
+
+
+        .CALL_ENTRY     MAX_ARGS=3, -
+                        HOME_ARGS=TRUE, -
+                        INPUT   =<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+                        PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+                        LABEL=CALC_SLOPE  
+;++
+;2 CALC_SLOPE  
+; Calculate the current slope of the line represented by short term
+; values when represented in graph format. The number returned represents
+; the 'best fit straight line' through the values and is a simple way
+; of showing the direction and magnitude of the change in values over time.
+; The calculation is performed only on every 32nd time a value is added. 
+;3 Inputs
+;	.address of CNTRPRC rec
+;3 Outputs
+;	The record may have the SLOPE filed modified.
+;3 Returns
+;	SS$_NORMAL	OK 
+;	Any return from LEAST_SQUARES
+;--
+	MOVL	4(AP),R6
+	MOVL	CTP_X_LTCNT(R6),R7		; Sample count
+; If this is a FLOAT sample, convert to long
+	BBC	#CTP_V_FLT,CTP_L_DTYP(R6),10$	; Br if not float
+	CVTFL	R7,R7                           ; Convert
+; Extract bot 5 bits, If 0 then proc. (every 32 samples)
+10$:
+	EXTZV	#0,#5,R7,R8                     ;
+	BEQL	20$                             ; Br if res = 0
+	MOVL	#SS$_NORMAL,R0
+	RET
+20$:
+	ADDL3	R6,#CTP_F_SLOPE,-(SP)	; Result
+	PUSHL	CTP_L_DTYP(R6)		; Data type
+	PUSHL	CTP_X_STCNT(R6)		; Sample count
+	ADDL3	#CTP_TQ_TIMTBL,R6,-(SP)	; Time array
+	ADDL3	#CTP_TF_SAMTBL,R6,-(SP)	; Value array
+	CALLS	#5,G^LEAST_SQUARES
+	RET
+
+	
+        .CALL_ENTRY     MAX_ARGS=4, -
+                        HOME_ARGS=TRUE, -
+                        INPUT   =<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+                        PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+                        LABEL=TIMEDIFF  
+;++
+;2 TIMEDIFF  
+; Calculate the difference between 2 absolute times and return the 
+; difference in seconds.
+;3 Inputs
+;	.address of .quad later time
+;	.address of .quad earlier time
+;	.address of .long where difference in seconds between the 2 times 
+;	is written
+;	.long Conversion flag. Optional if not present or not 1 or 2
+;	 result = seconds
+;	else
+;	1 = hours (rounded)
+;	2 = days  (rounded)
+;3 Outputs
+;	P3 is written with the difference in seconds between the 2 times
+;3 Returns
+;	SS$_NORMAL	OK , time difference written
+;	Any return from LIB$SUB_TIMES (Time1 must be later or = time2)
+;--
+
+        PUSHAL	QTIME		; Result
+	PUSHL	8(AP)           ; EARLIER
+	PUSHL	4(AP)           ; LATER
+	CALLS	#3,G^LIB$SUB_TIMES
+	BLBS	R0,130$
+	RET
+130$:
+; Test if resulting time = 0
+	TSTL	QTIME       	; low long
+	BNEQ	140$             ; Br if ne
+	TSTL	QTIME+4         ; hi long
+	BNEQ	140$             ; br if not
+	CLRL	@12(AP)              ; Time diff = 0
+	MOVL	#SS$_NORMAL,R0  ; OK
+	RET
+140$:
+	EDIV    #-10000000,QTIME,@12(AP),R2     ; = Seconds since
+	CMPL	#3,(AP)				; 3 params?
+	BNEQ	150$				; Br not
+	MOVL	#SS$_NORMAL,R0  ; OK
+	RET
+150$:
+	CASEL	16(AP),#0,#2		; Select routine
+200$:
+	.WORD	201$-200$
+	.WORD	202$-200$
+	.WORD	203$-200$
+201$:		   	     
+	MOVL	#SS$_NORMAL,R0  ; OK
+	RET
+202$:
+; Convert seconds to hours - round up if >= 1/2 hr. remainder
+	EDIV	#3600,@12(AP),@12(AP),R4
+	CMPL	#1800,R4
+	BGTR	201$
+	INCL	@12(AP)
+	BRW	201$
+203$:
+; Convert seconds to days - round up if >= 1/2 day remainder
+	EDIV	#86400,@12(AP),@12(AP),R4
+	CMPL	#43200,R4
+	BGTR	201$
+	INCL	@12(AP)
+	BRW	201$
+
+
+
+	.CALL_ENTRY     MAX_ARGS=3, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+       			LABEL=CTP_SUBQ
+;++
+;1 CTP_SUBQ
+; Subrtract 2 quad values and return the quad difference. This routine
+; uses AXP intruction and is NOT VAX compatible.
+;2 Input
+;  .address of quad val1
+;  .address of quad val2
+;  .address of quad val3
+;2 Output
+;  val3 = val1-val2
+;2 Returns
+;       SS$_NORMAL      OK
+;
+;--
+	MOVL    	4(AP),R6                        ; Val1
+	EVAX_LDQ        R7,(R6)                 ; Get 1st sample
+	MOVL    	8(AP),R6                        ; Val2
+	EVAX_LDQ        R8,(R6)                 ; Get 2nd sample
+	EVAX_SUBQ       R8,R7,R9                      ; Curr - 1st
+	EVAX_STQ        R9,@12(AP)              ; Return
+	MOVL    	#SS$_NORMAL,R0
+	RET
+
+	.CALL_ENTRY     MAX_ARGS=3, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+       			LABEL=CTP_MULQ
+;++
+;1 CTP_MULQ
+; Mulyiply 2 quad values and return the quad result. This routine
+; uses AXP intruction and is NOT VAX compatible.
+;2 Input
+;  .address of quad val1
+;  .address of quad val2
+;  .address of quad val3
+;2 Output
+;  val3 = val1*val2
+;2 Returns
+;       SS$_NORMAL      OK
+;
+;--
+	MOVL    	4(AP),R6                        ; Val1
+	EVAX_LDQ        R7,(R6)                 ; Get 1st sample
+	MOVL    	8(AP),R6                        ; Val2
+	EVAX_LDQ        R8,(R6)                 ; Get 2nd sample
+	EVAX_MULQ       R8,R7,R9                      ; Curr - 1st
+	EVAX_STQ        R9,@12(AP)              ; Return
+	MOVL    	#SS$_NORMAL,R0
+	RET
+
+	.CALL_ENTRY     MAX_ARGS=3, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+       			LABEL=CTP_ADDQ
+;++
+;1 CTP_ADDQ
+; Add 2 quad values and return the quad result. This routine
+; uses AXP intruction and is NOT VAX compatible.
+;2 Input
+;  .address of quad val1
+;  .address of quad val2
+;  .address of quad val3
+;2 Output
+;  val3 = val1*val2
+;2 Returns
+;       SS$_NORMAL      OK
+;
+;--
+	MOVL    	4(AP),R6                        ; Val1
+	EVAX_LDQ        R7,(R6)                 ; Get 1st sample
+	MOVL    	8(AP),R6                        ; Val2
+	EVAX_LDQ        R8,(R6)                 ; Get 2nd sample
+	EVAX_ADDQ       R8,R7,R9                      ; Curr - 1st
+	EVAX_STQ        R9,@12(AP)              ; Return
+	MOVL    	#SS$_NORMAL,R0
+	RET
+
+
+
+INITIALISE:
+	.JSB_ENTRY	INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			OUTPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>
+
+	$CREATE	FAB=CNTRPRCFAB
+	BLBS	R0,10$
+	RET
+10$:
+	$CONNECT RAB=CNTRPRCRAB
+	BLBS	R0,20$
+	RET
+20$:	MOVL	EXE$GL_ABSTIM_TICS,ABSTIM
+	MOVQ	EXE$GQ_SYSTIME,SYSTIM		; Current time
+	RSB
+
+
+; Here on unhandled error
+	.SBTTL	CNTRPRC_HANDLER ()
+	.CALL_ENTRY	MAX_ARGS=12, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=CNTRPRC_HANDLER
+	MOVL	R0,R6		; Save error
+        $UNWIND_S		; Unwind stack to previous caller
+	MOVL	R6,R0		; Restore
+	RET			; Tell the caller
+	.END								
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            

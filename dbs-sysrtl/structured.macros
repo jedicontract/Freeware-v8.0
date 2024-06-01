@@ -1,0 +1,1234 @@
+	.TITLE	SMAC	Structured Programming Macros Package
+	.IDENT	/2.05/
+;++
+;  Title:
+;	SMAC	Structured Programming Macros Package
+;
+;  Facility:
+;	Package of support macros to allow MACRO programmers to write
+;	more structured code.
+;
+;  Abstract:
+;  The SMAC package implements the common constructs of structured
+;  programming to allow MACRO programmers to write more structured
+;  programs.  
+;  The following structures are implemented:
+;
+;	IF condition THEN
+;	ELSE
+;	ENDIF
+;
+;	REPEAT
+;	UNTIL	|condition	|
+;		|FOREVER	|
+;		|ONCE		|
+;
+;	WHILE condition DO
+;	ENDWHILE
+;
+;  The REPEAT and WHILE structures can include the BREAK statement, which
+;  conditionally exits from the structure, and the NEXT statement, which
+;  conditionally branches to the bottom of the structure.
+;
+;  The form of these two statements are:
+;
+;	BREAK  [label]  IF condition
+;
+;	NEXT  [label] IF condition
+;
+;  The optional label must be defined at the appropriate place in the 
+;  structure.  If omitted, these statements apply to the innermost structure
+;  which contains them.
+;
+;  A CONDITION has the form of:
+;	|test	
+;	|test AND test AND test ....	|
+;	|     OR       OR		|
+;
+;  Up to six tests can be included in one condition.  The tests are performed
+;  in left to right order, with no precedence.
+;
+;  A TEST has the form:
+;	<relation,[arg1],[arg2],[TYPE=x]>
+;
+;  RELATION is the test to be performed and is specified as the appropriate
+;  suffix to the branch opcode; i.e. BBC is BC, BEQL is EQL, BLBS is LBS, etc.
+;  ARG1 and ARG2 are the operands for the test.  If ARG2 is omitted, a TEST
+;  instruction is generated.  If both arguments are omitted, the condition
+;  codes are assumed to be set and only the branch is generated.  If both
+;  arguments are specified, a CMP instruction is generated.  TYPE controls
+;  the data type of the comparison (default is L).
+;
+;  Some examples:
+;	IF <EQL,R1,R2> THEN
+;	ENDIF
+;
+;	IF <EQL,R1,R2> AND <NEQ,R6,#1> THEN
+;	ENDIF
+;
+;	WHILE <NEQ,A,B> OR <LBS,R1> DO
+;	ENDWHILE
+;
+; 	REPEAT	
+;	  BREAK IF <LBC,R1>
+;	UNTIL	FOREVER
+;
+;	WHILE	<NEQ,A,B>	DO
+;	  BREAK ALPHA IF <NEQ,R1,R2>
+;	ENDWHILE
+;ALPHA:
+;
+;	REPEAT
+;	  NEXT BETA IF <GTR,R1,R4>
+;BETA:
+;	UNTIL	<EQLU,R1,R2>
+;
+;
+;  This package also includes some macros for generating some conceptual
+;  data types:  COUNT's, VECTOR's, and STRING's.  A COUNT is an integer
+;  scalar variable (implemented as a longword).  A VECTOR is a linear array
+;  of storage locations of a specified length and size.  A string is a 
+;  descriptor pointing to a vector of bytes.  The vector may optionally be
+;  initialized with a character string.  The forms of these declarations are:
+;
+;	COUNT	[initial-value]
+;	VECTOR	length,[SIZE=| L |
+;			     | W |
+;			     | B |
+;	STRING	length,[<initial value>]
+;
+;  Other miscellaneous macros:
+;
+;	CALL	routine	arg1,arg2,arg3,...
+;
+;  will stack the arguments in reverse order and perform a CALLS to the
+;  address ROUTINE.  If the argument is an address, a PUSHAL is generated,
+;  and if the argument is a literal, a PUSHL is generated.
+;
+;	MESSAGE	CODE=code,F1=xx,F2=....,F8=xx
+;
+;  generates an argument list for the $PUTMSG system service and calls
+;  the service.  F1 through F8 are the $FAO parametrs in the message
+;  and are PUSHL'ed onto the stack.  CODE is the status code for the
+;  message to be issued.
+;
+;	SIGNAL CODE1=code,F1=<fao-list>,CODE2=code,F2=<fao-list>
+;
+;  generates an argument list for LIB$SIGNAL and calls it to signal the
+;  error.  CODE1 and CODE2 are condition values to be placed in the signal
+;  vector.  F1 and F2 the corresponding parameter lists for FAO parameters
+;  in the messages.  Call modifies R1 but preserves R0.  Either CODE can
+;  reside in R0 but not R1.
+;	
+;	REQLIST
+;	ITEM	itmcod, bufadr, buflen, lenadr
+;	REQEND
+;
+;  This group of macros is used to generate a $GETxxI request list.
+;  The itmcod and bufadr parameters are required.  Buflen and lenadr
+;  are optional and default to 4 and 0 respectively.
+;	
+;  Author:
+;	Gary L. Grebus, Creation Date: 08-Oct-1980
+;	Battelle Columbus Labs
+;
+;  Modified by:
+;	2.01  18-Jun-1981  Gary L. Grebus
+;	Fixed bug in SMAC.GENBR.  Wasn't handling unsigned branches correctly.
+;
+;	2.02  04-Aug-1981  Gary L. Grebus
+;	Added MESSAGE macro.  Deleted duplicate macro definitions.
+;
+;	2.03  14-Dec-1981  Gary L. Grebus
+;	Modified MESSAGE macro to preserve R0.
+;
+;	2.04  20-Jan-1981  Gary L. Grebus
+;	Added SIGNAL macro.
+;
+;	2.05 07-Feb-1983 Gary L. Grebus
+;	Moved $DSCDEF to STRING macro since that is only place it is used.
+;	Made definition of SMAC..LONGM conditional in SMAC..INI so that
+;	ENB_LONG can be used before first IF in program.  Added 
+;	REQLIST, REQUEST, and REQEND macros.
+;
+;--
+	.PAGE
+
+	.MACRO	IF	T1, C1, T2, C2, T3, C3, T4, C4, T5, C5, T6, C6
+
+	SMAC.INI			;; Init if needed
+
+	.NARG	..NARG
+
+	.IF	BLANK,<C1>		;;  Must have one connective
+	  .ERROR			; Missing condition or THEN in IF statement
+	  .MEXIT
+	.ENDC
+
+	.IF	NE,<<..NARG/2>*2-..NARG> ;;  Must be a pairs of arguments
+	  .ERROR			; Missing condition or THEN in IF statement
+	  .MEXIT
+	.ENDC
+
+	..NOOR = 1
+
+	SMAC.IF	<C6>,<T6>,<C5>,<T5>,<C4>,<T4>,-
+		  <C3>,<T3>,<C2>,<T2>,C1,T1
+
+	.IF	EQ,..NOOR		;;  An "OR" construct was used
+	  SMAC.TAG	\SMAC..LBLN,2
+	.ENDC
+
+	SMAC.PUSH	\SMAC..LBLN,\SMAC..IF
+	SMAC..LBLN = SMAC..LBLN + 1
+
+	.ENDM	IF
+
+	.PAGE
+
+	.MACRO	ELSE
+
+	.IF	NDF, SMAC..INI
+	  .ERROR			; ELSE occurs before any IF's
+	  .MEXIT
+	.ENDC
+
+	SMAC.PEEK	..LBL, ..TYP	;;Check top entry on stack
+
+	.IF	NE,<..TYP - SMAC..IF>
+	  .ERROR			; Incorrect nesting of ELSE block
+	  .MEXIT
+
+	.IF_FALSE
+	  SMAC.POP	..LBL, ..TYP	;; Get top stack entry
+
+	  .IRP	..N, \..LBL
+	    SMAC.EMIT	<BRW	_.'..N'.4>
+	  .ENDR
+
+	  SMAC.TAG	\..LBL, 3
+	  SMAC.PUSH	\..LBL, \SMAC..ELSE
+
+	.ENDC
+	.ENDM	ELSE
+
+	.PAGE
+
+	.MACRO	ENDIF
+
+	.IF	NDF, SMAC..INI
+	  .ERROR			; ENDIF occurs before any IF's
+	  .MEXIT
+	.ENDC
+
+	SMAC.PEEK	..LBL, ..TYP 	;; Get top items off stack
+	.IF	EQ,<..TYP - SMAC..IF>	;; If correctly nested IF
+
+	  SMAC.TAG	\..LBL, 3	;; Generate terminal tag
+	.IF_FALSE
+
+	  .IF	EQ,<..TYP-SMAC..ELSE>	;; or correctly nested ELSE
+	    SMAC.TAG	\..LBL,4	;; Generate terminal tag
+	  .IF_FALSE
+	    .ERROR			; ENDIF does not terminate an IF block
+	    .MEXIT
+	  .ENDC
+
+	.ENDC
+	SMAC.POP	..LBL, ..TYP	;; Since we know nesting ok, now
+					;; remove stuff from stack
+	.ENDM	ENDIF
+
+	.PAGE
+
+	.MACRO	REPEAT
+
+	SMAC.INI			;;  Init if needed
+;;  Stack label, type, and terminator suffix
+	SMAC.PUSH	\SMAC..LBLN, \SMAC..REPEAT
+	SMAC.TAG	\SMAC..LBLN, 1
+SMAC..LBLN = SMAC..LBLN + 1
+	.ENDM	REPEAT
+
+	.PAGE
+
+	.MACRO	UNTIL	T1,C1,T2,C2,T3,C3,T4,C4,T5,C5,T6,C6
+
+	.IF	NDF,SMAC..INI
+	  .ERROR			; UNTIL occurs before any REPEAT's
+	  .MEXIT
+	.ENDC
+
+	SMAC.PEEK	..LBL, ..TYP
+
+	.IF	NE,<..TYP-SMAC..REPEAT>
+	  .ERROR			; UNTIL does not terminate a REPEAT
+	  .MEXIT
+	.ENDC
+
+	SMAC.POP	..LBL, ..TYP	;; Since nesting is OK, ok to pop
+
+	.IRP	CC,\..LBL
+	  SMAC.TAG	'CC',2		;;  Generate NEXT tag
+	.ENDR
+
+	.NARG	..NARG
+	.IF	EQ,..NARG
+	  .ERROR			; UNTIL requires a condition, FOREVER, or ONCE
+	  .MEXIT
+	.ENDC
+
+	SMAC.UNTIL	<C6>,<T6>,<C5>,<T5>,<C4>,<T4>,<C3>,<T3>,<C2>,<T2>,-
+			C1, T1
+
+	SMAC.TAG	\..LBL,3
+	.ENDM	UNTIL
+	.PAGE
+
+	.MACRO	WHILE	T1, C1, T2, C2, T3, C3, T4, C4, T5, C5, T6, C6
+
+	SMAC.INI			;; Init if needed
+
+	.NARG	..NARG
+
+	.IF	BLANK,<C1>		;;  Must have one connective
+	  .ERROR			; Missing condition or DO in WHILE statement
+	  .MEXIT
+	.ENDC
+
+	.IF	NE,<<..NARG/2>*2-..NARG> ;;  Must be a pairs of arguments
+	  .ERROR			; Missing condition or DO in WHILE statement
+	  .MEXIT
+	.ENDC
+
+	..NOOR = 1
+	SMAC.TAG	\SMAC..LBLN,1	;; Generate top-of-loop tag
+
+	SMAC.WHILE	<C6>,<T6>,<C5>,<T5>,<C4>,<T4>,-
+		  <C3>,<T3>,<C2>,<T2>,C1,T1
+
+	.IF	EQ,..NOOR		;;  An "OR" construct was used
+	  SMAC.TAG	\SMAC..LBLN,4
+	.ENDC
+
+	SMAC.PUSH	\SMAC..LBLN,\SMAC..WHILE
+	SMAC..LBLN = SMAC..LBLN + 1
+
+	.ENDM	WHILE
+
+	.PAGE
+
+	.MACRO	ENDWHILE
+
+	.IF	NDF, SMAC..INI
+	  .ERROR			; ENDWHILE occurs before any WHILE's
+	  .MEXIT
+	.ENDC
+
+	SMAC.PEEK	..LBL, ..TYP 	;; Get top items off stack
+	.IF	NE,<..TYP - SMAC..WHILE>;; If not correctly nested 
+
+	  .ERROR			; ENDWHILE does not terminate a WHILE
+	  .MEXIT
+
+	.ENDC
+	SMAC.POP	..LBL, ..TYP	;; Since we know nesting ok, now
+					;; remove stuff from stack
+	SMAC.TAG	\..LBL,2	;; Generate NEXT tag
+
+	.IRP	CC,\..LBL		;; Generate loop branch
+	  SMAC.EMIT	<BRW	_.'CC'.1>
+	.ENDR
+
+	SMAC.TAG	\..LBL,3	;;  Generate BREAK and exit tag
+
+	.ENDM	ENDWHILE
+
+	.PAGE
+
+	.MACRO	BREAK	BRKID, IFDUM,T1,C1,T2,C2,T3,C3,T4,C4,T5,C5,T6,C6
+
+;;  Macro to implement break from a structure
+	.IF	NDF, SMAC..INI
+	  .ERROR			; BREAK occurs before any structures
+	  .MEXIT
+	.ENDC
+
+	.IF	IDN,BRKID,<IF>		;; No ID. Break innermost struct.
+	  SMAC.PEEK	..LBL, ..TYP, LEV=0 ;; Get info on structure to break
+
+	  .IF	LE,..TYP-4		;; Is it a breakable structure
+	    .ERROR			; Can't BREAK from an IF structure
+	    .MEXIT
+
+	  .IF_FALSE
+
+;;  Generates a pseudo IF-THEN-ENDIF
+	    SMAC.BRKNXT	<IFDUM>,<T1>,<C1>,<T2>,<C2>,<T3>,<C3>,<T4>,<C4>,-
+		<T5>,<C5>,<T6>
+	    .IRP	CC,\..LBL
+	      SMAC.EMIT	<BRW	_.'CC'.3>
+	    .ENDR
+	    ENDIF
+	  .ENDC
+
+	.IF_FALSE			;; Break to a label
+
+;; Generates a pseudo IF-THEN-ENDIF
+	  SMAC.BRKNXT	<T1>,<C1>,<T2>,<C2>,<T3>,<C3>,<T4>,<C4>,<T5>,<C5>,-
+			<T6>,<C6>
+	  SMAC.EMIT	<BRW	BRKID>
+	  ENDIF
+
+	.ENDC
+	.ENDM	BREAK
+
+	.PAGE
+	.MACRO	NEXT	NXTID, IFDUM,T1,C1,T2,C2,T3,C3,T4,C4,T5,C5,T6,C6
+
+;;  Macro to implement next interation in a structure
+	.IF	NDF, SMAC..INI
+	  .ERROR			; NEXT occurs before any structures
+	  .MEXIT
+	.ENDC
+
+	.IF	IDN,NXTID,<IF>		;; No ID. Next innermost struct.
+	  SMAC.PEEK	..LBL, ..TYP, LEV=0 ;; Get info on structure to next
+
+	  .IF	LE,..TYP-4		;; Is it a nextable structure
+	    .ERROR			; Can't NEXT in an IF structure
+	    .MEXIT
+
+	  .IF_FALSE
+
+;;  Generates a pseudo IF-THEN-ENDIF
+	    SMAC.BRKNXT	<IFDUM>,<T1>,<C1>,<T2>,<C2>,<T3>,<C3>,<T4>,<C4>,-
+		<T5>,<C5>,<T6>
+	    .IRP	CC,\..LBL
+	      SMAC.EMIT	<BRW	_.'CC'.2>
+	    .ENDR
+	    ENDIF
+	  .ENDC
+
+	.IF_FALSE			;; Break to a label
+
+;; Generates a pseudo IF-THEN-ENDIF
+	  SMAC.BRKNXT	<T1>,<C1>,<T2>,<C2>,<T3>,<C3>,<T4>,<C4>,<T5>,<C5>,-
+			<T6>,<C6>
+	  SMAC.EMIT	<BRW	NXTID>
+	  ENDIF
+
+	.ENDC
+	.ENDM	NEXT
+
+	.PAGE
+
+	.MACRO	CALL	NAME,A0,A1,A2,A3,A4,A5,A6,A7,A8,A9
+
+;;  macro to to a CALL_S type call.  The argument stacking is handled.
+;;  Argument is pushed as a value if literal, as an address if an address
+
+	..CNT = 0
+	.IRP	ARG,<A9,A8,A7,A6,A5,A4,A3,A2,A1,A0>
+
+	  .IF	NB,ARG
+	    .NTYPE	..TYP,ARG	;; Get addressing type
+	    ..TYP = ..TYP@-4&^XF
+	    .IF	IDN,0,<ARG>		;; If exactly zero
+	      PUSHL	#0		;; Stack zero
+	      .MEXIT
+	    .ENDC
+	
+	    ..FLG = 0
+	    .IIF	LE,..TYP-1,	..FLG=1
+	    .IIF	EQ,..TYP-5,	..FLG=1
+	    .IF	EQ,..FLG		;; If mode is an address
+	      PUSHAL	ARG
+	    .IF_FALSE
+	      PUSHL	ARG		;; Else push value
+	    .ENDC
+
+	    ..CNT = ..CNT + 1
+	  .ENDC
+	.ENDR
+
+	.IRP	CC,\..CNT
+	  CALLS	#'CC',G^'NAME
+	.ENDR
+
+	.ENDM	CALL
+
+	.PAGE
+
+	.MACRO	MESSAGE	CODE,F1,F2,F3,F4,F5,F6,F7,F8
+
+;;  Macro to build a message vector for the $PUTMSG system service.
+;;  Vector is for only one message and is built on the stack.
+;;  Message flags are left null.  
+	.IF	BLANK,<CODE>		;; Code must be specified
+	  .ERROR			; Message code must be specified
+	  .MEXIT
+	.ENDC
+
+	PUSHL	R0			; Save R0
+
+	.NARG	..MSG_NARGS		;; Get number of arguments
+	..LEN = 0			;  Length of vector built on stack
+
+	.IRP	F,<F8,F7,F6,F5,F4,F3,F2,F1>
+
+	  .IF	NB,<F>			;; If parameter was supplied
+	    PUSHL	'F		;  Push the parameter
+	    ..LEN = ..LEN + 1		;; and count it
+	  .ENDC
+	.ENDR
+
+	.IF	NE,<..LEN>		;; If there were FAO args
+	  PUSHL	#..LEN			; Push FAO count
+	  ..LEN = ..LEN + 1		;; and count it
+	.ENDC
+
+	PUSHL	CODE			; Store message code
+	PUSHL	#..LEN+1		; Store vector length
+	MOVL	SP,R0			; Point to vector
+	$PUTMSG_S	MSGVEC=(R0)	; Issue the message
+	ADDL2	#<4*<..LEN+2>>,SP	; Remove vector from stack
+
+	POPL	R0			; Restore saved R0
+	.ENDM	MESSAGE
+
+	.PAGE
+
+	.MACRO	SIGNAL	CODE1, F1,  CODE2, F2
+
+;;  Macro to generate a message vector and signal a condition.
+;;  Up to two message sequences are allowed.  Each sequence may have up to
+;;  four FAO parameters.  Sequences for RMS and SS error codes are correctly
+;;  generated.  Parameters must not reside in R1 which is modified.  R0 is
+;;  preserved.
+
+	.IF BLANK,<CODE1>		;; CODE1 must be specified
+	  .ERROR			; Message code must be specified
+	  .MEXIT
+	.ENDC
+
+	PUSHL	R0			; Preserve condition value
+	CLRL	R1			; Clear argument count
+	MSG..	CODE2,F2		; Process both message sequences
+	MSG..	CODE1,F1
+	CALLS	R1,G^LIB$SIGNAL		; Signal the condition
+	POPL	R0			; Restore condition value
+	.ENDM	SIGNAL
+
+	.MACRO	MSG..	CODE,FW,FX,FY,FZ,?L1
+	.IF	NB,<CODE>		;; If there is a message code
+	  ..FLEN=0			;; Count of FAO parameters
+	  .IRP F,<FZ,FY,FX,FW>		;; Stack parameters in reverse order
+	    .IF NB,<F>			;; If parameter supplied
+	      .NTYPE	..TYP,F		;; Get addressing type
+	      ..TYP = ..TYP@-4&^XF
+	      ..FLG = 0
+	      .IIF	LE,..TYP-1,  ..FLG=1
+	      .IIF	EQ,..TYP-5,  ..FLG=1
+	      .IF	EQ,..FLG	;; If mode is an address
+	        PUSHAL	F
+	      .IF_FALSE			;; Else push value
+		PUSHL	F
+	      .ENDC
+	      ..FLEN = ..FLEN + 1
+	    .ENDC
+	  .ENDR
+	  PUSHL	CODE			; Push message code on stack
+					; (it must be in memory for CMPZV)
+	  CMPZV	#STS$V_FAC_NO,-
+		#STS$S_FAC_NO,-
+		(SP),-
+		#1			; Is facility code system or RMS?
+	  BLEQ	L1			; Branch if so
+
+	  MOVAB	4(SP),SP		; Clear code off the stack.
+	  PUSHL	#..FLEN			; Push FAO list length
+	  INCL	R1
+	  PUSHL	CODE			; Push message code back
+L1:
+	  ADDL2	#..FLEN+1,R1		; Bump argument count
+	.ENDC
+	.ENDM	MSG..
+
+	.PAGE
+
+	.MACRO	COUNT	INIT
+
+;;  Macro to define a data type called a "count".
+
+	.IF	NB,INIT
+	  .LONG	INIT
+	.IF_FALSE
+	  .LONG	0
+	.ENDC
+	.ENDM	COUNT
+
+
+	.MACRO	STRING	LEN, INIT, ?SYM
+
+;;  macro to generate a descriptor followed by the string it describes.
+;;  the initialization is optional.
+
+	$DSCDEF
+	.NCHR	..CNT,<INIT>
+
+	.IF	GE,<LEN-..CNT>
+	  .WORD	LEN
+	.IF_FALSE
+	  .WORD	..CNT
+
+	.IF_TRUE_FALSE
+	  .BYTE	DSC$K_DTYPE_T
+	  .BYTE	DSC$K_CLASS_S
+	  .ADDRESS	SYM
+SYM:	  .ASCII	~INIT~
+	
+	.IF_TRUE
+	  . = . + <LEN-..CNT>
+	.ENDC
+
+	.ENDM	STRING
+
+	.MACRO	REQLIST
+;; Dummy header macro for $GETxxI request list macros
+	.ENDM	REQLIST
+
+	.MACRO ITEM ITMCOD, BUFADR, BUFLEN, LENADR
+;;  Macro to generate a $GETxxI request list item
+	.IF NB,BUFLEN
+	.WORD	BUFLEN
+	.IFF
+	.WORD	4
+	.ENDC
+	.IF	BLANK,<ITMCOD>
+	  .ERROR			; ITMCOD parameter required
+	  .MEXIT
+	.IFF
+	  .WORD	ITMCOD
+	.ENDC
+	.IF	BLANK,<BUFADR>
+	  .ERROR			; BUFADR parameter required
+	  .MEXIT
+	.IFF
+	  .ADDRESS	BUFADR
+	.ENDC
+	.IF	NB,LENADR
+	.ADDRESS	LENADR
+	.IFF
+	.LONG	0
+	.ENDC
+	.ENDM	ITEM
+
+	.MACRO	REQEND
+;;  Macro to generate terminator longword
+	.LONG	0
+	.ENDM	REQEND
+
+	.MACRO	 VECTOR	NRELS,SIZE=L
+
+;;  Macro to define a vector of storage locations
+	.BLK'SIZE	NRELS
+	.ENDM	VECTOR
+
+	.PAGE
+
+	.MACRO	ENB_LONG
+;;  Macro to enable use of all word displacement branching in the structures.
+;;  This is not the default.
+	SMAC..LONGM = 1
+	.ENDM	ENB_LONG
+
+	.MACRO	DSB_LONG
+;;  Macro to disable use of word displacement branching in the structures.
+;;  This is the default action
+	SMAC..LONGM = 0
+	.ENDM	DSB_LONG
+
+
+	.PAGE
+
+	.MACRO	SMAC.IF	C6,T6,C5,T5,C4,T4,C3,T3,C2,T2,C1,REL,ARG1,ARG2,TYPE=L 
+
+;;  Process last pair of args and recursively call if any args left.
+
+	.IRP	CC,\SMAC..LBLN
+
+	  .IF	IDN,<C1>,<OR>
+	    ..NOOR = 0
+	    SMAC.GENTST	<REL>, <ARG1>, <ARG2>, <TYPE>, <_.'CC'.2>, SMAC..NORM
+
+	  .IF_FALSE			;;Else simple or 'AND' connected
+	    SMAC.GENTST	<REL>, <ARG1>, <ARG2>, <TYPE>, <_.'CC'.3>, SMAC..BRREV
+
+	  .ENDC
+	.ENDR
+
+	.IF	NB,<T2>			;; If more tests
+	  SMAC.IF	<>, <>, <C6>, <T6>, <C5>, <T5>, -
+	      <C4>, <T4>, <C3>, <T3>, C2, T2
+	.ENDC
+
+	.ENDM	SMAC.IF
+
+	.PAGE
+
+	.MACRO	SMAC.UNTIL	C6,T6,C5,T5,C4,T4,C3,T3,C2,T2,C1,REL,ARG1,ARG2,TYPE=L 
+
+;;  Process last pair of args and recursively call if any args left.
+
+	.IRP	CC,\..LBL
+
+	  .IF	IDN,<REL>,<FOREVER>	;;If UNTIL FOREVER
+	    SMAC.EMIT	<BRW	_.'CC'.1>
+
+	  .IF_FALSE
+	    .IF	DIF,<REL>,<ONCE>	;;  And not REPEAT ONCE
+
+	      .IF	DIF,<C1>,<OR>	;;If not OR, assume simple or AND
+	        SMAC.GENTST	<REL>, <ARG1>, <ARG2>, <TYPE>, -
+			<_.'CC'.1>, SMAC..BRREV
+
+	      .IF_FALSE			;;Else OR connected
+	        SMAC.GENTST	<REL>, <ARG1>, <ARG2>, <TYPE>,-
+			 <_.'CC'.3>, SMAC..NORM
+	      .ENDC
+	    .ENDC
+
+	  .ENDC
+	.ENDR
+
+	.IF	NB,<C1>			;; If more connectives
+	  SMAC.UNTIL	<>, <>, <C6>, <T6>, <C5>, <T5>, -
+	      <C4>, <T4>, <C3>, <T3>, C2, T2
+	.ENDC
+
+	.ENDM	SMAC.UNTIL
+
+	.PAGE
+
+	.MACRO	SMAC.WHILE	C6,T6,C5,T5,C4,T4,C3,T3,C2,T2,C1,REL,ARG1,ARG2,TYPE=L 
+
+;;  Process last pair of args and recursively call if any args left.
+
+	.IRP	CC,\SMAC..LBLN
+
+	  .IF	IDN,<C1>,<OR>
+	    ..NOOR = 0
+	    SMAC.GENTST	<REL>, <ARG1>, <ARG2>, <TYPE>, <_.'CC'.4>, SMAC..NORM
+
+	  .IF_FALSE			;;Else simple or 'AND' connected
+	    SMAC.GENTST	<REL>, <ARG1>, <ARG2>, <TYPE>, <_.'CC'.3>, SMAC..BRREV
+
+	  .ENDC
+	.ENDR
+
+	.IF	NB,<C2>			;; If more connectives
+	  SMAC.WHILE	<>, <>, <C6>, <T6>, <C5>, <T5>, -
+	      <C4>, <T4>, <C3>, <T3>, C2, T2
+	.ENDC
+
+	.ENDM	SMAC.WHILE
+
+	.PAGE
+
+	.MACRO	SMAC.BRKNXT	T1, C1, T2, C2, T3, C3, T4, C4, T5, C5, T6, C6
+;; Internal macro used by BREAK and NEXT to do an internal IF-THEN-ENDIF
+	..NOOR = 1
+	SMAC.IF	<C6>,<T6>,<C5>,<T5>,<C4>,<T4>,<C3>,<T3>,<C2>,<T2>,C1,T1
+
+	.IF	EQ,..NOOR		;; An 'OR' construct was used
+	  SMAC.TAG	\SMAC..LBLN,2
+	.ENDC
+
+	SMAC.PUSH	\SMAC..LBLN,\SMAC..IF
+	SMAC..LBLN = SMAC..LBLN + 1
+
+	.ENDM	SMAC.BRKNXT
+
+	.PAGE
+
+	.MACRO	SMAC.INI
+;;  Define some constants and variables
+	SMAC..INI = 1			;; Init flag
+
+	SMAC..IF = 1			;;  Structure type codes
+	SMAC..REPEAT = 5
+	SMAC..WHILE = 6
+	SMAC..ELSE = 2
+
+	SMAC..BRREV = 1			;;  Branch sense codes
+	SMAC..NORM = 0
+
+	SMAC..SP = 0			;; Stack pointer
+	SMAC..LBLN = 0			;; Label generation counter
+	.IIF	NDF,SMAC..LONGM,	SMAC..LONGM = 0
+					;; Use short branches
+
+	.IIF	NDF,SMAC..LISTON,	SMAC..LISTON = 0
+
+
+	.MACRO	SMAC.INI		;;  Redefine this macro as a dummy
+	.ENDM	SMAC.INI
+
+	.ENDM	SMAC.INI
+
+	.PAGE
+
+	.MACRO	SMAC.GENBR	REL, DEST, SENSE
+
+	..LCP = %LENGTH(REL) - 1	;;Possible postion of "U" if unsigned
+
+	.IF	IDN,%EXTRACT(..LCP,1,REL),<U>
+	  SMAC.%EXTRACT(0,..LCP,REL)	<DEST>, U, <SENSE>
+	.IF_FALSE
+	  SMAC.'REL	<DEST>, <>, <SENSE>
+	.ENDC
+
+	.ENDM	SMAC.GENBR
+
+	.PAGE
+
+	.MACRO	SMAC.GENTST	REL, ARG1, ARG2, TYPE, DEST, SENSE
+
+	.IF	BLANK,REL
+	  .ERROR			; Relation not specified
+	  .MEXIT
+	.ENDC
+
+	.IF	BLANK,ARG2		;; If no second arg
+
+	  .IF	BLANK,ARG1		;; And no first argument
+	    SMAC.GENBR	<REL>, <DEST>, <SENSE> ;; Just need a branch
+	  .IF_FALSE
+
+	    .IF	DIF,%EXTRACT(0,2,REL),<LB>;;If not Low Bit test
+	    .IF	DIF,REL,OKAY		;; or equivalent
+	    .IF	DIF,REL,ERROR
+;;  Generate normal one arg form
+	       SMAC.EMIT	<TST'TYPE	ARG1>
+	       SMAC.GENBR	<REL>, <DEST>, <SENSE>;; Test and branch
+	       .MEXIT
+	     .ENDC
+	     .ENDC
+	     .ENDC
+;;  Drop through to here for low bit form
+	     SMAC.GENBR	<REL>, <ARG1,DEST>, <SENSE>
+
+	  .ENDC
+
+	.IF_FALSE
+	
+	  .IF	DIF,%EXTRACT(0,1,REL),<B>;; If not a Branch Bit test
+	    SMAC.EMIT	<CMP'TYPE	ARG1,ARG2>
+	    SMAC.GENBR	<REL>, <DEST>, <SENSE>
+
+	  .IF_FALSE
+	    SMAC.GENBR	<REL>, <ARG1,ARG2,DEST>, <SENSE>
+	  .ENDC
+
+	.ENDC
+	.ENDM	SMAC.GENTST
+
+	.PAGE
+
+	.MACRO	SMAC.GSLB	REL, DEST, SIGNED, SENSE
+
+	.IF	EQ,SMAC..LONGM		;;  If not in long mode, its easy
+	  SMAC.SHORTB	<REL>, <DEST>, <SIGNED>, <SENSE>
+	  .MEXIT
+	.ENDC
+
+	.IF	NDF,DEST		;; If branch target unknown
+	  SMAC.LONGB	<REL>, <DEST>, <SIGNED>, <SENSE> ;; Use long branch
+	  .MEXIT
+
+	.IF_FALSE
+	  .IF	LT,<128-<.-DEST>>	;; Defined but too far away
+	    SMAC.LONGB	<REL>, <DEST>, <SIGNED>, <SENSE>
+	    .MEXIT
+
+	  .IF_FALSE
+	    SMAC.SHORTB	<REL>, <DEST>, <SIGNED>, <SENSE>
+	    .MEXIT
+	  .ENDC
+
+	.ENDC
+	.ENDM	SMAC.GSLB
+
+	.PAGE
+
+	.MACRO	SMAC.GSLB.B	REL, SENSE, ARG1, DEST, DUMMY
+
+;;  Macro normally called with parameters:
+;;	<REL>, <SENSE>, DEST
+;;  where DEST can have one or two arguments preceeding the branch dest.
+
+	.IF	NB,DUMMY
+;;  If DUMMY has a value, then we have a two argument form.  Combine
+;;  ARG1 and ARG2 into ARG1
+	  SMAC.GSLB.B	<REL>, <SENSE>, <ARG1,DEST>, <DUMMY>
+	  .MEXIT
+
+	.IF_FALSE
+;; Normal expansion
+
+	  .IF	EQ,SMAC..LONGM		;;  If not in long mode, its easy
+	    SMAC.SHORTB.B	<REL>, <ARG1>, <DEST>, <SENSE>
+	    .MEXIT
+	  .ENDC
+
+	  .IF	NDF,DEST		;; If branch target unknown
+	    SMAC.LONGB.B	<REL>, <ARG1>, <DEST>, <SENSE> ;; Use long branch
+	    .MEXIT
+
+	  .IF_FALSE
+	    .IF	LT,<128-<.-DEST>>	;; Defined but too far away
+	      SMAC.LONGB.B	<REL>, <ARG1>, <DEST>, <SENSE>
+	      .MEXIT
+
+	    .IF_FALSE
+	      SMAC.SHORTB.B	<REL>, <ARG1>, <DEST>, <SENSE>
+	      .MEXIT
+	    .ENDC
+	  .ENDC
+
+	.ENDC
+	.ENDM	SMAC.GSLB.B
+
+	.PAGE
+
+	.MACRO	SMAC.SHORTB	REL, DEST, SIGNED, SENSE
+
+	.IF	DIF,SENSE,SMAC..BRREV	;;  Normal case branch
+	  SMAC.EMIT	<B'REL'SIGNED	DEST>
+	  .MEXIT
+	.IF_FALSE
+	  SMAC.R'REL	<DEST>, <SIGNED>
+	  .MEXIT
+	.ENDC
+	.ENDM	SMAC.SHORTB
+
+	.MACRO	SMAC.LONGB	REL, DEST, SIGNED, SENSE, ?LBL1
+;;  Macro to simulate a word displacement, conditional branch.
+;;  Generate a reverse sense branch to skip over a BRW instruction
+	.IF	IDN,SENSE,SMAC..BRREV	;; Reverse sense implies normal branch
+	  SMAC.EMIT	<B'REL'SIGNED	LBL1>
+	.IF_FALSE
+	  SMAC.R'REL	<LBL1>, <SIGNED>
+	.ENDC
+	SMAC.EMIT	<BRW	DEST>
+	SMAC.EMITL	<LBL1>
+
+	.ENDM	SMAC.LONGB
+
+	.PAGE
+
+	.MACRO	SMAC.SHORTB.B	REL, ARG1, DEST, SENSE
+
+;;  Special case for branch bit instructions
+	.IF	DIF,SENSE,SMAC..BRREV	;;  Normal case branch
+	  SMAC.EMIT	<B'REL	ARG1,DEST>
+	  .MEXIT
+	.IF_FALSE
+	  SMAC.R'REL	<ARG1>, <DEST>
+	  .MEXIT
+	.ENDC
+	.ENDM	SMAC.SHORTB.B
+
+	.MACRO	SMAC.LONGB.B	REL, ARG1, DEST, SENSE, ?LBL1
+;;  Macro to simulate a word displacement, conditional branch.
+;;  Generate a reverse sense branch to skip over a BRW instruction
+;;  Special case for branch bit instructions
+	.IF	IDN,SENSE,SMAC..BRREV	;; Reverse sense implies normal branch
+	  SMAC.EMIT	<B'REL	ARG1,LBL1>
+	.IF_FALSE
+	  SMAC.R'REL	<ARG1>, <LBL1>
+	.ENDC
+	SMAC.EMIT	<BRW	DEST>
+	SMAC.EMITL	<LBL1>
+
+	.ENDM	SMAC.LONGB.B
+
+	.PAGE
+
+	.MACRO	SMAC.TAG	LBL, SUFFIX
+
+	SMAC.EMITL	<_.'LBL'.'SUFFIX>
+	.ENDM	SMAC.TAG
+
+	.MACRO	SMAC.EMIT	VAL
+	.IIF	NE,SMAC..LISTON,	.SHOW	ME
+	VAL
+	.IIF	NE,SMAC..LISTON,	.NOSHOW	ME
+	.ENDM	SMAC.EMIT
+
+	.MACRO	SMAC.EMITL	VAL
+	.IIF	NE,SMAC..LISTON,	.SHOW	ME
+VAL:
+	.IIF	NE,SMAC..LISTON,	.NOSHOW	ME
+	.ENDM	SMAC.EMITL
+
+	.PAGE
+
+	.MACRO	SMAC.PUSH	LBL,TYP
+	SMAC..SP = SMAC..SP + 1
+	.IRP	CC, \SMAC..SP
+	  SMAC..STKT'CC = TYP
+	  SMAC..STKL'CC = LBL
+	.ENDR
+	.ENDM	SMAC.PUSH
+
+	.MACRO	SMAC.PEEK	LBL,TYP,LEV=0
+	.IF	LE,SMAC..SP-LEV
+	  .ERROR			; Incorrect nesting or missing statemnt.
+	  .MEXIT
+
+	.IF_FALSE
+
+	  ..TMP = SMAC..SP - LEV
+	  .IRP	CC,\..TMP
+	    LBL = SMAC..STKL'CC
+	    TYP = SMAC..STKT'CC
+	  .ENDR
+
+	.ENDC
+	.ENDM	SMAC.PEEK
+
+	.MACRO	SMAC.POP	LBL,TYP
+	SMAC.PEEK	<LBL>, <TYP>
+	SMAC..SP = SMAC..SP - 1
+	.ENDM	SMAC.POP
+
+	.PAGE
+
+;;  Special case branch instruction macros
+
+	.MACRO	SMAC.BC		DEST, SIGNED, SENSE
+;;  Note: No brackets around DEST in following call
+	SMAC.GSLB.B	<BC>, <SENSE>, DEST
+	.ENDM	SMAC.BC
+
+	.MACRO	SMAC.BS		DEST, SIGNED, SENSE
+;;  Note: No brackets around DEST in following call
+	SMAC.GSLB.B	<BS>, <SENSE>, DEST
+	.ENDM	SMAC.BS
+
+	.MACRO	SMAC.LBS		DEST, SIGNED, SENSE
+;;  Note: No brackets around DEST in following call
+	SMAC.GSLB.B	<LBS>, <SENSE>, DEST
+	.ENDM	SMAC.LBS
+
+	.MACRO	SMAC.LBC		DEST, SIGNED, SENSE
+;;  Note: No brackets around DEST in following call
+	SMAC.GSLB.B	<LBC>, <SENSE>, DEST
+	.ENDM	SMAC.LBC
+
+
+	.MACRO	SMAC.ERROR		DEST, SIGNED, SENSE
+;;  Equiv to LBC
+;;  Note: No brackets around DEST in following call
+	SMAC.GSLB.B	<LBC>, <SENSE>, DEST
+	.ENDM	SMAC.ERROR
+
+
+	.MACRO	SMAC.OKAY		DEST, SIGNED, SENSE
+;;  Equiv to LBS
+;;  Note: No brackets around DEST in following call
+	SMAC.GSLB.B	<LBS>, <SENSE>, DEST
+	.ENDM	SMAC.OKAY
+
+	.MACRO	SMAC.B		DEST, SIGNED
+	SMAC.EMIT	<BRB	'DEST'>
+	.ENDM	SMAC.B
+
+	.PAGE
+
+;  Macros to handle each possible type of branch
+	.MACRO	SMAC.EQL	DEST, SIGNED, SENSE
+	SMAC.GSLB	<EQL>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.EQL
+
+	.MACRO	SMAC.NEQ	DEST, SIGNED, SENSE
+	SMAC.GSLB	<NEQ>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.NEQ
+
+	.MACRO	SMAC.LEQ	DEST, SIGNED, SENSE
+	SMAC.GSLB	<LEQ>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.LEQ
+
+	.MACRO	SMAC.GEQ	DEST, SIGNED, SENSE
+	SMAC.GSLB	<GEQ>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.GEQ
+
+	.MACRO	SMAC.LSS	DEST, SIGNED, SENSE
+	SMAC.GSLB	<LSS>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.LSS
+
+	.MACRO	SMAC.GTR	DEST, SIGNED, SENSE
+	SMAC.GSLB	<GTR>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.GTR
+
+	.MACRO	SMAC.VS	DEST, SIGNED, SENSE
+	SMAC.GSLB	<VS>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.VS
+
+	.MACRO	SMAC.VC	DEST, SIGNED, SENSE
+	SMAC.GSLB	<VC>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.VC
+
+	.MACRO	SMAC.SC	DEST, SIGNED, SENSE
+	SMAC.GSLB	<SC>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.SC
+
+	.MACRO	SMAC.CC	DEST, SIGNED, SENSE
+	SMAC.GSLB	<CC>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.CC
+
+	.MACRO	SMAC.W	DEST, SIGNED, SENSE
+	SMAC.GSLB	<W>, <DEST>, <SIGNED>, <SENSE>
+	.ENDM	SMAC.W
+
+	.MACRO	SMAC.REQL	DEST, SIGNED
+	SMAC.EMIT	<BNEQ'SIGNED	DEST>
+	.ENDM	SMAC.REQL
+
+	.MACRO	SMAC.RNEQ	DEST, SIGNED
+	SMAC.EMIT	<BEQL'SIGNED	DEST>
+	.ENDM	SMAC.RNEQ
+	
+	.MACRO	SMAC.RGTR	DEST, SIGNED
+	SMAC.EMIT	<BLEQ'SIGNED	DEST>
+	.ENDM	SMAC.RGTR
+
+	.MACRO	SMAC.RLSS	DEST, SIGNED
+	SMAC.EMIT	<BGEQ'SIGNED	DEST>
+	.ENDM	SMAC.RLSS
+
+	.MACRO	SMAC.RGEQ	DEST, SIGNED
+	SMAC.EMIT	<BLSS'SIGNED	DEST>
+	.ENDM	SMAC.RGEQ
+
+	.MACRO	SMAC.RLEQ	DEST, SIGNED
+	SMAC.EMIT	<BGTR'SIGNED	DEST>
+	.ENDM	SMAC.RLEQ
+
+	.MACRO	SMAC.RVC	DEST, SIGNED
+	SMAC.EMIT	<BVS'SIGNED	DEST>
+	.ENDM	SMAC.RVC
+
+	.MACRO	SMAC.RVS	DEST, SIGNED
+	SMAC.EMIT	<BVC'SIGNED	DEST>
+	.ENDM	SMAC.RVS
+
+	.MACRO	SMAC.RCC	DEST, SIGNED
+	SMAC.EMIT	<BSC'SIGNED	DEST>
+	.ENDM	SMAC.RCC
+
+	.MACRO	SMAC.RSC	DEST, SIGNED
+	SMAC.EMIT	<BCC'SIGNED	DEST>
+	.ENDM	SMAC.RSC
+
+	.MACRO	SMAC.RLBC	ARG1, DEST
+	SMAC.EMIT	<BLBS	ARG1,DEST>
+	.ENDM	SMAC.RLBC
+
+	.MACRO	SMAC.RLBS	ARG1, DEST
+	SMAC.EMIT	<BLBC	ARG1,DEST>
+	.ENDM	SMAC.RLBS
+
+	.MACRO	SMAC.RBS	ARG1, DEST
+	SMAC.EMIT	<BBC	ARG1,DEST>
+	.ENDM	SMAC.RBS
+
+	.MACRO	SMAC.RBC	ARG1, DEST
+	SMAC.EMIT	<BBS	ARG1,DEST>
+	.ENDM	SMAC.RBC
+
+	.MACRO	SMAC.RW		DEST, SIGNED
+	SMAC.EMIT	<BRW	DEST>
+	.ENDM	SMAC.RW
+
+	.END
+
+	.PAGE
+	.MACRO	BREAK	BRKID, IFDUM,T1,C1,T2,C2,T3,C3,T4,C4,T5,C5,T6,C6
+
+;;  Macro to implement break from a structure
+	.IF	NDF, SMAC..INI
+	  .ERROR			; BREAK occurs before any structures
+	  .MEXIT
+	.ENDC
+
+	.IF	IDN,BRKID,<IF>		;; No ID. Break innermost struct.
+	  SMAC.PEEK	..LBL, ..TYP, LEV=0 ;; Get info on structure to break
+
+	  .IF	LE,..TYP-4		;; Is it a breakable structure
+	    .ERROR			; Can't BREAK from an IF structure
+	    .MEXIT
+
+	  .IF_FALSE
+
+;;  Generates a pseudo IF-THEN-ENDIF
+	    SMAC.BRKNXT	<IFDUM>,<T1>,<C1>,<T2>,<C2>,<T3>,<C3>,<T4>,<C4>,-
+		<T5>,<C5>,<T6>
+	    .IRP	CC,\..LBL
+	      SMAC.EMIT	<BRW	_.'CC'.3>
+	    .ENDR
+	    ENDIF
+	  .ENDC
+
+	.IF_FALSE			;; Break to a label
+
+;; Generates a pseudo IF-THEN-ENDIF
+	  SMAC.BRKNXT	<T1>,<C1>,<T2>,<C2>,<T3>,<C3>,<T4>,<C4>,<T5>,<C5>,-
+			<T6>,<C6>
+	  SMAC.EMIT	<BRW	BRKID>
+	  ENDIF
+
+	.ENDC
+	.ENDM	BREAK
+
+	.PAGE
+	.MACRO	NEXT	NXTID, IFDUM,T1,C1,T2,C2,T3,C3,T4,C4,T5,C5,T6,C6
+
+;;  Macro to implement next interation in a structure
+	.IF	NDF, SMAC..INI
+	  .ERROR			; NEXT occurs before any structures
+	  .MEXIT
+	.ENDC
+
+	.IF	IDN,NXTID,<IF>		;; No ID. Next innermost struct.
+	  SMAC.PEEK	..LBL, ..TYP, LEV=0 ;; Get info on structure to next
+
+	  .IF	LE,..TYP-4		;; Is it a nextable structure
+	    .ERROR			; Can't NEXT in an IF structure
+	    .MEXIT
+
+	  .IF_FALSE
+
+;;  Generates a pseudo IF-THEN-ENDIF
+	    SMAC.BRKNXT	<IFDUM>,<T1>,<C1>,<T2>,<C2>,<T3>,<C3>,<T4>,<C4>,-
+		<T5>,<C5>,<T6>
+	    .IRP	CC,\..LBL
+	      SMAC.EMIT	<BRW	_.'CC'.2>
+	    .ENDR
+	    ENDIF
+	  .ENDC
+
+	.IF_FALSE			;; Break to a label
+
+;; Generates a pseudo IF-THEN-ENDIF
+	  SMAC.BRKNXT	<T1>,<C1>,<T2>,<C2>,<T3>,<C3>,<T4>,<C4>,<T5>,<C5>,-
+			<T6>,<C6>
+	  SMAC.EMIT	<BRW	NXTID>
+	  ENDIF
+
+	.ENDC
+	.ENDM	NEXT
+
+	.END

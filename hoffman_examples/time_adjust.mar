@@ -1,0 +1,464 @@
+Article 154090 of comp.os.vms:
+Path: pa.dec.com!decuac.dec.com!haven.umd.edu!news.umbc.edu!cs.umd.edu!zombie.ncsc.mil!news.mathworks.com!newsfeed.internetmci.com!in3.uu.net!EU.net!sun4nl!sun4nl!ittpub!ittpub!veen
+Newsgroups: comp.os.vms
+Subject: [Macro Code]: How to change time backwards?
+Message-ID: <1996Aug15.120019@ittpub>
+From: veen@nl101.ittpub.nl (Hans van Veen - ITT Gouden Gids)
+Date: 15 Aug 96 12:00:19 WET+0100
+References: <01I7U2H5144Y9YCL50@SC.TEMIC.Com> <320B7F1B.6EFA@dartmouth.edu>
+Organization: ITT Publitec R+D BV, Amsterdam
+Nntp-Posting-Host: 128.42.0.1
+Lines: 449
+
+In article <320B7F1B.6EFA@dartmouth.edu>, Richard Hammersley <hammersley@dartmouth.edu> writes:
+> Norm Donovan X5678 wrote:
+>> 
+>> Every year at the Fall Daylight Savings Time (DST) switch we need to set
+>> our VMS system clock back 1 hour.  During this time, we have to shutdown
+>> all database applications because these systems many times will get sick
+>> if they detect a negative time.  For example if an order shipped before
+>> it was booked or some such thing.  We run 24x365 and shutting the systems
+>> down for an hour is a pain both for our manufacturing and our systems
+>> people who have to do the work.
+> 
+> (snip)
+> 
+>> I guess, my question is, how do people deal with system time changes
+>> at DST?
+>> 
+>> I have asked my users about switching to GMT and skipping DST, but this
+>> seems unacceptable to them.
+>> 
+>> Norm
+>> 
+>> ================================================================================
+>> ===  Norm Donovan                               Phone: 
+>> ================================================================================
+> 
+> You might think about a scenario where you set the time back in little increments.  
+> Like 5 or 10 seconds at a time every 5 to 10 seconds until the whole hour is set.  
+> Just keep track of how many intervals and stop when that number of intervals times 
+> the little increment equals 1 hour.
+> 
+> This essentially freezes the time to within several seconds for an hour.
+> 
+> 
+> -- 
+> Richard Hammersley                          Hammersley@Dartmouth.Edu
+> VMS System Manager                        603-646-3511
+> Dartmouth College
+> M   I   C       K  E  Y  MOUSE
+-- 
+
+We use this utility on our VAXes and Alpha's without any problems sofar.
+
+
+  TBO (Time Booster) is a OpenVMS VAX and AXP utility which allows
+  privileged users to gradualy move the OpenVMS time back- or forwards.
+  This utility is ment to be used when switching from summer- to
+  wintertime or vica versa.
+
+
+             Supplied by Digital without support !!!!
+
+
+How to build TBO:
+
+Underneath you find 3 files; TBO.CLD, TBO.HLP, and TBO.MAR
+
+1. Modify the line "image 'Dev:[Dir]'TBO" in TBO.CLD to point to the
+   device and directory were you will put TBO.EXE.
+
+2. If wanted put TBO.HLP in a helplibrary
+
+3. Compile and link TBO.MAR (see header for info) and copy the image
+   the device and directory mentioned unde 1.
+
+
+Good luck, but..... Use TBO at your own risk............
+
+
+Cheers, Hans
+
+      Hans van Veen                       Email  : hansv@ittpub.nl
+      ITT Gouden Gids IS/OS               CServe : 100145,2744
+      Hoekenrode 1                        Phone  : +31 20 5676797
+      1102 BR  AMSTERDAM, Netherlands     Fax    : +31 20 6911948
+
+
+=========== Start of TBO.CLD ============== Cut Here ===========================
+define verb TBO
+image 'Dev:[Dir]'TBO
+  noparameters
+  qualifier RESET	nonnegatable
+  qualifier INFO	nonnegatable
+  qualifier DIRECTION	nonnegatable, value(required, type=DIR_TYPE)
+  qualifier DELTA	nonnegatable, value(required, type=$NUMBER)
+  qualifier RANGE	nonnegatable, value(required, type=$NUMBER)
+
+  disallow		RESET and (DELTA or RANGE or DIRECTION)
+  disallow		DELTA and not (RANGE and DIRECTION)
+  disallow		RANGE and not (DELTA and DIRECTION)
+  disallow		DIRECTION and not (DELTA and RANGE)
+
+define type DIR_TYPE
+  keyword BACKWARD
+  keyword FORWARD
+============= End of TBO.CLD ============== Cut Here ===========================
+
+
+=========== Start of TBO.HLP ============== Cut Here ===========================
+1 TBO
+
+  TBO (Time Booster) is a OpenVMS VAX and AXP utility which allows
+  privileged users to gradualy move the OpenVMS time back- or forwards.
+  This utility is ment to be used when switching from summer- to
+  wintertime or vica versa.
+
+
+             Supplied by Digital without support !!!!
+
+
+  Syntax:
+
+    $ TBO /Qualifiers
+
+
+2 Parameter
+
+  TBO has no parameters
+
+
+2 Example
+
+    $ TBO /INFO
+    %TBO-I-IDENT, VAX/VMS Time Booster Rev 1.0
+    %TBO-I-INFO,  Systemtime:  2-APR-1996 10:28:05.58
+                  Timeadjust: 0
+                  Ticklength: 9765
+
+    $ TBO /DIRECTION=BACKWARD /RANGE=14400 /DELTA=3600 /INFO
+    %TBO-I-IDENT, VAX/VMS Time Booster Rev 1.0
+    %TBO-I-INFO,  Systemtime:  2-APR-1996 10:29:34.30
+                  Timeadjust: 14745600
+                  Ticklength: 7323
+
+  This command will move the clock 1 hour back over a period of
+  4 hours (summertime -> wintertime). /INFO will display the
+  current time, the adjustment duration, and the reduced ticklength.
+
+  Subsequent TBO /INFO commands will display the TBO progress (i.e.
+  the Timeadjust value will reduce slowly to zero).
+
+  Once TBO is active it can be stopped using the TBO /RESET command.
+
+    $ TBO /RESET /INFO
+    %TBO-I-IDENT, VAX/VMS Time Booster Rev 1.0
+    %TBO-I-RESET, Default ticklength restored
+    %TBO-I-INFO,  Systemtime:  2-APR-1996 10:34:17.57
+                  Timeadjust: 0
+                  Ticklength: 9765
+
+
+2 /DIRECTION
+
+  Format:
+
+    TBO /DIRECTION=Keyword /RANGE=Number /DELTA=Number [/INFO]
+
+  /DIRECTION is used to specify whether the time adjustment is made
+  for summertime (/DIRECTION=FORWARD) or for wintertime (/DIRECTION=
+  BACKWARD).
+
+  This qualifier must be used together with /DELTA and /RANGE, /INFO
+  is optional.
+
+
+2 /RANGE
+
+  Format:
+
+    TBO /DIRECTION=Keyword /RANGE=Number /DELTA=Number [/INFO]
+
+  /RANGE is used to specify the adjustment duration in seconds.
+  So /RANGE=14400 specifies a 4 hour period during which the
+  clock will be adjusted in the specified direction.
+
+  This qualifier must be used together with /DIRECTION and
+  /DELTA, /INFO is optional.
+
+
+2 /DELTA
+
+  Format:
+
+    TBO /DIRECTION=Keyword /RANGE=Number /DELTA=Number [/INFO]
+
+  /DELTA is used to specify the number of seconds the clock has to
+  be adjusted. So /DELTA=3600 is used to move the clock 1 hour back-
+  or forward (depends on the value of /DIRECTION). The duration of
+  the adjustment is specified by /RANGE.
+
+  This qualifier must be used together with /DIRECTION and
+  /RANGE, /INFO is optional.
+
+
+2 /RESET
+
+  Format:
+
+    TBO /RESET
+
+  This command (no other qualifiers, except /INFO, are allowed) resets
+  the clock update action. Whenever a TBO command is issued to change
+  the time, 2 internal OpenVMS memory locations (EXE$GL_TICKLENGTH and
+  EXE$GL_TIMEADJUST) are modified. /RESET forces the original values
+  into the memory locations, therby stopping the adjustment action.
+
+
+2 /INFO
+
+  Format:
+
+    TBO /INFO
+
+  Using /INFO will display the current system time, and the contents
+  of the locations EXE$GL_TICKLENGTH and EXE$GL_TIMEADJUST. The first
+  memory location specifies the number of hardware clock ticks which
+  make up a 10 msec unit, the 2nd location specifies the number of
+  hardware clockticks which have to pass before the 1st loctaion is
+  reseted to it's original value.
+
+============= End of TBO.CLD ============== Cut Here ===========================
+
+
+=========== Start of TBO.MAR ============== Cut Here ===========================
+
+              .title   Time_Booster
+              .ident   "Version 1.0"
+; 
+;	      Adapted to OpenVMS AXP  23-mar-1995
+;             LINK/SYSEXE  to link against the system
+;
+              .library "sys$share:lib.mlb"   ; Include the system macro library
+              $clidef
+              $ssdef
+
+              .macro   test_ret    ?l
+              blbs     r0,l
+              $exit_s  r0
+l:
+              .endm    test_ret
+
+              .psect   string,noexe, nowrt, quad
+ann:          .ascid   "%TBO-I-IDENT, VAX/VMS Time Booster Rev 1.0"
+res_ann:      .ascid   "%TBO-I-RESET, Default ticklength restored"
+cntr_info:    .ascid   "%TBO-I-INFO,  Systemtime: !AS!/              Timeadjust: !UL!/              Ticklength: !UL"
+noalq:        .ascid   "%TBO-E-NOTALLQUAL, Not all qualifiers are specified"
+res_entity:   .ascid   "reset"
+inf_entity:   .ascid   "info"
+del_entity:   .ascid   "delta"
+rang_entity:  .ascid   "range"
+dir_entity:   .ascid   "direction"
+dir_det:      .ascii   "B"
+addend:       .long    0
+              
+              .page
+              .psect   data  ,noexe,   wrt, quad
+lock_adr:     .address lock_start
+              .address lock_end
+deflen:       .blkl    1
+numargs:      .long    0
+direc_s:      .long    1                         ; Direction is forward
+range_s:      .long    0
+delta_s:      .long    0
+ticklength:   .blkl    1
+timeadjust:   .blkl    1
+systick:      .blkl    1
+remainder:    .blkl    1
+multipl:      .blkl    1
+product:      .blkq    1
+systime:      .blkq    1
+systime$:     .ascid   "xx-xxx-xxxx xx:xx:xx.xx" 
+out_desc:     .long    132
+              .address faobuf
+faobuf:       .blkb    132
+cvt_desc:     .word    8
+              .word    270
+              .address cvtbuf
+cvtbuf:       .blkb    8
+
+              .page
+              .psect   code  ,  exe, nowrt, quad
+
+              .entry main,^m<>
+
+              pushal   ann                       ; Push descriptor addres
+              calls    #1,g^lib$put_output       ; Let every one whats running
+              $lkwset_s inadr=lock_adr           ; Lock the privileged code in the working set
+              test_ret                           ; Check the return value
+              pushal   res_entity
+              calls    #1,g^cli$present          ; Do we want to reset?
+              cmpl     r0,#cli$_present          ; If option is reset then
+              bneq     10$
+              $cmkrnl_s routin=reset_hwclk       ; Initiate reset routine
+              test_ret                           ; Check the return value
+              pushal   res_ann                   ; Push success message
+              calls    #1,g^lib$put_output       ; Cry it out!
+              brw      20$
+10$:          bsbw     scan_cli                  ; See if there is something to mess around whith?
+              tstl     numargs                   ; No qualifiers?
+              beql     20$                       ; Then there is only one item to check left. 
+              cmpl     #3, numargs               ; Are there three items 
+              beql     22$                       ; If not, then exit
+              pushal   noalq
+              calls    #1,g^lib$put_output
+              brb      30$
+22$:          bsbw     calc_ticks                ; Calculate needed correction
+20$:          pushal   inf_entity
+              calls    #1,g^cli$present          ; Do we want info?
+              cmpl     r0,#cli$_present          ; If option is info then
+              bneq     30$
+              bsbw     hwclk_info                ; try to find out the current settings
+30$:          $exit_s                            ; Initiate image rundown
+              ret
+
+
+;              .entry hwclk_info,^m<>
+
+hwclk_info:   $cmkrnl_s routin= copy_info          
+              test_ret                           ; Check the return value
+              $asctim_s timlen=deflen, -         ; Convert quad word to system time string
+                       timbuf=systime$, -
+                       timadr=systime, -
+                       cvtflg=#0
+              $fao_s   ctrstr=cntr_info, -       ; Make everything readable and
+                       outbuf=out_desc, -        ; store it in a buffer
+                       p1=#systime$, -
+                       p2=timeadjust, -
+                       p3=ticklength
+              pushal   out_desc
+              calls    #1,g^lib$put_output       ; Cry it out!
+              rsb
+
+
+;              .entry scan_cli,^m<>
+
+scan_cli:     clrl     numargs
+              pushal   dir_entity               
+              calls    #1,g^cli$present          ; Test the precense of the direction qualifier
+              cmpl     r0,#cli$_present          ; Which way do we want to travel?
+              bneq     110$                      ; No direction?!, check the user for another errors!
+              incl     numargs                   ; Increment the parameter counter
+              pushal   cvt_desc
+              pushal   dir_entity
+              calls    #2,g^cli$get_value        ; Return the value assigned to the qualifier
+              moval    cvtbuf,r1
+              cmpb     dir_det,(r1)              ; If direction is backward
+              bneq     110$
+              movl     #-1,direc_s               ; Direc_s is negative
+110$:         pushal   del_entity                ; Check next entity
+              calls    #1,g^cli$present          ; Test the presence of the delta qualifier
+              cmpl     r0,#cli$_present          ; How many seconds are involved
+              bneq     115$                      ; And no delta? What are we doing?
+              incl     numargs
+              movl     #8,cvt_desc               ; Restore buffer size
+              pushal   cvt_desc                  ; Let the return value set up the descriptor
+              pushal   cvt_desc
+              pushal   del_entity
+              calls    #3,g^cli$get_value        ; Return the delta value
+              pushal   delta_s
+              pushal   cvt_desc
+              calls    #2,g^ots$cvt_tu_l         ; Convert delta string to unsigned long word
+              test_ret
+115$:         pushal   rang_entity               ; Check next entity
+              calls    #1,g^cli$present          ; Test the presence of the range qualifier
+              cmpl     r0,#cli$_present          ; How many seconds are involved
+              bneq     120$                      ; Even no range, we can better exit this routine
+              incl     numargs
+              movl     #8,cvt_desc               ; Restore buffer size
+              pushal   cvt_desc                  ; Let the return value set up the descriptor
+              pushal   cvt_desc
+              pushal   rang_entity
+              calls    #3,g^cli$get_value        ; Return the range value
+              pushal   range_s
+              pushal   cvt_desc
+              calls    #2,g^ots$cvt_tu_l         ; Convert delta string to unsigned long word
+              test_ret
+120$:         movl     #ss$_normal,r0            ; Restore the success return value for sys$cmkrnl
+              rsb
+
+;              .entry calc_ticks,^m<>
+
+calc_ticks:   $cmkrnl_s routin=get_systick       ; Retrieve systick
+              movl #10000000,r1                  ; Load clock resolution (1/100ns)
+              movl range_s,r2                    ; Load range in seconds
+              movl systick,r3                    ; Load exe$gl_systick
+              divl2 r3,r1                        ; r1 contains number of ticks required to adjust time
+              mull2 r2,r1                        ; Formula:(1E7*range/systick)
+              movl r1,timeadjust                 ; Save it
+
+              movl delta_s,r4                    ; Load delta value
+              movl direc_s,r5                    ; Load direction
+              mull2 r5,r4                        ; calc direction
+              addl2 r2,r4                        
+              movl  r4,multipl                   ; Store r4
+              pushal product                     ; Push the arguments
+              pushal addend
+              pushal systick
+              pushal multipl
+              calls  #4,g^lib$emul               ; Perform an 64 bit multiplication
+              pushal remainder
+              pushal ticklength
+              pushal product
+              pushal range_s
+              calls  #4,g^lib$ediv               ; Formula: ((range+(delta*direc))*systick/range) => new ticklength
+              $cmkrnl_s routin=store_ticks       ; Store calculated values in hwclk data structures
+              rsb
+
+              .page
+              .psect   prcode,  exe, nowrt       ; This psect contains code which runs at an elevated ipl
+
+              .entry        reset_hwclk,^m<>
+
+lock_start:                                      ; and is locked in the working set
+              lock     lockname=hwclk            ; Lock hardware clock data structures
+              clrl     g^exe$gl_timeadjust       ; Disable clock adjustment
+              movl     g^exe$gl_systick,g^exe$gl_ticklength ; Restore standard tick
+              unlock   lockname=hwclk, newipl=#0 ; Release the hardware clock lock
+              movl     #ss$_normal,r0            ; Restore the success return value for sys$cmkrnl
+              ret
+
+              .entry        copy_info,^m<>
+
+              lock     lockname=hwclk            ; Lock hardware clock data structures
+              movl     g^exe$gl_timeadjust, timeadjust ; Save timeadjust value in order to release lock as quick as possible
+              movl     g^exe$gl_ticklength, ticklength ; Do the same with the ticklength value
+              movq     g^exe$gq_systime, systime ; Even system time is saved for whatever the purpose may be
+              unlock   lockname=hwclk, newipl=#0 ; Release the hardware clock lock
+              movl     #ss$_normal,r0            ; Restore the success return value for sys$cmkrnl
+              ret
+
+              .entry        get_systick,^m<>
+
+              lock     lockname=hwclk            ; Lock hardware clock data structures
+              movl     g^exe$gl_systick,systick  ; Copy systick value
+              unlock   lockname=hwclk, newipl=#0 ; Release the hardware clock lock
+              movl     #ss$_normal,r0            ; Restore the success return value for sys$cmkrnl
+              ret
+
+              .entry        store_ticks,^m<>
+
+              lock     lockname=hwclk            ; Lock hardware clock data structures
+              movl     timeadjust, g^exe$gl_timeadjust ; Store timeadjust value
+              movl     ticklength, g^exe$gl_ticklength ; Store new ticklength value
+              unlock   lockname=hwclk, newipl=#0 ; Release the hardware clock lock
+              movl     #ss$_normal,r0            ; Restore the success return value for sys$cmkrnl
+              ret
+lock_end:
+              .end main
+
+============= End of TBO.MAR ============== Cut Here ===========================
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

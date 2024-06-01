@@ -1,0 +1,5 @@
+# 4.macro - demonstration of printing to stdout
+for ( k = 0 ;  k < 10 ; k++ )
+ { 
+  print("k is ",k,"\n"); 
+}

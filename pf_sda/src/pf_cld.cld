@@ -1,0 +1,16 @@
+! Definition of PF command syntax
+	module	PF_cld
+	ident "V0.4"
+!
+! COPYRIGHT NOTICE
+!
+! This software is COPYRIGHT (c) 2006, Ian Miller. ALL RIGHTS RESERVED.
+!
+! Released under licence described in aaareadme.txt 
+!
+	DEFINE VERB PF
+	PARAMETER P1, LABEL=INDEX, VALUE(TYPE=$NUMBER,REQUIRED)
+	QUALIFIER COUNT, NONNEGATABLE
+	QUALIFIER LOCATION, NONNEGATABLE
+	QUALIFIER GLOBAL, NONNEGATABLE
+	QUALIFIER FID_ONLY

@@ -1,0 +1,45 @@
+# Format descriptor for 3d image format
+# Created by ./tnimage 2.7.0 on Jun 24 1998
+identifier 3d
+headerfile 
+compression gzip -f
+decompression gunzip -c
+compression_extension .gz
+platform 21
+packing 1
+useheader 0
+useidentifier 1
+headerbytes 0
+skipbytes 0
+compressflag 1
+defaultbpp 8
+defaultcolortype 0
+defaultxsize 128
+defaultysize 128
+defaultrbpp 0
+defaultgbpp 0
+defaultbbpp 0
+defaultkbpp 0
+defaultframes 1
+# Offsets into the uncompressed file:
+identifieroff 0
+xoff 4
+yoff 8
+bppoff 12
+colortypeoff 16
+compressflagoff 20
+redbppoff 24
+greenbppoff 28
+bluebppoff 32
+blackbppoff 36
+xposoff 40
+yposoff 44
+framesoff 48
+fpsoff 52
+chromakeyoff 56
+chromakey_graymin_off 60
+chromakey_graymax_off 64
+chromakey_rgbmin_off 68
+chromakey_rgbmax_off 74
+paletteoff 80
+imageoff 852

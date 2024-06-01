@@ -1,0 +1,870 @@
+redefine DOMAIN AI1ATTEN USING AI1_ATTENDEE_REC ON OA$DATA:ATTENDEE.DAT;
+
+redefine DOMAIN AI1FORM USING AI1_FORM_REC ON AI1FORM.DOM;
+
+redefine DOMAIN AI1FORMAT USING AI1_FORMAT_RECORD ON OA$DATA:FORMAT.DAT;
+
+redefine DOMAIN AI1LOG USING AI1_LOG_REC ON OA$LIB:AI1.LOG;
+
+redefine DOMAIN AI1NORM USING AI1_NORM_REC ON
+    SYS$SYSDEVICE:[ALLIN1]AI1NORM.DOM;
+
+redefine RECORD AI1_ATTENDEE_REC OPTIMIZE
+01 AI1_ATTENDEE_REC.
+!
+! All-In-1 Meeting Attendees
+!
+! B. Z. Lederman
+!
+ 02 MEET_REC.
+  03 MEET_MATCH.
+    10 NAME1 PIC X(30) EDIT_STRING T(15).
+    10 MATCH1.
+        20 FILLER PIC X(12).
+        20 DATE COMPUTED BY CHOICE OF
+            (MM1 EQ "  ") THEN FN$DATE("18-NOV-1858 00:00:00.00")
+            ELSE FN$DATE(MD1 | "-" | MM1 VIA MONTH_TABLE | "-" |
+                MY1 | " " | MH1 | ":" | MI1 | ":00.00")
+            END_CHOICE.
+        20 TIME COMPUTED BY FN$TIME(MATCH1.DATE)
+                EDIT_STRING X(5).
+        20 LENGTH PIC X(4).
+    10 MATCH1_R REDEFINES MATCH1.
+        20 MY1 PIC X(4).
+        20 MM1 PIC X(2).
+        20 MD1 PIC X(2).
+        20 MH1 PIC X(2).
+        20 MI1 PIC X(2).
+   03 MEETR REDEFINES MEET_MATCH.
+        20 MEETING_POINTER PIC X(46).
+   03 ATTEN.
+    10 ATTENDEE_NAME PIC X(30) EDIT_STRING T(15).
+ 02 MEETRC REDEFINES MEET_REC.
+        20 MEETING_RECORD PIC X(76).
+ 02 DATA.
+    10 FLAG PIC X.
+    10 YES_NO PIC X(3).
+    10 MESSAGE PIC X(56) EDIT_STRING T(24).
+    10 APPOINTMENTS OCCURS 6 TIMES.
+      15 MATCH2.
+        20 FILLER PIC X(12).
+        20 DATE COMPUTED BY CHOICE OF
+            (MM2 EQ "  ") THEN FN$DATE("18-NOV-1858 00:00:00.00")
+            ELSE FN$DATE(MD2 | "-" | MM2 VIA MONTH_TABLE | "-" |
+                MY2 | " " | MH2 | ":" | MI2 | ":00.00")
+            END_CHOICE.
+        20 TIME COMPUTED BY FN$TIME(MATCH2.DATE)
+                EDIT_STRING X(5).
+        20 LENGTH PIC X(4).
+      15 MATCH2_R REDEFINES MATCH2.
+        20 MY2 PIC X(4).
+        20 MM2 PIC X(2).
+        20 MD2 PIC X(2).
+        20 MH2 PIC X(2).
+        20 MI2 PIC X(2).
+        20 LENGTH PIC X(4).
+    10 END PIC X(19).
+;
+
+redefine RECORD AI1_CALACCESS_REC OPTIMIZE
+01 AI1_CALACCESS_REC.
+!
+! All-In-1 Calender access (who has access to whom).
+!
+! B. Z. Lederman
+!
+    10 GRANTUSER PIC X(30)
+        EDIT_STRING T(16)
+        QUERY_HEADER "User"/"Granting"/"Access".
+    10 ACCUSER PIC X(30)
+        EDIT_STRING T(16)
+        QUERY_HEADER "Access"/"Given"/"To".
+    10 READ PIC X QUERY_HEADER "Read"/"Your"/"Calendar".
+    10 WRITE PIC X QUERY_HEADER "Schedule"/"for"/"You".
+    10 PHONE PIC X QUERY_HEADER "".
+;
+
+redefine RECORD AI1_FORMAT_RECORD OPTIMIZE
+01 AI1_FORMAT_REC.
+    10 FILE_FORMAT PIC X(15).
+    10 DESCRIPTION PIC X(50).
+    10 DEFAULT_FILE_EXT PIC X(4).
+    10 OBJECT_EXT PIC X(4).
+    10 DSAB_TYPE PIC X(15).
+    10 TEMPLATE_FILENAME PIC X(36).
+    10 EDIT_FUNCTION PIC X(50).
+    10 INITIALIZATION_FILE PIC X(29).
+    10 PURGE_COUNT PIC XX.
+    10 EDITOR_TYPE PIC X(15).
+    10 LIST_FUNCTION PIC X(45).
+    10 EXTERNAL_COMMAND PIC X(50).
+    10 STANDARD_FORMATTING PIC X(1).
+    10 COMPILE_COMMAND PIC X(50).
+    10 TEMPLATE_FORM PIC X(31).
+    10 EXTRA PIC X(19).
+;
+
+redefine RECORD AI1_FORM_REC OPTIMIZE
+01 AI1_FORM_REC.
+!
+! Used to correlate the form to the library containing it
+! (or a DO script to the directory containing it).
+!
+! B. Z. Lederman
+!
+	10 FORM PIC X(24).
+	10 LIBRARY PIC X(9).
+;
+
+redefine RECORD AI1_LOG_REC OPTIMIZE
+!
+! This will read the logging file produced by ALL-IN-1 when logging
+! is turned on.
+!
+! B. Z. Lederman
+!
+01 AI1_LOG_REC.
+   05 ID.
+	10 FACIL_ID USAGE LONG.
+	10 MSG_ID USAGE LONG.
+	10 PROC_ID USAGE LONG.
+   05 TIMES.
+	10 SYS_DATE USAGE DATE.
+	10 SYS_TIME PIC X(12) COMPUTED BY FN$TIME(SYS_DATE).
+	10 ELAP_TIME USAGE LONG.
+   05 MESSAGE.
+	10 INPUT PIC X(10).
+	10 FUNCTION PIC X(16).
+	10 TEXT PIC X(200) EDIT_STRING T(24).
+	10 TX REDEFINES TEXT.
+		20 FORM_NAME PIC X(32).
+;
+
+redefine RECORD AI1_MEETING_REC OPTIMIZE
+01 AI1_MEETING_REC.
+!
+! All-In-1 Meetings scheduled.
+!
+   10 MEETING_MATCH.
+     15 SCHEDULER PIC X(30) EDIT_STRING T(15).
+     15 MATCH1.
+       20 FILLER PIC X(12).
+       20 DATE COMPUTED BY CHOICE OF
+           (MM1 EQ "  ") THEN FN$DATE("18-NOV-1858 00:00:00.00")
+           ELSE FN$DATE(MD1 | "-" | MM1 VIA MONTH_TABLE | "-" |
+               MY1 | " " | MH1 | ":" | MI1 | ":00.00")
+           END_CHOICE.
+       20 TIME COMPUTED BY FN$TIME(MATCH1.DATE)
+               EDIT_STRING X(5).
+       20 LENGTH PIC X(4).
+    15 MATCH1_R REDEFINES MATCH1.
+       20 MY1 PIC X(4).
+       20 MM1 PIC X(2).
+       20 MD1 PIC X(2).
+       20 MH1 PIC X(2).
+       20 MI1 PIC X(2).
+  10 MEETR REDEFINES MEETING_MATCH.
+       20 MEETING_POINTER PIC X(46).
+  10 MATCH2.
+       20 FILLER PIC X(12).
+       20 DATE COMPUTED BY CHOICE OF
+           (MM2 EQ "  ") THEN FN$DATE("18-NOV-1858 00:00:00.00")
+           ELSE FN$DATE(MD2 | "-" | MM2 VIA MONTH_TABLE | "-" |
+               MY2 | " " | MH2 | ":" | MI2 | ":00.00")
+           END_CHOICE.
+       20 TIME COMPUTED BY FN$TIME(MATCH2.DATE)
+               EDIT_STRING X(5).
+       20 LENGTH PIC X(3).
+  10 MATCH2_R REDEFINES MATCH2.
+       20 MY2 PIC X(4).
+       20 MM2 PIC X(2).
+       20 MD2 PIC X(2).
+       20 MH2 PIC X(2).
+       20 MI2 PIC X(2).
+  10 PURPOSE PIC X(60) EDIT_STRING T(15).
+  10 LOCATION PIC X(32) EDIT_STRING T(16).
+  10 PRIORITY PIC XX.
+  10 A PIC X(31).
+  10 NAME2 PIC X(30) EDIT_STRING T(15).
+  10 B PIC X(60).
+;
+
+redefine RECORD AI1_NETWORK_REC OPTIMIZE
+01 AI1_NETWORK_REC.
+!
+! Read the ALL-IN-1 network data file (who is on what node).
+!
+! B. Z. Lederman
+!
+    10 USER_NAME PIC X(30).
+    10 NODE PIC X(6).
+    10 DATE1.
+        20 FILLER PIC X(16).
+        20 LAST_UPDATE COMPUTED BY CHOICE OF
+            (IY1 EQ "  ") THEN FN$DATE("18-NOV-1858")
+            ELSE FN$DATE(ID1 | "-" | IM1 VIA MONTH_TABLE | "-" |
+                IY1 | " " | IH1 | ":" | II1 | ":" | IS1 | "." | IF1)
+            END_CHOICE.
+        20 UPDATE_TIME COMPUTED BY FN$TIME(DATE1.LAST_UPDATE)
+                EDIT_STRING X(11).
+    10 DI1 REDEFINES DATE1.
+        20 IY1 PIC XXXX.
+        20 IM1 PIC XX.
+        20 ID1 PIC XX.
+        20 IH1 PIC XX.
+        20 II1 PIC XX.
+        20 IS1 PIC XX.
+        20 IF1 PIC XX.
+    10 FULL_NAM PIC X(32).
+    10 TITLE PIC X(30).
+    10 DEPARTMENT PIC X(24).
+    10 TELEPHONE PIC X(20).
+    10 ADDRESS.
+        20 ADDR1 PIC X(30).
+        20 ADDR2 PIC X(30).
+        20 ADDR3 PIC X(30).
+        20 ADDR4 PIC X(30).
+        20 ZIPCOD PIC X(10).
+    10 NETWORK_ADDRESS PIC X(63) EDIT_STRING T(32).
+    10 TIMESTAMP PIC X(22).
+    10 M_NODE PIC X.
+    10 DELETED PIC X.
+;
+
+redefine procedure ai1_log_normalize
+!
+! Process AI1 logging file so that the form names are extracted and
+! normalized. This allows looking them up in a table to find out which
+! library they are in, and to allow summation for statistics on use.
+!
+! 06-Mar-1986	B. Z. Lederman
+! 18-Mar-1986			add DO scripts
+!
+DEFINE FILE FOR AI1NORM
+READY AI1NORM WRITE
+READY AI1LOG
+DECLARE A_FORM PIC X(24).
+DECLARE B_FORM PIC X(24).
+DECLARE E1 PIC 99 EDIT_STRING Z9.
+DECLARE E2 PIC 99 EDIT_STRING Z9.
+FOR AI1LOG WITH FUNCTION = "FORM", "DO" BEGIN
+	E1 = 0
+	E2 = 0
+	A_FORM = FN$UPCASE (FORM_NAME)		! force upper case
+	E1 = FN$STR_LOC (A_FORM, " ")		! look for end of form name
+	E2 = FN$STR_LOC (A_FORM, "/")		! may have command attached
+	IF E1 > 0 E1 = E1 - 1			! want last character
+	IF E2 > 0 E2 = E2 - 1			! not search character
+	IF ( (E2 > 0) AND ( (E2 < E1) OR (E1 = 0) ) ) THEN
+		B_FORM = FN$STR_EXTRACT (A_FORM, 1, E2) ELSE
+		B_FORM = FN$STR_EXTRACT (A_FORM, 1, E1)
+	IF (B_FORM IN FORM_TABLE) THEN
+		A_FORM = B_FORM VIA FORM_TABLE ELSE A_FORM = " "
+	STORE AI1NORM USING BEGIN
+		FACIL_ID  = FACIL_ID
+		MSG_ID    = MSG_ID
+		PROC_ID   = PROC_ID
+		SYS_DATE  = SYS_DATE
+		ELAP_TIME = ELAP_TIME
+		FUNCTION  = FUNCTION
+		NAME      = B_FORM
+		LIBRARY   = A_FORM
+	END
+END
+FINISH
+RELEASE A_FORM
+RELEASE B_FORM
+RELEASE E1
+RELEASE E2
+end_procedure
+
+redefine RECORD AI1_NORM_REC OPTIMIZE
+01 AI1_NORM_REC.
+!
+! Hold logging data after normalization of form names, etc.
+!
+! B. Z. Lederman
+!
+   05 ID.
+	10 FACIL_ID USAGE LONG.
+	10 MSG_ID USAGE LONG.
+	10 PROC_ID USAGE LONG.
+   05 TIMES.
+	10 SYS_DATE USAGE DATE.
+	10 SYS_TIME PIC X(12) COMPUTED BY FN$TIME(SYS_DATE).
+	10 ELAP_TIME USAGE LONG.
+   05 MESSAGE.
+	10 FUNCTION PIC X(16).
+	10 NAME PIC X(24).
+	10 LIBRARY PIC X(9).
+;
+
+redefine procedure ai1_log_sum
+!
+! summarize logging data so we can determine which are the most
+! commonly used scripts and forms.
+!
+READY AI1NORM
+REPORT AI1NORM WITH LIBRARY NE " " SORTED BY
+	FUNCTION, NAME ON *."TT or file name"
+AT BOTTOM OF NAME PRINT FUNCTION, SPACE 1,
+	LIBRARY, SPACE 1, COUNT, SPACE 1, NAME
+AT BOTTOM OF FUNCTION PRINT NEW_PAGE
+END_REPORT
+end_procedure
+
+redefine DOMAIN AI1_PENDING USING AI1_PENDING_RECORD ON OA$DATA:PENDING.DAT;
+
+redefine RECORD AI1_PENDING_RECORD OPTIMIZE
+01 AI1_PENDING_REC.
+!
+! Read the ALL-IN-1 PENDING data file.
+!
+! B. Z. Lederman
+!
+    10 PENDING_KEY PIC X(65) EDIT_STRING T(32).
+    10 C USAGE BYTE EDIT_STRING SZZ9.
+    10 A USAGE WORD EDIT_STRING SZZ,ZZ9.
+    10 B USAGE WORD EDIT_STRING SZZ,ZZ9.
+    10 D PIC XX.
+    10 HIDE.
+	20 FILLER PIC X(8).
+    10 REAL REDEFINES HIDE.
+	20 E PIC X(8).
+    10 ENUM PIC 9(8) COMPUTED BY E EDIT_STRING ZZ,ZZZ,ZZ9.
+    10 FILLER PIC X(1920).
+;
+
+redefine RECORD AI1_PRNTTYPE_REC OPTIMIZE
+01 AI1_PRNTTYPE_REC.
+!
+! Printer types that All-In-1 knows about
+!
+! B. Z. Lederman
+!
+    10 SM_PRI_NAME PIC X(15) QUERY_HEADER "Printer"/"Name".
+    10 SM_PRI_DESC PIC X(50) QUERY_HEADER "Description".
+    10 SM_PRI_TYPE PIC X(30) QUERY_HEADER "Printer"/"Type".
+    10 SM_PRI_FUNC PIC X(30) QUERY_HEADER "Print"/"Function".
+    10 SM_PRI_QUEU PIC X(30) QUERY_HEADER "Print"/"Queue".
+    10 SM_PRI_COM2 PIC X(30) QUERY_HEADER "Comments".
+    10 SM_PRI_COM3 PIC X(30) QUERY_HEADER "Comments".
+;
+
+redefine RECORD AI1_PROFILE_REC OPTIMIZE
+01 AI1_PROFILE_REC.
+!
+! Read the ALL-IN-1 user profile. Good for quick lookups of user names,
+! which have DCL, which have logging, or for modifications (turn DCL
+! on or off for everybody, etc.).  I recommend NOT using this to add
+! or delete users.
+!
+	10 USER PIC X(30).
+	10 USER_INFO.
+		20 VMSNAM PIC X(12).
+		20 FULNAM PIC X(32).
+		20 TITLE PIC X(30).
+		20 DEPART PIC X(24).
+		20 STATUS PIC X(68) EDIT_STRING T(24).
+		20 PASWRD PIC X(31).
+		20 PHONE PIC X(20).
+	10 RESERVED PIC X(15).
+	10 PRIV.
+		20 DCL PIC X.
+		20 SUP PIC X.
+		20 ERR PIC X.
+		20 CMD PIC X.
+		20 SRC PIC X.
+		20 CPHD PIC X.
+		20 LOG PIC X.
+		20 MULTI_NODE PIC X.
+		20 RSVD_FOR_TCS PIC X.
+	10 ADDRESS.
+		20 ADDR1 PIC X(30).
+		20 ADDR2 PIC X(30).
+		20 ADDR3 PIC X(30).
+		20 ADDR4 PIC X(30).
+		20 ZIPCOD PIC X(15).
+	10 NOTIFY.
+		20 NOTICE PIC X.
+		20 BATCH_NOT PIC X.
+		20 PRINT_NOT PIC X.
+		20 MAIL_READ_REC PIC X.
+		20 TICKLER PIC X.
+		20 ACTITEM PIC X.
+	10 DIRECTORY PIC X(68) EDIT_STRING T(32).
+	10 FORMLIB PIC X(68) EDIT_STRING T(24).
+	10 INIT_FORM PIC X(30).
+	10 EDITOR PIC X(10).
+	10 PRINTER PIC X(15).
+	10 NODE PIC X(13).
+	10 PRINT_PORT PIC X.
+	10 TERM_MODE PIC X.
+	10 MAIL.
+		20 MAIL_FORWARD PIC X(66) EDIT_STRING T(24).
+		20 MAIL_REPLY PIC X(31).
+		20 MAIL_MENU PIC X(10).
+		20 MAIDES PIC X(10).
+	10 CALENDAR.
+		20 CALTIMEING PIC X(5).
+		20 SETUSR PIC X.
+		20 YESDAYS PIC X.
+		20 STARTD PIC X.
+		20 ENDD PIC X.
+		20 STARTH PIC X(7).
+		20 ENDH PIC X(7).
+		20 MEALS PIC X(7).
+		20 MEALE PIC X(7).
+		20 CALDAY PIC X.
+	10 UFLAG.
+		20 UFLAG1 PIC X.
+		20 UFLAG2 PIC X.
+		20 UFLAG3 PIC X.
+		20 UFLAG4 PIC X.
+		20 UFLAG5 PIC X.
+		20 UFLAG6 PIC X.
+		20 UFLAG7 PIC X.
+		20 UFLAG8 PIC X.
+		20 UFLAG9 PIC X.
+		20 UFLAG10 PIC X.
+		20 CLASS PIC X(10).
+	10 LANGUAGE PIC X(20).
+	10 END PIC X(138) EDIT_STRING T(24).
+;
+
+redefine RECORD AI1_PROFILE_RECORD OPTIMIZE
+01 AI1_PROFILE_REC.
+!
+! Read the ALL-IN-1 user profile. Good for quick lookups of user names,
+! which have DCL, which have logging, or for modifications (turn DCL
+! on or off for everybody, etc.).  I recommend NOT using this to add
+! or delete users.
+!
+	10 USER PIC X(30).
+	10 USER_INFO.
+		20 VMSNAM PIC X(12).
+		20 FULNAM PIC X(32).
+		20 TITLE PIC X(30).
+		20 DEPART PIC X(24).
+		20 STATUS PIC X(68) EDIT_STRING T(24).
+		20 PASWRD PIC X(31).
+		20 PHONE PIC X(20).
+	10 RESERVED PIC X(15).
+	10 PRIV.
+		20 DCL PIC X.
+		20 SUP PIC X.
+		20 ERR PIC X.
+		20 CMD PIC X.
+		20 SRC PIC X.
+		20 CPHD PIC X.
+		20 LOG PIC X.
+		20 MULTI_NODE PIC X.
+		20 RSVD_FOR_TCS PIC X.
+	10 ADDRESS.
+		20 ADDR1 PIC X(30).
+		20 ADDR2 PIC X(30).
+		20 ADDR3 PIC X(30).
+		20 ADDR4 PIC X(30).
+		20 ZIPCOD PIC X(15).
+	10 NOTIFY.
+		20 NOTICE PIC X.
+		20 BATCH_NOT PIC X.
+		20 PRINT_NOT PIC X.
+		20 MAIL_READ_REC PIC X.
+		20 TICKLER PIC X.
+		20 ACTITEM PIC X.
+	10 DIRECTORY PIC X(68) EDIT_STRING T(32).
+	10 FORMLIB PIC X(68) EDIT_STRING T(24).
+	10 INIT_FORM PIC X(30).
+	10 EDITOR PIC X(10).
+	10 PRINTER PIC X(15).
+	10 NODE PIC X(13).
+	10 PRINT_PORT PIC X.
+	10 TERM_MODE PIC X.
+	10 MAIL.
+		20 MAIL_FORWARD PIC X(66) EDIT_STRING T(24).
+		20 MAIL_REPLY PIC X(31).
+		20 MAIL_MENU PIC X(10).
+		20 MAIDES PIC X(10).
+	10 CALENDAR.
+		20 CALTIMEING PIC X(5).
+		20 SETUSR PIC X.
+		20 YESDAYS PIC X.
+		20 STARTD PIC X.
+		20 ENDD PIC X.
+		20 STARTH PIC X(7).
+		20 ENDH PIC X(7).
+		20 MEALS PIC X(7).
+		20 MEALE PIC X(7).
+		20 CALDAY PIC X.
+	10 UFLAG.
+		20 UFLAG1 PIC X.
+		20 UFLAG2 PIC X.
+		20 UFLAG3 PIC X.
+		20 UFLAG4 PIC X.
+		20 UFLAG5 PIC X.
+		20 UFLAG6 PIC X.
+		20 UFLAG7 PIC X.
+		20 UFLAG8 PIC X.
+		20 UFLAG9 PIC X.
+		20 UFLAG10 PIC X.
+		20 CLASS PIC X(10).
+	10 LANGUAGE PIC X(20).
+	10 END PIC X(138) EDIT_STRING T(24).
+;
+
+redefine DOMAIN CALACCESS USING AI1_CALACCESS_REC ON OA$DATA:CALACCESS.DAT;
+
+redefine DOMAIN CD USING DOCDB_REC ON USER$DEVICE:[CINAMON.OA]DOCDB.DAT;
+
+redefine DOMAIN DAF USING DAF_REC ON OA$DATA:DAF.DAT;
+
+redefine RECORD DAF_REC
+01 DAF_REC.
+!
+! The System DAF file is a variable format file, and you usually
+! can't get much of anything useful from it.  The user DAF files
+! aren't much better.
+!
+   05 FIXED_GROUP.
+	10 FILE_NAME PIC X(64).
+	10 RECORD_CODE PIC X.
+	10 CONT_FLAG PIC X.
+	10 A USAGE BYTE.
+	10 B USAGE BYTE.
+	10 C USAGE BYTE.
+	10 D USAGE BYTE.
+	10 USAGE_COUNT PIC XX.
+   05 OTHER.
+	10 WHAT PIC X.
+	10 STRING1 PIC X(8).
+	10 BINB OCCURS 42 TIMES.
+		20 B USAGE WORD.
+	10 L2 USAGE WORD.
+	10 TEXT PIC X(100) EDIT_STRING T(16).
+	10 VAR REDEFINES TEXT.
+		20 S2 OCCURS 0 TO 64 TIMES DEPENDING ON L2 .
+			30 T PIC X.
+	10 END PIC X(1733) EDIT_STRING T(64).
+;
+
+redefine DOMAIN DB USING DOCDB_REC ON USER$DEVICE:[LEDERMAN.OA]DOCDB.DAT;
+
+redefine DOMAIN DOCDB_MANAGER USING DOCDB_REC ON SYS$SYSDEVICE:[ALLIN1.MGR]DOCDB.DAT;
+
+redefine DOMAIN DOCDB_POSTMASTER USING
+    DOCDB_REC ON SYS$SYSDEVICE:[ALLIN1.POSTMASTE]DOCDB.DAT;
+
+redefine RECORD DOCDB_REC OPTIMIZE
+01 DOCDB_REC.
+!
+! Document data base (DOCDB.DAT) definition for WPS (either
+! All-In-1 or VMS). I don't recommend adding or deleting documents
+! using DATATRIEVE (except in emergencies like DOCDB.DAT
+! corruption).  However, it is useful if you want to find out what
+! VMS file is related to a given document, and to check to see if
+! there are any documents in a users' directory which do not
+! appear in the document database, which happens occasionaly when
+! AI1 or WPS regurgitates.
+!
+! B. Z. Lederman
+!
+    10 LOOKUP.
+!
+! The following (20 level) fields are the three keys defined by DEC.
+!
+        20 DOCUMENT PIC X(36).
+        20 FOL REDEFINES DOCUMENT.
+            30 FOLDER PIC X(30).
+            30 FIXER PIC X(6).
+        20 REFNUM PIC 9(6).
+        20 TITLE_HASH PIC X(6).
+    10 FILENAME PIC X(64).
+    10 DAF_POINTER PIC X.
+    10 TITLE PIC X(72) EDIT_STRING T(32).
+    10 AUTHOR PIC X(30).
+    10 TYPE PIC X(15).
+    10 UNUSED_SETUP PIC X(15).
+    10 FORMAT PIC X(15).
+    10 KEYWORDS PIC X(50).
+    10 DATE1.
+        20 FILLER PIC X(16).
+        20 CREATED COMPUTED BY CHOICE OF
+            (IM1 EQ "  ") THEN FN$DATE("18-NOV-1858 00:00:00.00")
+            ELSE FN$DATE(ID1 | "-" | IM1 VIA MONTH_TABLE | "-19" |
+                IY1 | " 00:00:00.00")
+            END_CHOICE.
+        20 MODIFIED COMPUTED BY CHOICE OF
+            (IM2 EQ "  ") THEN FN$DATE("18-NOV-1858 00:00:00.00")
+            ELSE FN$DATE(ID2 | "-" | IM2 VIA MONTH_TABLE | "-19" |
+                IY2 | " 00:00:00.00")
+            END_CHOICE.
+    10 DI1 REDEFINES DATE1.
+        20 IM1 PIC XX.
+        20 FILLER PIC X.
+        20 ID1 PIC XX.
+        20 FILLER PIC X.
+        20 IY1 PIC XX.
+        20 IM2 PIC XX.
+        20 FILLER PIC X.
+        20 ID2 PIC XX.
+        20 FILLER PIC X.
+        20 IY2 PIC XX.
+    10 MAIL_ORIG PIC X(6).
+    10 F3 PIC X(30).
+    10 MAIL_STATUS PIC X(8).
+    10 F2 PIC X(12).
+    10 DOCNUM PIC 9(6) EDIT_STRING Z(6).
+    10 DELETABLE PIC X.
+    10 MODIFIABLE PIC X.
+    10 DATE2.
+        20 FILLER PIC X(33).
+        20 CREATED COMPUTED BY CHOICE OF
+            (IM2 EQ "  ") THEN FN$DATE("18-NOV-1858")
+            ELSE FN$DATE(ID3 | "-" | IM3 VIA MONTH_TABLE | "-" |
+                IY3 | " " | IH3 | ":" | II3 | ":" | IS3 | "." | IF3)
+            END_CHOICE.
+        20 CREATED_TIME COMPUTED BY FN$TIME(DATE2.CREATED)
+                EDIT_STRING X(11).
+        20 MODIFIED COMPUTED BY CHOICE OF
+            (IM2 EQ "  ") THEN FN$DATE("18-NOV-1858")
+            ELSE FN$DATE(ID4 | "-" | IM4 VIA MONTH_TABLE | "-" |
+                IY4 | " " | IH4 | ":" | II4 | ":" | IS4 | "." | IF4)
+            END_CHOICE.
+        20 MODIFIED_TIME COMPUTED BY FN$TIME(DATE2.MODIFIED)
+                EDIT_STRING X(11).
+    10 DI2 REDEFINES DATE2.
+        20 IY3 PIC XXXX.
+        20 IM3 PIC XX.
+        20 ID3 PIC XX.
+        20 IH3 PIC XX.
+        20 II3 PIC XX.
+        20 IS3 PIC XX.
+        20 IF3 PIC XX.
+        20 F4 PIC X.
+        20 IY4 PIC XXXX.
+        20 IM4 PIC XX.
+        20 ID4 PIC XX.
+        20 IH4 PIC XX.
+        20 II4 PIC XX.
+        20 IS4 PIC XX.
+        20 IF4 PIC XX.
+    10 V1TYPE PIC X(16).
+    10 DSAB PIC X(16).
+    10 F6 PIC X(45).
+;
+
+redefine procedure ai1_doc_report
+!
+! Get a listing of a users' documents with corresponding VMS file names.
+!
+REPORT DOCDB ON *."file specification"
+SET COLUMNS_PAGE = 132
+SET LINES_PAGE = 42
+PRINT REFNUM, FOLDER,
+    TITLE USING T(48),
+    FILENAME USING T(24)
+END_REPORT
+end_procedure
+
+redefine TABLE FORM_TABLE FROM AI1FORM USING
+!
+! Domain table to relate a form to the library containing it.
+!
+! B. Z. Lederman
+!
+FORM : LIBRARY,
+ELSE "No Match"
+END_TABLE
+
+redefine RECORD F_T_REC OPTIMIZE
+01 F_T_REC.
+!
+! Used to read an edited FMS listing of the forms in a library when
+! generating the domain table.
+!
+! B. Z. Lederman
+!
+	10 FORM PIC X(24).
+	10 FILLER PIC X(231).
+;
+
+redefine DOMAIN MEETING USING AI1_MEETING_REC ON OA$DATA:MEETING.DAT;
+
+redefine TABLE MONTH_TABLE
+!
+! Needed for some date conversions.
+!
+01 : "JAN",
+02 : "FEB",
+03 : "MAR",
+04 : "APR",
+05 : "MAY",
+06 : "JUN",
+07 : "JUL",
+08 : "AUG",
+09 : "SEP",
+10 : "OCT",
+11 : "NOV",
+12 : "DEC"
+END_TABLE
+
+redefine DOMAIN NETWORK USING AI1_NETWORK_REC ON OA$DATA:NETWORK.DAT;
+
+redefine procedure forms_convert
+!
+! Read the forms in a number of edited FMS library listings and
+! put them into a domain so we can look them up (and also use them
+! in a domain table FORM_TABLE. You must first get FMS library
+! listings of the various forms libraries, and DCL directory
+! listings of OA$DO and OA$LIB:*.SCP, and edit all of the listing
+! files to contain form names only (none of the stuff at the beginning
+! or end of the listing about file names, dates, etc.).  Could probably
+! be done automatically with a DCL procedure but I havn't written one
+! yet, and now that I know how to use TRIM I probably won't bother.
+!
+! B. Z. Lederman
+!
+DEFINE FILE FOR AI1FORM KEY = FORM(DUP), KEY = LIBRARY(DUP), ALLOCATION = 55
+READY AI1FORM WRITE
+DELETE T_FORM;
+!
+! Get forms in OAFORM
+!
+DEFINE DOMAIN T_FORM USING F_T_REC ON OAFORM.SEQ;
+READY T_FORM
+PRINT "Storing OAFORM"
+FOR T_FORM STORE AI1FORM USING BEGIN
+	FORM = FORM
+	LIBRARY = "OAFORM"
+END
+FINISH T_FORM
+DELETE T_FORM;
+!
+! Get forms in MEMRES
+!
+DEFINE DOMAIN T_FORM USING F_T_REC ON MEMRES.SEQ;
+READY T_FORM
+PRINT "Storing MEMRES"
+FOR T_FORM STORE AI1FORM USING BEGIN
+	FORM = FORM
+	LIBRARY = "MEMRES"
+END
+FINISH T_FORM
+DELETE T_FORM;
+!
+! Get forms in MANAGER
+!
+DEFINE DOMAIN T_FORM USING F_T_REC ON MANAGER.SEQ;
+READY T_FORM
+PRINT "Storing MANAGER"
+FOR T_FORM STORE AI1FORM USING BEGIN
+	FORM = FORM
+	LIBRARY = "MANAGER"
+END
+FINISH T_FORM
+!
+DELETE T_FORM;
+!
+! Get scripts in OA$DO
+!
+DEFINE DOMAIN T_FORM USING F_T_REC ON OADO.SEQ;
+READY T_FORM
+PRINT "Storing OA$DO"
+FOR T_FORM STORE AI1FORM USING BEGIN
+	FORM = FORM
+	LIBRARY = "OA$DO"
+END
+FINISH T_FORM
+!
+DELETE T_FORM;
+!
+! Get scripts in OA$LIB
+!
+DEFINE DOMAIN T_FORM USING F_T_REC ON OALIB.SEQ;
+READY T_FORM
+PRINT "Storing OA$LIB"
+FOR T_FORM STORE AI1FORM USING BEGIN
+	FORM = FORM
+	LIBRARY = "OA$LIB"
+END
+FINISH T_FORM
+FINISH AI1FORM
+end_procedure
+
+redefine procedure print_pending
+!
+! Find out how much ALL-IN-1 Electronic Mail is Pending
+!
+! B. Z. Lederman
+!
+READY AI1_PENDING SHARED
+DECLARE KEY_FIELD PIC X(65).
+!
+! Get the pre-defined user name and make it into a retrieval key
+!
+KEY_FIELD = "MAIL " | FN$TRANS_LOG ("USER_NAME")
+!
+FOR AI1_PENDING WITH PENDING_KEY = KEY_FIELD
+	PRINT "Pending Messages = ", ENUM(-)
+!
+FINISH
+end_procedure
+
+redefine DOMAIN PRNTTYPE USING AI1_PRNTTYPE_REC ON OA$DATA:PRNTTYPE.DAT;
+
+redefine DOMAIN PROFILE USING AI1_PROFILE_REC ON OA$DATA:PROFILE.DAT;
+
+redefine procedure print_profile
+!
+FOR PROFILE PRINT COL 1, "<NAME>" | FULNAM, SKIP,
+    COL 1, "<TITLE>" | TITLE, SKIP,
+    COL 1, "<PHONE>" | PHONE, SKIP,
+    COL 1, "<ADDR1>" | ADDR1, SKIP,
+    COL 1, "<ADDR2>" | ADDR2, SKIP,
+    COL 1, "<ADDR3>" | ADDR3, SKIP,
+    COL 1, "<ADDR4>" | ADDR4, SKIP,
+    COL 1, "<ZIPCOD>" | ZIPCOD, SKIP,
+    COL 1, "<STARTH>" | STARTH, SKIP,
+    COL 1, "<ENDH>" | ENDH, SKIP,
+    COL 1, "<>" ON *."TT or file name"
+end_procedure
+
+redefine DOMAIN SDAF USING SDAF_RECORD ON OA$DATA:DAF.DAT;
+
+redefine RECORD SDAF_RECORD OPTIMIZE
+01 SDAF_REC.
+!
+! The System DAF file is a variable format file, and you usually
+! can't get much of anything useful from it.  The user DAF files
+! aren't much better.
+!
+   05 FIXED_GROUP.
+	10 FILE_NAME PIC X(64) EDIT_STRING T(28).
+	10 RECORD_CODE USAGE BYTE .
+	10 CONT_FLAG PIC X.
+	10 H_INT.
+	    20 FILLER PIC XXXX.
+	 10 INTERNAL_USE REDEFINES H_INT.
+	20 A USAGE BYTE.
+	20 B USAGE BYTE.
+	20 C USAGE BYTE.
+	20 D USAGE BYTE.
+	10 USAGE_COUNT USAGE INTEGER PIC 9999 EDIT_STRING ZZ9.
+   05 H_OTHER.
+    10 FILLER PIC X(2000).
+   05 OTHER REDEFINES H_OTHER.
+	10 WHAT PIC X.
+	10 STRING1 PIC X(8).
+	10 BINB OCCURS 42 TIMES.
+		20 B USAGE WORD.
+	10 L2 USAGE WORD.
+	10 TEXT PIC X(100) EDIT_STRING T(16).
+	10 VAR REDEFINES TEXT.
+		20 S2 OCCURS 0 TO 64 TIMES DEPENDING ON L2 .
+			30 T PIC X.
+	10 END PIC X(1733) EDIT_STRING T(64).
+;
+
+redefine DOMAIN T_FORM USING F_T_REC ON OALIB.SEQ;
+

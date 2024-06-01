@@ -1,0 +1,748 @@
+dnl Process this file with autoconf to produce a configure script.
+
+AC_INIT()
+echo Configuring.....
+echo Backing up lex.yy.c
+cp lex.yy.c lex.yy.c2 
+AC_CONFIG_HEADER(config.h)
+AC_DEFINE(CF)
+AC_DEFINE(XBAE_LIBS)
+AC_DEFINE(XBAE_INCLUDES)
+AC_DEFINE(XPM_LIBS)
+AC_DEFINE(MOTIF_INCLUDES)
+AC_DEFINE(MOTIF_LIBS)
+AC_DEFINE(LIBDIR)
+AC_DEFINE(LIBDIRA)
+AC_DEFINE(LIBDIRB)
+AC_DEFINE(LIBDIRC)
+AC_DEFINE(LIBDIRD)
+AC_DEFINE(LIBDIR1)
+AC_DEFINE(LIBDIR2)
+AC_DEFINE(LIBDIR2)
+AC_DEFINE(LIBDIR3)
+AC_DEFINE(XMOBJS)
+AC_DEFINE(LEXOBJS)
+AC_DEFINE(OBJS)
+AC_DEFINE(JPEG_INCLUDES)
+AC_DEFINE(JPEG_LIBS)
+AC_DEFINE(EXTRA_LIBS)
+AC_DEFINE(EXTRA_LIBS2)
+AC_DEFINE(EXTRA_INCLUDES)
+
+dnl Checks for programs.
+AC_PROG_CC
+AC_PROG_LEX
+AC_PROG_YACC
+AC_PATH_X
+AC_PATH_XTRA
+AC_LANG_CPLUSPLUS
+
+dnl Make blank since autoconf is screwed up in OSX
+XBAE_LIBS=""
+JPEG_LIBS=""
+STDCPLUSLIB=""
+
+dnl ========================================================================
+dnl Check if we want static or shared version
+
+AC_MSG_CHECKING(whether we want to build static libraries)
+AC_ARG_WITH(static, [  --with-static           build static binaries])
+if test "$with_static" = yes ; then
+   with_static="yes"
+else
+   with_static="no"
+fi
+AC_MSG_RESULT($with_static)
+
+dnl ========================================================================
+dnl Check which platform
+
+echo Checking host type...
+AC_CANONICAL_HOST
+
+case "${host}" in
+  *linux* )
+    echo Linux
+    CC="g++"
+    AC_MSG_RESULT(Creating makefile for linux)
+dnl ************THIS LINE FOR DEBUGGING ONLY************
+dnl CF="-O3 -Wall -Wunused -W -pedantic -Wwrite-strings -Wid-clash-31 -Wpointer-arith  -Woverloaded-virtual -Weffc++ -Wcast-align -Wtraditional -Wstrict-prototypes -Wmissing-prototypes -Wredundant-decls -Wnested-externs -Winline -Woverloaded-virtual"
+    CF="-O3 -Wall -Wunused -W"
+    STDCPLUSLIB="-lstdc++"
+    LDF="-s"
+    EXTRA_LIBS="-L/usr/X11R6/lib"
+    AC_DEFINE(LINUX)
+    LINUX=yes
+  ;;  
+  *:freebsd:*:* )
+    echo FreeBSD
+    CC="g++"
+    AC_MSG_RESULT(Creating makefile for FreeBSD)
+    CF="-O3 -Wall -Wunused -W"
+    STDCPLUSLIB="-lstdc++"
+    LDF="-s"
+    EXTRA_LIBS="-L/usr/X11R6/lib"
+    AC_DEFINE(LINUX)
+    LINUX=yes
+  ;;     
+  *:FreeBSD:*:* )
+    echo FreeBSD
+    CC="g++"
+    AC_MSG_RESULT(Creating makefile for FreeBSD)
+    CF="-O3 -Wall -Wunused -W"
+    STDCPLUSLIB="-lstdc++"
+    LDF="-s"
+    EXTRA_LIBS="-L/usr/X11R6/lib"
+    AC_DEFINE(LINUX)
+    LINUX=yes
+  ;;     
+  *:NetBSD:*:*)
+    echo NetBSD
+    CC="g++"
+    AC_MSG_RESULT(Creating makefile for NetBSD)
+    CF="-O3 -Wall -Wunused -W"
+    STDCPLUSLIB="-lstdc++"
+    LDF="-s"
+    EXTRA_LIBS="-L/usr/X11R6/lib"
+    AC_DEFINE(LINUX)
+    LINUX=yes
+  ;;     
+  *mips-sgi-irix6.5* )
+    AC_MSG_RESULT(Creating makefile for mipspro)
+    CF="-O2"
+    LDF="-s"
+    CC="cc"
+    AC_DEFINE(IRIX)
+    echo MIPS
+    EXTRA_LIBS="-L/usr/lib32"
+dnl Uncomment the line below for libflex    
+dnl EXTRA_LIBS="-L/usr/lib32 /usr/freeware/lib32/libfl.a"
+    IRIX=yes
+    AC_DEFINE(MIPS)
+    MIPSPRO=yes
+  ;;
+  *-*-irix* )
+    AC_MSG_RESULT(Creating makefile for irix)
+    CC="gcc"
+    echo IRIX
+    CF="-O2"
+    LDF="-s"
+dnl    CF="-O2 -mips2"
+    AC_DEFINE(IRIX)
+    IRIX=yes
+  ;;
+  *-*-solaris* )
+    AC_MSG_RESULT(Creating makefile for solaris)
+    echo Solaris
+    CC="g++"
+    CF="-O3 -Wall"
+    LDF="-s"
+    EXTRA_LIBS="-L/usr/openwin/lib"
+    EXTRA_LIBS2="/usr/lib/libsocket.so -R /usr/openwin/lib -R /usr/dt/lib"
+    EXTRA_INCLUDES="-I/usr/openwin/include -I/usr/X11/include -I/usr/include/sys/scsi"
+    AC_DEFINE(SOLARIS)
+    SOLARIS=yes
+  ;;
+  *darwin* )
+   AC_MSG_RESULT(Creating a makefile for Darwin)
+   echo Darwin
+   CC="g++"
+   CF="-O3 -fno-common   -Wall  -no-cpp-precomp "
+   LDF="-dylib -dynamic -undefined suppress -flat_namespace"
+   STDCPLUSLIB="-lstdc++"
+   EXTRA_LIBS="-L/sw/lib -L/usr/lib -L/usr/X11R6/lib -L./libpng -L./libtiff -L./jpeg-6a -L./zlib-1.1.4 -lz"
+   EXTRA_INCLUDES="-I/sw/include -I/usr/X11R6/include -I/usr/X11R6/include/X11 -I./include -I./jpeg-6a"
+   AC_DEFINE(DARWIN)
+   AC_DEFINE(OSX)
+   DARWIN=yes
+   OSX=yes
+   ;;
+  *-*-darwin6.6* )
+   AC_MSG_RESULT(Creating a makefile for Darwin)
+   echo Darwin
+   CC="g++"
+   CF="-O3 -fno-common   -Wall  -no-cpp-precomp "
+   LDF="-dylib -dynamic -undefined suppress -flat_namespace"
+   STDCPLUSLIB="-lstdc++"
+   EXTRA_LIBS="-L/sw/lib -L/usr/lib -L/usr/X11R6/lib -L./libpng -L./libtiff -L./jpeg-6a -L./zlib-1.1.4 -lz"
+   EXTRA_INCLUDES="-I/sw/include -I/usr/X11R6/include -I/usr/X11R6/include/X11 -I./include -I./jpeg-6a"
+   AC_DEFINE(DARWIN)
+   AC_DEFINE(OSX)
+   DARWIN=yes
+   OSX=yes
+   ;;
+  *-*-osx* )
+   AC_MSG_RESULT(Creating a makefile for OSX)
+   CC="g++"
+   echo OSX
+   CF="-O3 -fno-common   -Wall  -no-cpp-precomp "
+   LDF="-dylib -dynamic -undefined suppress -flat_namespace"
+   STDCPLUSLIB="-lstdc++"
+   EXTRA_LIBS="-L/sw/lib -L/usr/lib -L/usr/X11R6/lib -L./libpng -L./libtiff  -L./jpeg-6a -L./zlib-1.1.4 -lz"
+   EXTRA_INCLUDES="-I/sw/include -I/usr/X11R6/include -I/usr/X11R6/include/X11 -I./include -I./jpeg-6a"
+   AC_DEFINE(DARWIN)
+   AC_DEFINE(OSX)
+   DARWIN=yes
+   OSX=yes
+   ;;
+  *-*-convex* )
+    AC_MSG_RESULT(Creating makefile for convex)
+    echo Convex
+    CF="-O3 -Wall"
+    LDF="-s"
+    AC_DEFINE(CONVEX)
+    CONVEX=yes
+  ;;
+  *-*-alpha-dec-osf4.0* )
+    CC="cxx"
+    echo Alpha
+    LDF=""
+    CF="-O2 -assume noaligned_objects -std1 -msg_quiet"
+    EXTRA_INCLUDES="-I/usr/dt/include -I/usr/include/cxx -I/usr/local/include"
+    AC_DEFINE(DIGITAL)
+    DIGITAL=yes
+  ;;
+  *alpha-dec-osf4.0* )
+    CC="cxx"
+    CF="-O2 -assume noaligned_objects -std1 -msg_quiet"
+    echo Alpha
+    LDF=""
+    EXTRA_INCLUDES="-I/usr/dt/include -I/usr/include/cxx -I/usr/local/include"
+    AC_DEFINE(DIGITAL)
+    DIGITAL=yes
+  ;;
+  *i386-unknown-cygwin* )
+    AC_MSG_RESULT(Creating makefile for Cygwin-Xfree 2)
+    echo Cygwin
+    CF="-O3 -Wall -Wunused -W"
+    LDF="-s"
+    AC_DEFINE(CYGWIN)
+    EXTRA_INCLUDES="-I/usr/X11R6/include -I/usr/X11R6/include/X11 -I/usr/X11R6/include/X11/ICE -I/usr/X11R6/include/X11/SM -I/usr/X11R6/include -I/usr/include"
+    EXTRA_LIBS="-L/usr/lib"
+    EXTRA_LIBS2="/usr/lib/libjpeg.a /usr/X11R6/lib/libSM.a /usr/X11R6/lib/libICE.a"
+    CYGWIN=yes
+  ;;
+  *)
+    CF="-O3 -Wall"
+    LDF=""
+  ;;
+esac
+
+
+if test "$with_static" = yes ; then
+    CFLAGS="$CF -static"
+else
+    CFLAGS=$CF
+fi
+
+dnl ========================================================================
+dnl Checks for library functions.
+
+AC_FUNC_ALLOCA
+AC_PROG_GCC_TRADITIONAL
+AC_FUNC_MEMCMP
+AC_TYPE_SIGNAL
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS(mkfifo popen)
+AC_CHECK_FUNCS(fcvt gcvt cbrt acosh asinh atanh isinf isnan erf)
+
+dnl ========================================================================
+dnl Figure out where oh where is motif
+dnl If your motif /include dir is somewhere else, insert it here.
+dnl To define a variable, use AC_DEFINE (equivalent to #define).
+dnl No spaces allowed before or after "=" in assignment.
+
+for ac_dir in                 \
+dnl    ./motif/include/Motif-2.0 \
+    ./include                 \
+    /usr/X11R6/include        \
+    /usr/X11R5/include        \
+    /usr/X11R4/include        \
+                              \
+    /usr/dt/include           \
+    /usr/openwin/include      \
+    /usr/include/Motif1.2     \
+    /usr/Motif1.2/include     \
+                              \
+    /usr/include/X11R6        \
+    /usr/include/X11R5        \
+    /usr/include/X11R4        \
+                              \
+    /usr/local/X11R6/include  \
+    /usr/local/X11R5/include  \
+    /usr/local/X11R4/include  \
+                              \
+    /usr/local/include/X11R6  \
+    /usr/local/include/X11R5  \
+    /usr/local/include/X11R4  \
+    /usr/local/include        \
+                              \
+    /usr/X11/include          \
+    /usr/include/X11          \
+    /usr/local/X11/include    \
+    /usr/local/include/X11    \
+                              \
+    /usr/X386/include         \
+    /usr/x386/include         \
+    /usr/XFree86/include/X11  \
+                              \
+    /usr/include              \
+    /usr/local/include        \
+    /usr/unsupported/include  \
+    /usr/athena/include       \
+    /usr/local/x11r5/include  \
+    /usr/lpp/Xamples/include  \
+    /sw/include               \
+    /sw/LessTif/Motif2.0/include \
+    /usr/sw/include               \
+    /usr/sw/LessTif/Motif2.0/include \
+                               \
+    /usr/openwin/include      \
+    /usr/openwin/share/include \
+    ; \
+do
+    AC_MSG_RESULT(  looking for ${ac_dir}/Xm/Xm.h)
+    if test -r "$ac_dir/Xm/Xm.h"; then
+       MOTIF_INCLUDES=$ac_dir
+       AC_DEFINE(HAVE_MOTIF)
+       HAVE_MOTIF=yes
+       AC_MSG_RESULT( found)
+       break
+    fi
+done
+if test "$HAVE_MOTIF"==yes; then
+    AC_MSG_RESULT( $MOTIF_INCLUDES)
+else
+    AC_MSG_RESULT(Couldnt find your motif include files!)
+fi
+
+
+dnl ========================================================================
+dnl Check for motif libraries.
+dnl If your motif /lib dir is somewhere else, insert it here.
+dnl AC_CHECK_LIB doesn't work for motif
+
+# First see if replacing the include by lib works.
+for ac_dir in             \
+    `echo "$MOTIF_INCLUDES" | sed s/include/lib/` \
+dnl    ./motif/lib/Xm-2.0/.libs \
+    ./lib                 \
+    /usr/X11R6/lib        \
+    /usr/X11R5/lib        \
+    /usr/X11R4/lib        \
+    /usr/lib              \
+                          \
+    /usr/dt/lib           \
+    /usr/openwin/lib      \
+    /usr/lib/Motif1.2     \
+    /usr/Motif1.2/lib     \
+                          \
+    /usr/lib/X11R6        \
+    /usr/lib/X11R5        \
+    /usr/lib/X11R4        \
+                          \
+    /usr/local/X11R6/lib  \
+    /usr/local/X11R5/lib  \
+    /usr/local/X11R4/lib  \
+                          \
+    /usr/local/lib/X11R6  \
+    /usr/local/lib/X11R5  \
+    /usr/local/lib/X11R4  \
+    /usr/local/lib        \
+                          \
+    /usr/X11/lib          \
+    /usr/lib/X11          \
+    /usr/local/X11/lib    \
+    /usr/local/lib/X11    \
+                          \
+    /usr/X386/lib         \
+    /usr/x386/lib         \
+    /usr/XFree86/lib/X11  \
+                          \
+    /usr/lib              \
+    /usr/local/lib        \
+    /usr/unsupported/lib  \
+    /usr/athena/lib       \
+    /usr/local/x11r5/lib  \
+    /usr/lpp/Xamples/lib  \
+                          \
+    /sw/lib               \
+    /usr/sw/lib           \
+    /usr/openwin/lib      \
+    /usr/openwin/share/lib \
+    ; \
+do
+  for ac_extension in a so sl la dylib; do
+    AC_MSG_RESULT(  looking for $ac_dir/libXm.$ac_extension)
+    if test -r $ac_dir/libXm.$ac_extension; then
+       MOTIF_LIBS=$ac_dir
+       HAVE_MOTIF=yes
+       break 2
+    fi
+  done
+done
+
+if test "$HAVE_MOTIF"==yes; then
+    AC_MSG_RESULT( found)
+else
+    AC_MSG_RESULT(****ERROR: Couldnt find your motif library files!****)
+fi
+
+
+dnl ========================================================================
+dnl Find location of jpeg include files (could be almost anywhere)
+
+for ac_dir in               \
+    /usr/include            \
+    /usr/include/gr         \
+    /usr/include/jpeg       \
+    ./jpeg                  \
+    ./jpeg-6a               \
+    /usr/local/include      \
+    /usr/local/include/gr   \
+    /usr/local/include/jpeg \
+    /sw/include             \
+    /usr/sw/include         \
+    $HOME                   \
+    $HOME/jpeg-6a           \
+    $HOME/jpeg/jpeg-6a      \
+    $HOME/jpeg-6a/jpeg-6a   \
+    $HOME/jpeg-6a/include   \
+    ; \
+    do
+       AC_MSG_RESULT(  looking for $ac_dir/jpeglib.h)
+       if test -r $ac_dir/jpeglib.h; then
+          JPEG_INCLUDES=$ac_dir
+          AC_DEFINE(HAVE_JPEG)
+          HAVE_JPEG=yes
+          AC_MSG_RESULT( found)
+          break
+       fi
+done
+if test "$HAVE_JPEG"==yes; then
+    AC_MSG_RESULT( JPEG include files found in $JPEG_INCLUDES)
+else
+    AC_MSG_RESULT(****ERROR: Couldnt find your JPEG include files!****)
+fi
+
+
+dnl ========================================================================
+dnl Find location of jpeg lib files (could be almost anywhere)
+for ac_dir in               \
+    /usr/lib                \
+    /usr/lib32              \
+    /usr/lib/gr             \
+    /usr/lib/jpeg           \
+    ./jpeg                  \
+    ./jpeg-6a               \
+    /usr/local/lib          \
+    /usr/local/lib/gr       \
+    /usr/local/lib/jpeg     \
+    /sw/lib                 \
+    /usr/sw/lib             \
+    $HOME                   \
+    $HOME/jpeg-6a           \
+    $HOME/jpeg/jpeg-6a      \
+    $HOME/jpeg-6a/jpeg-6a   \
+    $HOME/jpeg-6a/lib       \
+    ; \
+    do
+    for ac_extension in so a sl la dylib; do
+       AC_MSG_RESULT(  looking for $ac_dir/libjpeg.$ac_extension  - JPEG library)
+       if test -r $ac_dir/libjpeg.$ac_extension; then
+          JPEG_LIBS=$ac_dir/libjpeg.$ac_extension
+          HAVE_JPEG=yes
+          AC_MSG_RESULT( found)
+          break 2
+       fi
+    done
+done
+
+
+dnl ========================================================================
+dnl Find location of xbae lib files 
+dnl AC_CHECK_LIB doesn't always work on solaris
+
+for ac_dir in             \
+    /usr/X11R6/lib        \
+    /usr/X11R5/lib        \
+    /usr/X11R4/lib        \
+    /usr/lib              \
+    /usr/X11R6/lib/Xbae   \
+    /usr/X11R5/lib/Xbae   \
+    /usr/X11R4/lib/Xbae   \
+    /usr/lib              \
+                          \
+    ./lib                 \
+    ./Xbae                \
+    ./Xbae/lib            \
+    $HOME                 \
+    $HOME/Xbae            \
+    $HOME/Xbae/lib        \
+    /usr/dt/lib           \
+    /usr/openwin/lib      \
+    /usr/lib/Motif1.2     \
+    /usr/Motif1.2/lib     \
+                          \
+    /usr/lib/X11R6        \
+    /usr/lib/X11R5        \
+    /usr/lib/X11R4        \
+                          \
+    /usr/lib/X11R6/Xbae   \
+    /usr/lib/X11R5/Xbae   \
+    /usr/lib/X11R4/Xbae   \
+                          \
+    /usr/local/X11R6/lib  \
+    /usr/local/X11R5/lib  \
+    /usr/local/X11R4/lib  \
+                          \
+    /usr/local/lib/X11R6  \
+    /usr/local/lib/X11R5  \
+    /usr/local/lib/X11R4  \
+                          \
+    /usr/X11/lib          \
+    /usr/lib/X11          \
+    /usr/local/X11/lib    \
+    /usr/local/lib/X11    \
+                          \
+    /usr/X386/lib         \
+    /usr/x386/lib         \
+    /usr/XFree86/lib/X11  \
+                          \
+    /usr/lib              \
+    /usr/local/lib        \
+    /usr/unsupported/lib  \
+    /usr/athena/lib       \
+    /usr/local/x11r5/lib  \
+    /usr/lpp/Xamples/lib  \
+    /sw/lib               \
+    /sw/lib/Xbae          \
+    /usr/sw/lib           \
+    /usr/sw/lib/Xbae      \
+                         \
+    /usr/openwin/lib      \
+    /usr/openwin/share/lib \
+    ; \
+do
+  for ac_extension in so a sl la dylib; do
+    AC_MSG_RESULT(  looking for $ac_dir/libXbae.$ac_extension - Xbae library)
+    if test -r $ac_dir/libXbae.$ac_extension; then
+       XBAE_LIBS="$ac_dir/libXbae.$ac_extension"
+       AC_DEFINE(HAVE_XBAE)
+       HAVE_XBAE=yes
+       AC_MSG_RESULT( found)
+       break 2
+    fi
+  done
+done
+
+
+dnl ========================================================================
+dnl Find location of xbae include files 
+
+for ac_dir in             \
+    /usr/X11R6/include        \
+    /usr/X11R5/include        \
+    /usr/X11R4/include        \
+    /usr/include              \
+    /usr/X11R6/include/Xbae   \
+    /usr/X11R6/include/Xbae-4.6  \
+    /usr/X11R5/include/Xbae   \
+    /usr/X11R4/include/Xbae   \
+    /usr/include              \
+                              \
+    ./include                 \
+    ./Xbae                    \
+    ./Xbae/include            \
+    $HOME                     \
+    $HOME/Xbae                \
+    $HOME/xbae/Xbae-4.6       \
+    $HOME/Xbae/include        \
+    /usr/dt/include           \
+    /usr/openwin/include      \
+    /usr/include/Motif1.2     \
+    /usr/Motif1.2/include     \
+                              \
+    /usr/include/X11R6        \
+    /usr/include/X11R5        \
+    /usr/include/X11R4        \
+                              \
+    /usr/include/X11R6/Xbae   \
+    /usr/include/X11R5/Xbae   \
+    /usr/include/X11R4/Xbae   \
+                              \
+    /usr/local/X11R6/include  \
+    /usr/local/X11R5/include  \
+    /usr/local/X11R4/include  \
+                              \
+    /usr/local/include/X11R6  \
+    /usr/local/include/X11R5  \
+    /usr/local/include/X11R4  \
+                              \
+    /usr/X11/include          \
+    /usr/include/X11          \
+    /usr/local/X11/include    \
+    /usr/local/include/X11    \
+                              \
+    /usr/X386/include         \
+    /usr/x386/include         \
+    /usr/XFree86/include/X11  \
+                              \
+    /usr/include              \
+    /usr/local/include        \
+    /usr/unsupported/include  \
+    /usr/athena/include       \
+    /usr/local/x11r5/include  \
+    /usr/lpp/Xamples/include  \
+    /sw/include               \
+    /sw/include/Xbae          \
+    /usr/sw/include           \
+    /usr/sw/include/Xbae      \
+                              \
+    /usr/openwin/include      \
+    /usr/openwin/share/include\
+    /usr/openwin/share/include/Xol\
+    ; \
+do
+    AC_MSG_RESULT(  looking for $ac_dir/CaptionP.h - Xbae include files)
+    if test -r $ac_dir/CaptionP.h; then
+       XBAE_INCLUDES=$ac_dir
+       HAVE_XBAE=yes
+       AC_MSG_RESULT( found)
+       break 2
+    fi
+done
+
+
+
+dnl ========================================================================
+dnl Check for other libraries
+dnl This section is only useful in creating config.h, not for finding where
+dnl the libraries actually are.
+dnl If the library was already found, autoconf might say "no" here.
+dnl Sometimes semicolons are needed to separate statements, sometimes not.
+
+dnl linux
+dnl LIBS=  -L/usr/X11/lib -lm  -ll -lXbae -lXm -lXpm -lXext -lXt -lX11 /usr/lib/libjpeg.a
+dnl        motif-libs     aaa  libs Xbae  bbbbb Xpm cccccccccccccccccc
+dnl solaris
+dnl # LIBS=  -L/usr/dt/lib -L/usr/openwin/lib  -ll -lm -lXm -lXt -lX11 -lXbae -L/usr/lib /usr/lib/libjpeg.a /usr/lib/libsocket.so  -R /usr/openwin/lib -R /usr/dt/lib
+dnl          motif-libs      extra-libs        libs aaa bbb
+
+LIBDIRA="-L$MOTIF_LIBS $EXTRA_LIBS -lm -ltiff" 
+LIBDIRB="-lXm"
+LIBDIRC="-lXext -lXt -lX11 -lpng -ltiff -lz" 
+LIBDIR1="$LIBDIRA $XBAE_LIBS $LIBDIRB -lXpm $LIBDIRC"
+
+AC_MSG_RESULT(Using library for xpm)
+AC_MSG_RESULT($LIBDIR1)
+AC_CHECK_LIB(Xpm, XpmFreeXpmImage, XPM_LIBS=-lXpm; AC_DEFINE(HAVE_XPM) HAVE_XPM=yes,,$LIBDIR1)
+
+LIBDIR2="$LIBDIRA $LIBDIRB $XPM_LIBS $LIBDIRC"
+AC_CHECK_LIB(Xext, XShapeQueryExtension,,,$LIBDIR2)
+AC_CHECK_LIB(m, cos,,,$LIBDIRA)
+AC_CHECK_LIB(l, main,,,$LIBDIRA)
+
+
+dnl ========================================================================
+want_xft="yes"
+AC_ARG_ENABLE(xft,
+[ --disable-xft   Disable Xft antialiased fonts
+], [
+  want_xft=$enableval
+])
+if test "$want_xft" = yes; then
+   AC_MSG_RESULT( want xft is yes)
+   AC_CHECK_LIB(Xft, XftFontOpen,,,$LIBDIR2)
+   dnl Check for Xft include files
+   for ac_dir in               \
+       /usr/X11R6/include/X11/Xft \
+       /usr/X11R6/include/Xft     \
+       /usr/local/include/Xft     \
+       /usr/include/Xft           \
+       ; \
+   do
+       AC_MSG_RESULT(  looking for $ac_dir/Xft.h - Freetype include files)
+       if test -r $ac_dir/Xft.h; then
+           AC_DEFINE(HAVE_XFT)
+           HAVE_XFT=yes
+           AC_MSG_RESULT( found)
+           break
+       fi
+     done
+else
+    AC_MSG_RESULT(want xft is no - disabling freetype fonts)
+fi
+
+
+LIBDIR="$LIBDIRA $LIBS $XBAE_LIBS $LIBDIRB $XPM_LIBS $LIBDIRC"
+
+
+dnl ========================================================================
+dnl Checks for header files.
+AC_PATH_X
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+AC_HEADER_SYS_WAIT
+AC_CHECK_HEADERS(fcntl.h malloc.h strings.h sys/ioctl.h sys/time.h unistd.h bytesex.h endian.h)
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_C_INLINE
+AC_TYPE_MODE_T
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_HEADER_TIME
+AC_STRUCT_TM
+
+
+dnl ========================================================================
+dnl Check for meminfo motif version and os type
+dnl Then set all the variables to put in config.h and makefile.
+dnl Only variables pre-defined by autoconf can be
+dnl   substituted into makefile.  For example, you can't substitute a variable 
+dnl   named INCLUDES. So it is  necessary to send -I parameters by stuffing 
+dnl   them in CPPFLAGS.
+dnl The shell [] operator doesn't seem to work, must use 'test'.
+
+if test -r "/proc/meminfo"; then 
+    AC_DEFINE(HAVE_MEMINFO)
+    AC_MSG_RESULT(found /proc/meminfo)
+fi
+
+if test `grep -c "Version 2" $MOTIF_INCLUDES/Xm/Xm.h`  -ge 1 ; then
+    AC_DEFINE(MOTIF2)
+    MOTIF2=yes
+    AC_MSG_RESULT(found Motif 2 or higher)
+else
+    AC_MSG_RESULT(** Warning: Motif is version 1.x. This should not be a problem. **)
+fi
+
+if test "$DARWIN" ; then
+   CPPFLAGS="-I. -I/usr/include -I/usr/include/X11  -I$MOTIF_INCLUDES -I$XBAE_INCLUDES  -I$JPEG_INCLUDES $EXTRA_INCLUDES"
+   LIBS="$LIBDIR $LEXLIB $STDCPLUSLIB $JPEG_LIBS $EXTRA_LIBS2"
+   LDFLAGS="$LDF"
+else
+   CPPFLAGS="-I. -I/usr/include -I/usr/include/X11  -I$MOTIF_INCLUDES -I$XBAE_INCLUDES $EXTRA_INCLUDES -I$JPEG_INCLUDES"
+   LIBS="$LIBDIR $LEXLIB $STDCPLUSLIB $JPEG_LIBS $EXTRA_LIBS2"
+   LDFLAGS="$LDF"
+fi
+
+if test "$LEXLIB" ; then 
+    LEXOBJS="lex.yy.o  y.tab.o"
+    AC_DEFINE(HAVE_LEX)
+fi
+
+
+
+dnl ========================================================================
+AC_MSG_RESULT(setting extra includes to $EXTRA_INCLUDES)
+AC_MSG_RESULT(setting jpeg includes to $JPEG_INCLUDES)
+
+AC_MSG_RESULT(setting CC to $CC)
+AC_MSG_RESULT(setting LIBS to $LIBS)
+AC_MSG_RESULT(setting INCLUDES to $CPPFLAGS)
+AC_MSG_RESULT(setting CFLAGS to $CFLAGS)
+AC_MSG_RESULT(setting LDFLAGS to $LDFLAGS)
+
+AC_OUTPUT(makefile)
+cp lex.yy.c2 lex.yy.c

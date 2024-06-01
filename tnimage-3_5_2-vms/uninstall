@@ -1,0 +1,44 @@
+#!/bin/bash
+# Linux uninstall script for tnimage - $HOME requires Bourne shell
+
+echo
+if expr $SHELL != "/bin/bash" &> /dev/null
+then 
+   echo Cant find /bin/bash
+   exit 1
+fi
+USER=$LOGNAME
+ACTUALHOME=`csh -fc "echo ~$LOGNAME" `
+echo `groups $LOGNAME` | cut -f2, -d:> stuff   
+GROUP="`cat stuff | cut -f2, -d' ' | sed s/' '/''/ `"
+rm stuff
+
+if [ -d /usr/local/lib/tnimage ]; 
+then
+  echo Removing /usr/local/lib/tnimage/
+  rm -rf /usr/local/lib/tnimage 
+fi
+
+if [ -d /usr/local/lib/tnimage ]; 
+then
+  echo Removing /usr/local/bin/tnimage 
+  rm -rf /usr/local/bin/tnimage 
+fi
+
+
+if ! [ -d $ACTUALHOME/.tnimage ] 
+then
+   echo Removing $ACTUALHOME/.tnimage for $USER
+   rm -rf $ACTUALHOME/.tnimage
+fi
+
+if ! [ -d /usr/local/lib/wavelets ]
+then
+   echo Removing /usr/local/lib/wavelets
+   rm -rf /usr/local/lib/wavelets
+fi
+
+rm /usr/man/man1/tnimage.1.gz
+rm /usr/local/bin/tni
+
+echo "Uninstallation complete"

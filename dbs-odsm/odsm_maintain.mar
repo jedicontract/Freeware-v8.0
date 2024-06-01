@@ -1,0 +1,808 @@
+	.title	odsm_maintain
+	.ident	/X2-005/
+	.subtitle Psect, library and external definitions
+
+;+
+; Version:	X2-005
+;
+; Facility:	Online Disk Space Monitor
+;
+; Abstract:	This program maintains the data base for the monitor.
+;
+; Environment:	User mode.
+;
+; History:
+;
+;	06-Jun-1991, DBS; Version X1-001
+; 001 -	Original version.
+;	07-Jun-1991, DBS; Version X1-002
+; 002 -	Added list option and fixed up set option.
+;
+;	29-Jul-1992, DBS; Version X2-001
+; 001 -	Modified to handle shadow sets and now uses the physical device
+;	rather than volume label as the key.
+;	09-Sep-1993, DBS; Version X2-002
+; 002 -	Changed the location of the data file.
+;	08-Nov-1993, DBS; Version X2-003
+; 003 -	Added secondary key for listing purposes.
+;	09-Dec-1993, DBS; Version X2-004
+; 004 -	Added ability to specify which key to use for the list.
+;	23-Feb-1994, DBS; Version X2-005
+; 005 -	Changed location of the data file to ODSM_DATA:ODSM_DISKS.DATA.
+;-
+
+	.library	"SYS$LIBRARY:LIB.MLB"
+	.library	"SYS$LIBRARY:STARLET.MLB"
+	.library	"DBSLIBRARY:SYS_MACROS.MLB"
+	.library	"DBSLIBRARY:ODSM.MLB"
+	.link		"SYS$SYSTEM:SYS.STB" /selective_search
+
+	.disable global
+
+	.external	lib_cvt_t_l
+	.external	lib_get_input
+	.external	lib$get_foreign
+	.external	lib$get_input
+	.external	lib$put_output
+	.external	lib$signal
+	.external	lib$stop
+	.external	lib$tparse
+	.external	str_len
+	.external	str_uppercase
+
+	$fabdef
+	$iodef
+	$libdef
+	$namdef
+	$rabdef
+	$rmsdef
+	$ssdef
+	$stsdef
+	$tpadef
+	$gblini GLOBAL
+	_odsmdef
+
+	def_psect _odsm_data_rw, type=DATA, alignment=LONG
+	def_psect _odsm_data_ro, type=RO_DATA, alignment=LONG
+	def_psect _odsm_code, type=CODE, alignment=LONG
+
+	.subtitle Read only data area
+
+	nul=0
+	lf=10
+	cr=13
+	space=32
+
+	set_psect _odsm_data_ro
+
+odsm_version:	.ascid	"ODSM_Maintain X2-005"
+odsm_prompt:	.ascid	"Maintain "
+odsm_tt:	.ascid	"TT"
+
+blank_line:	.ascid	<cr>
+
+odsm_ambiguous:	.ascid	"!/The use of the word !AS is ambiguous"
+
+odsm_syntaxerr:	.ascid	"I didn't understand that command, "
+
+odsm_confused:	.ascid	"!/!ASI got confused when I reached !AS"
+
+odsm_badtable:	.ascid	<cr><lf>"My internal tables are invalid... help"
+
+odsm_fatal:	.ascid	<cr><lf>"A fatal logic error has occurred... help"
+
+using_file:	.ascid	"!AS !AS"
+updating_file:	.ascid	"Updating"
+
+record_added:	.ascic	"Added   "
+record_deleted:	.ascic	"Deleted "
+record_set:	.ascic	"Modified"
+
+dump_fao:	.ascid	"!AC  !32AF  !AF  !AF   !3UB% - !UB%"
+list_fao:	.ascid	"  !32AF  !AF  !AF   !3UB% - !UB%"
+
+	reset_psect
+
+	.subtitle Impure data area and TPA argument block
+
+	set_psect _odsm_data_rw
+
+;>>> start of lib$tparse argument block
+; this becomes the argument block for all lib$tparse action routines
+
+odsm_parse_ctrl:	; control block for lib$tparse
+	.long	tpa$k_count0	; longword count - required
+	.long	tpa$m_abbrev	; allow unambiguous abbreviations
+		; from here down is filled in at run time
+	.long	0	; length of input string	tpa$l_stringcnt
+	.long	0	; pointer to input string	tpa$l_stringptr
+	.long	0	; length of current token	tpa$l_tokencnt
+	.long	0	; pointer to current token	tpa$l_tokenptr
+	.blkb	3	; unused area
+	.byte	0	; character returned		tpa$b_char
+	.long	0	; binary value of numeric token	tpa$l_number
+	.long	0	; argument supplied by user	tpa$l_param
+		; up to here is REQUIRED, anything after here is optional
+odsm_parse_ctrl_end:
+
+;>>> end of lib$tparse argument block
+
+	alloc_string	odsm_command, 256
+	alloc_string	odsm_faobuf, 1024
+
+inp_option:	.long	0
+	m_addition	== 1
+	v_addition	== 0
+	m_deletion	== 2
+	v_deletion	== 1
+	m_set		== 4
+	v_set		== 2
+	m_list		== 8
+	v_list		== 3
+
+inp_disk:	.long	0
+inp_disk_addr:	.long	0
+	inp_disk_s	== odsm_s_device
+inp_disk_t:	.blkb	inp_disk_s
+
+inp_label:	.long	0
+inp_label_addr:	.long	0
+	inp_label_s	== odsm_s_volnam
+inp_label_t:	.blkb	inp_label_s
+
+inp_host:	.long	0
+inp_host_addr:	.long	0
+	inp_host_s	== odsm_s_host
+inp_host_t:	.blkb	inp_host_s
+
+inp_minimum:	.long	0
+inp_maximum:	.long	0
+	def_minimum	== 0
+	def_maximum	== 75
+	minimum_none	== 0
+	maximum_none	== 100
+
+inp_data:	.long	0
+	m_disk		== 1
+	v_disk		== 0
+	m_host		== 2
+	v_host		== 1
+	m_minimum	== 4
+	v_minimum	== 2
+	m_maximum	== 8
+	v_maximum	== 3
+	m_label		== 16
+	v_label		== 4
+
+odsm_tt_chan:	.long	0
+
+odsm_msg: 	$putmsg msgvec=odsm_msgvec ; setup a message vector
+odsm_msgvec:	.word	^X0001		; argument count
+odsm_msgtxt:	.word	^X000F		; set message/f/i/s/t
+odsm_msgsts:	.long	0		; here we store the status
+
+	reset_psect
+
+	.subtitle Main command processing loop
+
+	set_psect _odsm_code
+
+	.entry -
+odsm_start, ^m<>
+
+	display	odsm_version
+
+	$assign_s -			; assign a channel to our terminal
+		devnam=odsm_tt, -	;  so we can setup a control c
+		chan=odsm_tt_chan	;  trap
+	jsb	odsm_set_ctrlcast	; now do it
+
+	jsb	odsm_open_input
+	jsb	reset_inputs
+
+odsm_get_command:
+	pushaw	odsm_command
+	pushaq	odsm_prompt
+	pushaq	odsm_command_ds
+	calls	#3, g^lib_get_input
+	blbc	r0, odsm_input_error	; get out if any problems occurred
+	tstw	odsm_command		; was a command entered ?
+	bneq	10$
+	jmp	odsm_exit_die
+
+10$:	pushaq	odsm_command
+	calls	#1, g^str_uppercase
+	movzwl	odsm_command, -		; move the command descriptor to
+		odsm_parse_ctrl+tpa$l_stringcnt ; the control block so that
+	movab	odsm_command_t, -	; lib$tparse knows what to look at
+		odsm_parse_ctrl+tpa$l_stringptr
+	pushab	start_keyword_tbl	; that's the keyword table to use
+	pushab	start_state_tbl		; that's the state table to use
+	pushab	odsm_parse_ctrl		; that's the control block
+	calls	#3, g^lib$tparse	; let's parse the command
+	blbs	r0, 20$			; any errors ?
+	jsb	odsm_syntax_error	; go do some error processing
+20$:	brw	odsm_get_command
+
+odsm_nasty:
+	display	odsm_fatal		; say we've got a problem
+	jmp	odsm_exit_die
+
+odsm_input_error:
+	cmpl	r0, #rms$_eof		; did they do a ^Z ?
+	beql	10$			; yes, don't report an error
+	tstw	odsm_command		; did they give a response ?
+	beql	10$			; no, just go away
+	display_error
+10$:	brw	odsm_exit_die
+
+odsm_syntax_error:
+	movl	r0, odsm_msgsts		; in case we need it later
+	cmpl	r0, #lib$_invtype	; is it a table problem ?
+	bneq	10$			; no, try some other tests
+	display_error odsm_msgsts
+	display	odsm_badtable		; say our parse table is rs
+	brw	90$			; and bail out
+10$:	cmpl	r0, #lib$_syntaxerr	; was it a syntax error ?
+	beql	20$			; yes, check for ambiguity as well
+	display_error odsm_msgsts
+	brw	90$			; and bail out
+20$:	movaq	odsm_parse_ctrl+tpa$l_tokencnt, r0
+	bbs	#tpa$v_ambig, -		; here we check to see if the word
+		odsm_parse_ctrl+tpa$l_options, - ; was ambiguous so we can
+		30$			; give our message
+	$fao_s	ctrstr=odsm_confused, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#odsm_syntaxerr, -
+		p2=r0			; that's the confusing bit
+	brw	40$
+30$:	$fao_s	ctrstr=odsm_ambiguous, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=r0			; that's the ambiguous bit
+40$:	display	odsm_faobuf
+90$:	rsb
+
+	.entry -		; exit without displaying any messages but
+odsm_exit, ^m<>			; leave the status value intact
+odsm_exit_die::
+	display	blank_line
+	bisl	#sts$m_inhib_msg, r0
+	$exit_s	code=r0
+	ret
+
+	set_psect _odsm_data_ro
+odsm_incomplete:	.ascid	"!/?!AS what?"
+odsm_no_can_do:		.ascid	\!/"!AS" is not a thing that I can do\
+	reset_psect
+
+	.entry -			; tell them that what they type was
+odsm_not_possible, ^m<>			; not something we can do
+	$fao_s	ctrstr=odsm_no_can_do, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#odsm_command
+	display	odsm_faobuf
+	ret
+
+	.entry -		; tell them that their command was lacking
+odsm_short_command, ^m<>	; in substance
+	$fao_s	ctrstr=odsm_incomplete, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#odsm_command
+	display	odsm_faobuf
+	ret
+
+	.entry -		; use implicit processing of blanks
+odsm_blanks_off, ^m<>
+	bbcc	#tpa$v_blanks, tpa$l_options(ap), 10$
+10$:	ret
+
+	.entry -		; use explicit processing of blanks
+odsm_blanks_on, ^m<>
+	bbss	#tpa$v_blanks, tpa$l_options(ap), 10$
+10$:	ret
+
+odsm_set_ctrlcast::
+	$qiow_s	chan=odsm_tt_chan, -
+		func=#<io$_setmode!io$m_ctrlcast>, -
+		p1=odsm_exit, -
+		p3=#3
+	rsb
+
+	.subtitle RMS data areas for disk data base
+
+	set_psect _odsm_data_rw
+
+list_key:	.long	1		; default to secondary key for list
+odsm_record:	.blkb	odsm_s_odsmdef
+odsmsrh_record:	.blkb	odsm_s_odsmdef
+
+	alloc_string	odsm_res_filespec, 255
+
+odsm_mbf=16
+odsm_rtv=255
+
+	.align	long
+odsm_fab:
+	$fab	fac=<GET,PUT,DEL,UPD>, -
+		fop=<NAM,DFW>, -
+		fnm=<ODSM_DISKS>, -
+		dnm=<ODSM_DATA:ODSM_DISKS.DATA>, -
+		mrs=odsm_s_odsmdef, -
+		nam=odsm_nam, -
+		org=<IDX>, -
+		rat=<CR>, -
+		rfm=<FIX>, -
+		rtv=odsm_rtv, -
+		shr=<GET,PUT,DEL,UPD>, -
+		xab=odsm_all0
+	.align	long
+odsm_all0:
+	$xaball	aid=0, -
+		alq=24, -
+		aop=<CBT>, -
+		bkz=12, -
+		deq=12, -
+		nxt=odsm_all1
+	.align	long
+odsm_all1:
+	$xaball	aid=1, -
+		alq=24, -
+		aop=<CBT>, -
+		bkz=12, -
+		deq=12, -
+		nxt=odsm_all2
+	.align	long
+odsm_all2:
+	$xaball	aid=2, -
+		alq=6, -
+		aop=<CBT>, -
+		bkz=3, -
+		deq=6, -
+		nxt=odsm_key0
+	.align	long
+odsm_key0:
+	$xabkey	ref=0, -
+		dan=0, -
+		dtp=<STG>, -
+		ian=1, -
+		prolog=3, -
+		pos=odsm_t_device, -
+		siz=odsm_k_keylength, -
+		nxt=odsm_key1
+	.align	long
+odsm_key1:
+	$xabkey	ref=1, -
+		dan=2, -
+		dtp=<STG>, -
+		ian=2, -
+		pos=<odsm_t_volnam,odsm_t_device>, -
+		siz=<odsm_s_volnam,odsm_s_device>
+	.align	long
+odsm_nam:
+	$nam
+	.align	long
+odsm_rab:
+	$rab 	fab=odsm_fab, -
+		mbf=odsm_mbf, -
+		rac=<KEY>, -
+		rop=<WAT,RLK,LOA>, -
+		krf=0, -
+		ksz=odsm_k_keylength, -
+		kbf=odsmsrh_record, -
+		usz=odsm_k_length, -
+		ubf=odsm_record
+
+	reset_psect
+
+	.subtitle Open and Close routines for disk data base
+
+odsm_open_input::
+
+	movb	#odsm_res_filespec_s, -
+		odsm_nam+nam$b_ess
+	movab	odsm_res_filespec_t, -
+		odsm_nam+nam$l_esa
+	$open	fab=odsm_fab
+	blbs	r0, 10$
+	$create	fab=odsm_fab
+
+10$:	$connect rab=odsm_rab
+	movzbl	odsm_nam+nam$b_esl, -
+		odsm_res_filespec
+	$fao_s	ctrstr=using_file, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#updating_file, -
+		p2=#odsm_res_filespec
+	display	odsm_faobuf
+
+	rsb
+
+odsm_close_input::
+
+	$close	fab=odsm_fab
+
+	rsb
+
+	.subtitle Process the requested option, routine to reset inputs
+
+	.entry -
+odsm_process_option, ^m<>
+
+	$rab_store -
+		rab=odsm_rab, -
+		rac=<KEY>, -
+		rop=<WAT,RLK,LOA>, -
+		krf=#0, -
+		ksz=#odsm_k_keylength, -
+		kbf=odsmsrh_record, -
+		usz=#odsm_k_length, -
+		ubf=odsm_record
+
+	bbs	#v_addition, inp_option, 10$
+	bbs	#v_deletion, inp_option, 20$
+	bbc	#v_set, inp_option, 90$
+
+10$:	jsb	update_record
+	brb	90$
+
+20$:	jsb	delete_record
+
+90$:	jsb	reset_inputs
+
+	movl	#1, r0
+
+	ret
+
+reset_inputs::
+
+	clrl	inp_option
+	clrl	inp_data
+	clrq	inp_disk
+	clrq	inp_label
+	clrq	inp_host
+	movl	#def_minimum, -
+		inp_minimum
+	movl	#def_maximum, -
+		inp_maximum
+
+	rsb
+
+	.subtitle Create, Update and Delete routines
+
+create_record::
+
+	pushr	#^m<r2,r9,r10>
+
+	$rab_store -
+		rab=odsm_rab, -
+		rsz=#odsm_k_length, -
+		rbf=odsmsrh_record
+	$put	rab=odsm_rab
+	display_error
+	blbc	r0, 90$
+	movab	record_added, r10
+	movl	odsm_rab+rab$l_rbf, r9
+	jsb	format_record
+
+90$:	popr	#^m<r2,r9,r10>
+
+	rsb
+
+update_record::
+
+	pushr	#^m<r2,r3,r4,r5,r9,r10>
+
+	jsb	load_record
+	$get	rab=odsm_rab
+	blbs	r0, 10$
+	jsb	create_record		; create it if it doesn't exist
+	$get	rab=odsm_rab
+	brw	90$
+
+10$:	display_error
+	blbs	r0, 15$
+	brw	90$
+
+15$:	bbc	#v_host, inp_data, 20$
+	movc5	inp_host, -
+		@inp_host_addr, #space, -
+		#odsm_s_host, -
+		odsmsrh_record+odsm_t_host
+20$:	bbc	#v_minimum, inp_data, 30$
+	movb	inp_minimum, -
+		odsmsrh_record+odsm_b_minimum
+30$:	bbc	#v_maximum, inp_data, 40$
+	movb	inp_maximum, -
+		odsmsrh_record+odsm_b_maximum
+40$:	bbc	#v_label, inp_data, 50$
+	movc5	inp_label, -
+		@inp_label_addr, #space, -
+		#odsm_s_volnam, -
+		odsmsrh_record+odsm_t_volnam
+
+50$:	$rab_store -
+		rab=odsm_rab, -
+		rsz=#odsm_k_length, -
+		rbf=odsmsrh_record
+	$update	rab=odsm_rab
+	display_error
+	blbc	r0, 90$
+	movab	record_set, r10
+	movl	odsm_rab+rab$l_rbf, r9
+	jsb	format_record
+
+90$:	popr	#^m<r2,r3,r4,r5,r9,r10>
+
+	rsb
+
+delete_record::
+
+	pushr	#^m<r9,r10>
+
+	jsb	load_record
+	$get	rab=odsm_rab
+	display_error
+	blbc	r0, 90$
+	$delete	rab=odsm_rab
+	display_error
+	blbc	r0, 90$
+	movab	record_deleted, r10
+	movl	odsm_rab+rab$l_rbf, r9
+	jsb	format_record
+
+90$:	popr	#^m<r9,r10>
+
+	rsb
+
+load_record::
+
+	pushr	#^m<r2,r3,r4,r5>
+
+	movq	inp_disk, r0
+	cmpw	r0, #odsm_s_device
+	beqlu	10$
+	addl3	r0, r1, r2
+	cmpb	#^A/:/, -(r2)
+	beqlu	10$
+	movb	#^A/:/, (r0)+[r1]
+10$:	movc5	r0, (r1), #space, -
+		#odsm_s_device, -
+		odsmsrh_record+odsm_t_device
+	movq	inp_label, r0
+	movc5	r0, (r1), #space, -
+		#odsm_s_volnam, -
+		odsmsrh_record+odsm_t_volnam
+	movq	inp_host, r0
+	movc5	r0, (r1), #space, -
+		#odsm_s_host, -
+		odsmsrh_record+odsm_t_host
+	movb	inp_minimum, -
+		odsmsrh_record+odsm_b_minimum
+	movb	inp_maximum, -
+		odsmsrh_record+odsm_b_maximum
+
+	$rab_store -
+		rab=odsm_rab, -
+		rsz=#odsm_k_length, -
+		rbf=odsmsrh_record, -
+		usz=#odsm_k_length, -
+		ubf=odsmsrh_record
+
+	popr	#^m<r2,r3,r4,r5>
+
+	rsb
+
+	.subtitle Process a record for output
+
+format_record::
+
+; Inputs:
+;	R9	Address of the input record
+;	R10	Descriptor of the added/deleted word
+
+	addl3	#odsm_t_device, r9, r0
+	addl3	#odsm_t_volnam, r9, r1
+	addl3	#odsm_t_host, r9, r2
+	movzwl	r10, r10
+	$fao_s	ctrstr=dump_fao, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=r10, -
+		p2=#odsm_s_device, -
+		p3=r0, -
+		p4=#odsm_s_volnam, -
+		p5=r1, -
+		p6=#odsm_s_host, -
+		p7=r2, -
+		p8=odsm_b_minimum(r9), -
+		p9=odsm_b_maximum(r9)
+	display	odsm_faobuf
+
+	rsb
+
+	.subtitle List the disk data base
+
+	.entry -
+odsm_list_file, ^m<r2,r3,r4,r5,r9>
+
+	display	blank_line
+	movc5	#0, odsmsrh_record, #nul, -
+		#odsm_k_keylength, -
+		odsmsrh_record
+	$rab_store -
+		rab=odsm_rab, -
+		rac=<KEY>, -
+		rop=<KGE>, -
+		krf=list_key, -
+		ksz=#odsm_k_keylength, -
+		kbf=odsmsrh_record
+	$get	rab=odsm_rab
+	blbc	r0, 90$
+	$rab_store -
+		rab=odsm_rab, -
+		rac=<SEQ>, -
+		rop=<NXT>
+
+10$:	movl	odsm_rab+rab$l_rbf, r9
+	jsb	show_a_disk
+	$get	rab=odsm_rab
+	blbs	r0, 10$
+
+90$:	jsb	reset_inputs
+	display	blank_line
+	movl	#1, r0
+
+	ret
+
+show_a_disk::
+
+; Inputs:
+;	R9	Address of the record
+
+	addl3	#odsm_t_device, r9, r0
+	addl3	#odsm_t_volnam, r9, r1
+	addl3	#odsm_t_host, r9, r2
+	$fao_s	ctrstr=list_fao, -
+		outbuf=odsm_faobuf_ds, -
+		outlen=odsm_faobuf, -
+		p1=#odsm_s_device, -
+		p2=r0, -
+		p3=#odsm_s_volnam, -
+		p4=r1, -
+		p5=#odsm_s_host, -
+		p6=r2, -
+		p7=odsm_b_minimum(r9), -
+		p8=odsm_b_maximum(r9)
+	display	odsm_faobuf
+
+	rsb
+
+	.entry -
+set_list_device, ^m<>
+
+	movl	#0, list_key
+	calls	#0, g^odsm_list_file
+
+	ret
+
+	.entry -
+set_list_label, ^m<>
+
+	movl	#1, list_key
+	calls	#0, g^odsm_list_file
+
+	ret
+
+	.subtitle Routines to set values to NONE
+
+	.entry -
+set_label_none, ^m<>
+
+	clrq	inp_label
+	movl	#1, r0
+
+	ret
+
+	.entry -
+set_host_none, ^m<>
+
+	clrq	inp_host
+	movl	#1, r0
+
+	ret
+
+	.entry -
+set_minimum_none, ^m<>
+
+	movl	#minimum_none, -
+		inp_minimum
+	movl	#1, r0
+
+	ret
+
+	.entry -
+set_maximum_none, ^m<>
+
+	movl	#maximum_none, -
+		inp_maximum
+	movl	#1, r0
+
+	ret
+
+
+	.subtitle Parser state and transition defintions for start
+
+$init_state start_state_tbl, start_keyword_tbl
+
+	$state start
+	$tran	tpa$_eos	,tpa$_exit
+	$tran	'EXIT'		,tpa$_exit,odsm_exit
+	$tran	'ADD'		,check_disk,,m_addition,inp_option
+	$tran	'DELETE'	,check_disk,,m_deletion,inp_option
+	$tran	'SET'		,check_disk,,m_set,inp_option
+	$tran	'LIST'		,setup_list
+	$tran	'SHOW'		,setup_list
+
+	$state check_disk
+	$tran	tpa$_eos	,tpa$_exit,odsm_short_command
+	$tran	'DISK'		,save_disk,,m_disk,inp_data
+	$tran	'DEVICE'	,save_disk,,m_disk,inp_data
+
+	$state get_data
+	$tran	tpa$_eos	,tpa$_exit,odsm_process_option
+	$tran	'LABEL'		,save_label,,m_label,inp_data
+	$tran	'NAME'		,save_label,,m_label,inp_data
+	$tran	'VOLUME'	,save_label,,m_label,inp_data
+	$tran	'HOST'		,save_host,,m_host,inp_data
+	$tran	'MINIMUM'	,save_minimum,,m_minimum,inp_data
+	$tran	'MAXIMUM'	,save_maximum,,m_maximum,inp_data
+
+	$state save_disk
+	$tran	tpa$_eos	,tpa$_exit,odsm_short_command
+	$tran	tpa$_filespec	,get_data,,,inp_disk
+
+	$state save_label
+	$tran	tpa$_eos	,tpa$_exit,odsm_short_command
+	$tran	'NONE'		,get_data,set_label_none
+	$tran	tpa$_filespec	,get_data,,,inp_label
+
+	$state save_host
+	$tran	tpa$_eos	,tpa$_exit,odsm_short_command
+	$tran	'NONE'		,get_data,set_host_none
+	$tran	tpa$_filespec	,get_data,,,inp_host
+
+	$state save_minimum
+	$tran	tpa$_eos	,tpa$_exit,odsm_short_command
+	$tran	'NONE'		,get_data,set_minimum_none
+	$tran	tpa$_decimal	,get_data,,,inp_minimum
+
+	$state save_maximum
+	$tran	tpa$_eos	,tpa$_exit,odsm_short_command
+	$tran	'NONE'		,get_data,set_maximum_none
+	$tran	tpa$_decimal	,get_data,,,inp_maximum
+
+	$state setup_list
+	$tran	tpa$_eos	,tpa$_exit,odsm_list_file
+	$tran	'BY'		,setup_list_by
+	$tran	'DEVICE'	,tpa$_exit,set_list_device
+	$tran	'DISK'		,tpa$_exit,set_list_device
+	$tran	'LABEL'		,tpa$_exit,set_list_label
+	$tran	'NAMES'		,tpa$_exit,set_list_label
+	$tran	'VOLUME'	,tpa$_exit,set_list_label
+
+	$state setup_list_by
+	$tran	tpa$_eos	,tpa$_exit,odsm_short_command
+	$tran	'DEVICE'	,tpa$_exit,set_list_device
+	$tran	'DISK'		,tpa$_exit,set_list_device
+	$tran	'LABEL'		,tpa$_exit,set_list_label
+	$tran	'NAMES'		,tpa$_exit,set_list_label
+	$tran	'VOLUME'	,tpa$_exit,set_list_label
+
+$end_state
+
+	.end	odsm_start

@@ -1,0 +1,119 @@
+Preparing to build Emacs:
+You must have a working copy of MMK (MadGoat Make) or MMS (part of DECSet).  I
+use MMK.  There are binaries available for both Alpha and Itanium.
+
+If you are using MMK, you must override the MMS symbol to point to it, as part
+of the Emacs build process will attempt to invoke MMS:
+$ mms == "''mmk'"  ! this assumes you already have an appropriate mmk symbol
+
+After extracting the files from the zipfile, you must define a root "AXPA" that
+points to this tree.  For example:
+$  define /tran=(conc,term) /job axpa $1$dga3001:[fds0.emilkie.emacs.]
+
+
+Directory structure:
+
+(root)
+  EMACS
+    AC   (autoconf for VMS)
+    BUILD    <- run all commands while in this directory
+      LISP
+      LWLIB   (x-windows obj's appear here)
+      OLDXMENU (x-windows obj's appear here)
+      SRC     (emacs obj's appear here)
+      TRADCPP (C preprocessor used to preprocess DESCRIP.MMS_IN_IN)
+      VMS  (here is where the build products appear, e.g. TEMACS.EXE)
+    EMACS212_3 (all emacs source files live within here)
+      LISP
+      LWLIB     (x-windows source)
+      OLDXMENU (x-windows source)
+      SRC (Main Emacs source directory!)
+        M (machine-specific header files)
+        S (os-specific header files)
+      TRADCPP (same as in BUILD)
+      VMS (helper VMS utilities to help Emacs build)
+  PLAY
+
+
+Files of note:
+AXPA:[EMACS.EMACS212_3.SRC]DESCRIP.MMS_IN_IN
+Edit this file to adjust how things are built and linked.  This file becomes
+AXPA:[EMACS.BUILD]DESCRIP.MMS when you run "configure".
+
+AXPA:[EMACS.BUILD.VMS]TEMACS.EXE
+This is the emacs executable.  When you run "mmk install", it gets renamed to
+EMACS-21_2.EXE.
+
+AXPA:[EMACS.BUILD.VMS]TEMACS_D.EXE
+This is the emacs executable if you build it in debug mode by using "mmk debug".
+
+AXPA:[EMACS.BUILD.VMS]TEMACS.DUMP
+This is the dumpfile that is created at the end of emacs build.  It contains
+the program sections from virtual memory that are memory-mapped when Emacs is
+started.
+
+Building Emacs:
+
+0. Build TRADCPP
+You may need to rebuild TRADCPP if it gives errors during the build. Simply
+change to its directory and do "mmk".  You should only need to do this once.
+
+1. Run configure.
+Change default directory to AXPA:[EMACS.BUILD].  Run configure:
+$ @[-.emacs212_3]configure --with-tcpip=YES --with-x=YES --prefix=AXPA:[LOCAL]
+--startupdir=AXPA:[LOCAL.STARTUP]
+
+You can get a list of options that configure takes by giving the -h option.  We
+use Multinet at FactSet so the descrip.mms file may try to link against only
+Multinet libraries.  It should also be able to use TCP/IP Services libraries,
+however.
+After configure runs, it should parse
+AXPA:[EMACS.EMACS212_3.SRC]DESCRIP.MMS_IN_IN and produce
+AXPA:[EMACS.BUILD]DESCRIP.MMS.
+
+2. Run MMK.
+With a proper descrip.mms file, run:
+$ mmk /ignore=warn
+You may wish to run $ mmk clean first if you have changed descrip.mms_in_in.
+Emacs will build.  The build may fail to find a header file; if this occurs,
+simply invoke mmk again.  There is a bug with either mmk or the descrip.mms
+file in that it changes directories to build oldxmenu but for some reason
+doesn't restore the directory when it moves on to build emacs files.
+After emacs is built and links, it will invoke emacs in batch mode in order to
+"dump" it.  You will see many messages about loading various Lisp modules, then
+it will produce a TEMACS.DUMP file.
+
+3. Test emacs
+To run a test, invoke:
+$ mcr [.vms]temacs.exe -map [.vms]temacs.dump
+
+Building Emacs in Debug mode
+To build emacs in debug mode for use with the debugger, change the file
+AXPA:[EMACS.EMACS212_3.SRC.S]VMS.H
+Find the declaration of C_DEBUG_SWITCH and change it to be /deb/noopt
+Rerun configure.
+Invoke mmk as:
+$ mmk debug /ignore=warn
+Note that the image will be created with the name TEMACS_D.EXE, so to run it
+you will use:
+$ mcr [.vms]temacs_d.exe -map [.vms]temacs.dump
+
+Important files
+VMSMAP.C in the emacs SRC directory:
+Contains the code to "dump" emacs when it is built, and also to map in the
+sections from the dump file when Emacs is run.
+VMSGMALLOC.C:
+Contains the custom memory allocator for Emacs; adapted from the original GNU
+malloc/free.
+
+Helpful website
+http://www.delorie.com/gnu/docs/elisp-manual-21/elisp_715.html
+(from the GNU Emacs manual)
+This webpage describes how the Emacs dumping process is undertaken.
+
+Installing Emacs
+Normally, after emacs is built, one runs 
+$ mmk install /ign=warn
+And files are copied out to the location specified in the --prefix when you
+first ran configure.  At this point, the temacs.exe file is renamed and placed
+in a production location for users.

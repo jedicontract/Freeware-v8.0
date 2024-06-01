@@ -1,0 +1,57 @@
+
+		  Network Utilities Quick Reference Card
+
+______________________________________________________________________________
+
+ETHERWATCH		X4-002
+
+	spy	[/device=<ddcu:>]				See Note 1
+		[/from={<ethernet_addr>|<node_name>|UNKNOWN}]	*
+		[/to={<ethernet_addr>|<node_name>|UNKNOWN}]	*
+		[/protocol=<protocol>]				*
+		[/display=<display_option>]		       ALL, See Note 3
+		[/both]
+
+______________________________________________________________________________
+
+FRAME_COUNTER		X1-008
+
+ framecount	[/device=<ddcu:>]				See Notes 1,2
+		[/address=<ethernet_addr>]			*
+		[/protocol=<protocol>]				*
+
+______________________________________________________________________________
+
+LATWATCH		X4-004
+
+   latwatch	[/device=<ddcu:>]				See Note 1
+		[/from={<ethernet_addr>|<node_name>|UNKNOWN}]	*
+		[/to={<ethernet_addr>|<node_name>|UNKNOWN}]	*
+		[/both]
+		[/message_type=<number>]
+
+	message types:
+	 0 run message		 1 start message	 2 stop message
+	10 service info		12 command message	13 status message
+	14 solicit info		15 response info
+	16 <unknown types>	63 <match all types>
+______________________________________________________________________________
+
+PROTOCOL_COUNTER	X1-006
+
+   ptycount	[/device=<ddcu:>]				See Notes 1,2
+		[/address=<ethernet_addr>]			*
+
+______________________________________________________________________________
+
+Note 1:	The default is established at run-time by using the first ethernet
+	device found on the system.
+
+Note 2:	This utility will collect data until interrupted by a Control/C.
+	At this stage, the data will be displayed and you then have the
+	option of continuing, resetting the counters and continuing, or
+	exiting.
+
+Note 3: <display_option> = { ALL | NONE | HEXADECIMAL | TEXT }
+______________________________________________________________________________
+								   dbs-93287-1

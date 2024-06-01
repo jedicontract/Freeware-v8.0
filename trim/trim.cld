@@ -1,0 +1,65 @@
+! TRIM.CLD
+!
+! Command Language Definition for the TRIM utility written by
+! Bart Z. Lederman
+!
+! !!!! REMEMBER TO CHANGE THE IMAGE LOCATION TO SUIT YOUR SYSTEM !!!!
+!
+
+define verb TRIM
+
+image TOOLS:TRIM
+
+  parameter P1
+	label = FILE_SPEC
+	value (required, type = $INFILE)
+	prompt = "File to process"
+
+  qualifier FIRST_LINE,
+	default, nonnegatable,
+	value (default = "1", type = $NUMBER)
+
+  qualifier LAST_LINE,
+	default, nonnegatable,
+	value (default = "0", type = $NUMBER)
+
+  qualifier STARTING_CHAR
+	value (required), nonnegatable
+
+  qualifier FINAL_CHAR,
+	value (required), nonnegatable
+
+  qualifier REMOVE,
+	value (required), nonnegatable
+!	value (required,list), nonnegatable	! possible future enhancement
+
+  qualifier REPLACE,
+	value (required), nonnegatable
+!	value (required,list), nonnegatable	! possible future enhancement
+
+  qualifier PREFIX,
+	value (required,list), nonnegatable
+
+  qualifier SUFFIX,
+	value (required,list), nonnegatable
+
+  qualifier TRIM
+
+  qualifier STRIP
+
+  qualifier TRAIL
+	default, negatable
+
+  qualifier CASE_SENSITIVE
+	default, negatable
+
+  qualifier SINGLE
+	nonnegatable
+
+  qualifier STATISTICS
+
+  qualifier APPEND
+	value (required), nonnegatable
+
+  qualifier PREPEND
+	value (required), nonnegatable

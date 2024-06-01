@@ -1,0 +1,224 @@
+#-----------------------------------------------------------------------------
+# Makefile.in for Unix version of tnimage
+# Tabs must be used to separate fields
+# Makefile is created automatically by 'configure'.
+#-----------------------------------------------------------------------------
+
+RM = rm -f
+
+# Add    -static    to end of the CFLAGS line to get a statically-linked version.
+# Remove -Wall      if your compiler complains about complex.h (This occurs with
+#                   some older versions of gcc).
+# To use gcc 3.x in Suse, do the following:
+#    1. make /opt/experimental/bin first in your path.
+#    2. add /opt/experimental/lib to /etc/ld.so.config and rerun ldconfig
+
+# Remove lex.yy.o and y.tab.o here and remove the line
+# #define HAVE_LEX from xmtnimage.h if you don't have flex or lex.
+# -ll may be needed on LIBS line on some older systems 
+
+OBJS = xmtnimage*.o lex.yy.o y.tab.o
+LDFLAGS=
+INCLUDES=-I. -I/usr/include -I/usr/include/X11  -I -I  -I
+LIBS=-L  -lm -ltiff -ll -lm -lXext   -lXm  -lXext -lXt -lX11 -lpng -ltiff -lz    
+CC=gcc
+CFLAGS=-O3 -Wall
+YACC=yacc -d
+
+# Can't use a 'rule' to make .o files because not all make's handle it.
+# If flex is used on calculator.l, lex.yy.c must be edited manually. See
+# comments in calculator.y.
+
+all:: tnimage plugin readtif
+xmtnimage.o:  xmtnimage.cc  xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage.cc
+xmtnimage1.o: xmtnimage1.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage1.cc
+xmtnimage2.o: xmtnimage2.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage2.cc
+xmtnimage3.o: xmtnimage3.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage3.cc
+xmtnimage4.o: xmtnimage4.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage4.cc
+xmtnimage5.o: xmtnimage5.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage5.cc
+xmtnimage6.o: xmtnimage6.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage6.cc
+xmtnimage7.o: xmtnimage7.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage7.cc
+xmtnimage8.o: xmtnimage8.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage8.cc
+xmtnimage9.o: xmtnimage9.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage9.cc
+xmtnimage10.o: xmtnimage10.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage10.cc
+xmtnimage11.o: xmtnimage11.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage11.cc
+xmtnimage12.o: xmtnimage12.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage12.cc
+xmtnimage13.o: xmtnimage13.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage13.cc
+xmtnimage14.o: xmtnimage14.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage14.cc
+xmtnimage15.o: xmtnimage15.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage15.cc
+xmtnimage16.o: xmtnimage16.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage16.cc
+xmtnimage17.o: xmtnimage17.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage17.cc
+xmtnimage18.o: xmtnimage18.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage18.cc
+xmtnimage19.o: xmtnimage19.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage19.cc
+xmtnimage20.o: xmtnimage20.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage20.cc
+xmtnimage21.o: xmtnimage21.cc  xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage21.cc
+xmtnimage22.o: xmtnimage22.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage22.cc
+xmtnimage23.o: xmtnimage23.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage23.cc
+xmtnimage24.o: xmtnimage24.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage24.cc
+xmtnimage25.o: xmtnimage25.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage25.cc
+xmtnimage26.o: xmtnimage26.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage26.cc
+xmtnimage27.o: xmtnimage27.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage27.cc
+xmtnimage28.o: xmtnimage28.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage28.cc
+xmtnimage29.o: xmtnimage29.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage29.cc
+xmtnimage30.o: xmtnimage30.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage30.cc
+xmtnimage31.o: xmtnimage31.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage31.cc
+xmtnimage32.o: xmtnimage32.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage32.cc
+xmtnimage33.o: xmtnimage33.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage33.cc
+xmtnimage34.o: xmtnimage34.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage34.cc
+xmtnimage35.o: xmtnimage35.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage35.cc
+xmtnimage36.o: xmtnimage36.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage36.cc
+xmtnimage37.o: xmtnimage37.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage37.cc
+xmtnimage38.o: xmtnimage38.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage38.cc
+xmtnimage39.o: xmtnimage39.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage39.cc
+xmtnimage40.o: xmtnimage40.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage40.cc
+xmtnimage41.o: xmtnimage41.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage41.cc
+xmtnimage42.o: xmtnimage42.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage42.cc
+xmtnimage43.o: xmtnimage43.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage43.cc
+xmtnimage44.o: xmtnimage44.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage44.cc
+xmtnimage45.o: xmtnimage45.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage45.cc
+xmtnimage46.o: xmtnimage46.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage46.cc
+xmtnimage47.o: xmtnimage47.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage47.cc
+xmtnimage48.o: xmtnimage48.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage48.cc
+xmtnimage49.o: xmtnimage49.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage49.cc
+xmtnimage50.o: xmtnimage50.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage50.cc
+xmtnimage51.o: xmtnimage51.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage51.cc
+xmtnimage52.o: xmtnimage52.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage52.cc
+xmtnimage53.o: xmtnimage53.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage53.cc
+xmtnimage54.o: xmtnimage54.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage54.cc
+xmtnimage55.o: xmtnimage55.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage55.cc
+xmtnimage56.o: xmtnimage56.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage56.cc
+xmtnimage57.o: xmtnimage57.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage57.cc
+xmtnimage58.o: xmtnimage58.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage58.cc
+xmtnimage59.o: xmtnimage59.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage59.cc
+xmtnimage60.o: xmtnimage60.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage60.cc
+xmtnimage61.o: xmtnimage61.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage61.cc
+xmtnimage62.o: xmtnimage62.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage62.cc
+xmtnimage63.o: xmtnimage63.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage63.cc
+xmtnimage64.o: xmtnimage64.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage64.cc
+xmtnimage65.o: xmtnimage65.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage65.cc
+xmtnimage66.o: xmtnimage66.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage66.cc
+xmtnimage67.o: xmtnimage67.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage67.cc
+xmtnimage68.o: xmtnimage68.cc xmtnimage.h
+	$(CC) -c $(CFLAGS) $(INCLUDES) xmtnimage68.cc
+
+# MIPSpro c compiler has no option to force c++ so rename it first
+y.tab.o: y.tab.c
+	cp y.tab.c y.tab.cc
+	$(CC) -c -x c++ $(CFLAGS) $(INCLUDES) y.tab.cc
+y.tab.c: calculator.y
+	$(YACC) -d calculator.y  
+lex.yy.o: lex.yy.c
+	cp lex.yy.c lex.yy.cc
+	$(CC) -c -x c++ $(CFLAGS) $(INCLUDES) lex.yy.cc
+install:
+	./Install
+
+
+# Each line here after the .o's must start with a tab.
+tnimage: xmtnimage.o   xmtnimage1.o  xmtnimage2.o  xmtnimage3.o  xmtnimage4.o \
+	xmtnimage5.o   xmtnimage6.o  xmtnimage7.o  xmtnimage8.o  xmtnimage9.o \
+	xmtnimage10.o  xmtnimage11.o xmtnimage12.o xmtnimage13.o xmtnimage14.o \
+	xmtnimage15.o  xmtnimage16.o xmtnimage17.o xmtnimage18.o xmtnimage19.o \
+	xmtnimage20.o  xmtnimage21.o xmtnimage22.o xmtnimage23.o xmtnimage24.o \
+	xmtnimage25.o  xmtnimage26.o xmtnimage27.o xmtnimage28.o xmtnimage29.o \
+	xmtnimage30.o  xmtnimage31.o xmtnimage32.o xmtnimage33.o xmtnimage34.o \
+	xmtnimage35.o  xmtnimage36.o xmtnimage37.o xmtnimage38.o xmtnimage39.o \
+	xmtnimage40.o  xmtnimage41.o xmtnimage42.o xmtnimage43.o xmtnimage44.o\
+	xmtnimage45.o  xmtnimage46.o xmtnimage47.o xmtnimage48.o xmtnimage49.o\
+	xmtnimage50.o  xmtnimage51.o xmtnimage52.o xmtnimage53.o xmtnimage54.o\
+	xmtnimage55.o  xmtnimage56.o xmtnimage57.o xmtnimage58.o xmtnimage59.o\
+	xmtnimage60.o  xmtnimage61.o xmtnimage62.o xmtnimage63.o xmtnimage64.o\
+	xmtnimage65.o  xmtnimage66.o xmtnimage67.o xmtnimage68.o\
+	lex.yy.o       y.tab.o
+	$(RM) $@ 
+	$(CC) -o $@ $(CFLAGS) $(OBJS) $(LIBS) $(LDFLAGS)
+
+plugin.o:  plugin.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) plugin.cc
+plugin: plugin.o
+	$(RM) $@ 
+	$(CC) -o $@ $(CFLAGS) plugin.o $(LIBS) $(LDFLAGS)
+readtif.o:  readtif.cc
+	$(CC) -c $(CFLAGS) $(INCLUDES) readtif.cc
+readtif: readtif.o
+	$(RM) $@ 
+	$(CC) -o $@ $(CFLAGS) readtif.o $(LIBS) $(LDFLAGS)
+	strip readtif 
+
+clean:
+	$(RM) ./tnimage ./plugin
+	echo Cleaning up...
+	$(RM) *.o 
+
+distclean:
+	echo Distribution cleaning...
+	$(RM)  config.cache config.status config.log 
+	find . -name makefile -exec rm {} \; -print

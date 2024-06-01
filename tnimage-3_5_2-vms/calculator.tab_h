@@ -1,0 +1,49 @@
+typedef union {  double dval;
+          struct symtab *symp;
+       } YYSTYPE;
+#define	NAME	258
+#define	NUMBER	259
+#define	YYSTRING	260
+#define	IDENTIFIER	261
+#define	EQ	262
+#define	LE	263
+#define	GE	264
+#define	PLUS_EQUALS	265
+#define	MINUS_EQUALS	266
+#define	TIMES_EQUALS	267
+#define	DIVIDE_EQUALS	268
+#define	LOGICAL_AND	269
+#define	LOGICAL_OR	270
+#define	INCREMENT	271
+#define	DECREMENT	272
+#define	IMAGE	273
+#define	RED	274
+#define	GREEN	275
+#define	BLUE	276
+#define	YYREAL	277
+#define	YYIMAG	278
+#define	YYWAVE	279
+#define	AREA	280
+#define	DENSITY	281
+#define	TNI_OPEN	282
+#define	TNI_READ	283
+#define	TNI_WRITE	284
+#define	PRINT	285
+#define	TNI_CLOSE	286
+#define	IF	287
+#define	THEN	288
+#define	ELSE	289
+#define	CASE	290
+#define	DEFAULT	291
+#define	SWITCH	292
+#define	WHILE	293
+#define	DO	294
+#define	FOR	295
+#define	GOTO	296
+#define	TNI_CONTINUE	297
+#define	BREAK	298
+#define	RETURN	299
+#define	UMINUS	300
+
+
+extern YYSTYPE yylval;

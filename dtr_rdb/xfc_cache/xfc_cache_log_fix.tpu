@@ -1,0 +1,176 @@
+!+
+!	XFC_CACHE_LOG_FIX.TPU
+!
+! The base procedure that this processing is based on was
+! taken from DECUS tape, modified to be a stand-alone procedure
+! B. Z. Lederman 15-Jul-1987
+!
+! 27-Jan-1989 remove any <DEL> characters first (fix for Databridge capture)
+! 15-Jun-1990 Add removal of <NUL> characters
+! 08-May-2003 Change for processing XFC cache statistics output. Remove
+!		<CR> and <LF> but don't break into new lines.
+!-
+
+PROCEDURE replace_string (search_for, replace_with)
+
+LOCAL the_range, replace_count;
+
+    ON_ERROR
+        IF (ERROR <> TPU$_STRNOTFOUND) THEN
+            MESSAGE ("Error (" + STR(ERROR) + ") at line " + STR(ERROR_LINE));
+            RETURN (replace_count);
+        ENDIF;
+    ENDON_ERROR;
+
+    replace_count := 0;
+
+    LOOP
+	POSITION (BEGINNING_OF (main_buffer));
+	the_range := SEARCH (search_for, FORWARD);
+	EXITIF (the_range = 0);
+!
+	LOOP
+	    ERASE (the_range);
+	    POSITION (END_OF (the_range));
+	    COPY_TEXT (replace_with);
+	    replace_count := replace_count + 1;
+	    the_range := SEARCH (search_for, FORWARD);
+	    EXITIF (the_range = 0);
+	ENDLOOP;
+!
+    ENDLOOP;
+!
+    RETURN (replace_count);
+!
+ENDPROCEDURE
+
+PROCEDURE fix_crlf
+
+LOCAL	the_range, save_position, crlf_count, del_count, chrset, orchr ;
+
+    ON_ERROR
+        IF (ERROR <> TPU$_STRNOTFOUND) THEN
+            MESSAGE ("Error (" + STR(ERROR) + ") at line " + STR(ERROR_LINE));
+            RETURN;
+        ENDIF;
+    ENDON_ERROR;
+!
+! Remove the CRLFs.
+!
+    crlf_count := 0;
+    chrset := ASCII(13) + ASCII(10);
+    POSITION (BEGINNING_OF (main_buffer));
+    LOOP
+        the_range := SEARCH (chrset, FORWARD);
+        EXITIF (the_range = 0);
+        ERASE (the_range);
+	crlf_count := crlf_count+1;
+        POSITION (BEGINNING_OF (the_range));
+    ENDLOOP;
+    MESSAGE (FAO ("Removed <CR><LF>s at !UL positions", crlf_count));
+
+ENDPROCEDURE
+
+PROCEDURE bring_up (search_for)
+
+LOCAL the_range, replace_count;
+
+    ON_ERROR        ! will also cause procedure to exit when it hits
+        RETURN (replace_count);     ! the end of the buffer.
+    ENDON_ERROR;
+
+    replace_count := 0;
+
+    POSITION (BEGINNING_OF (main_buffer));
+
+    LOOP
+        the_range := SEARCH (search_for, FORWARD);
+        EXITIF (the_range = 0);
+	POSITION (BEGINNING_OF (the_range));
+        APPEND_LINE;			! should move the line up
+	replace_count := replace_count+1;
+	POSITION (END_OF (the_range));
+    ENDLOOP;
+
+    RETURN (replace_count);
+
+ENDPROCEDURE
+
+!!!!!!!!!!!! Main process starts here
+
+input_file := GET_INFO (COMMAND_LINE, 'FILE_NAME');
+main_buffer := CREATE_BUFFER ('MAIN', input_file);
+
+MESSAGE (FAO ("Processing !AS", input_file));
+
+repl_cnt := replace_string ("                ", " ");
+MESSAGE (FAO ("Removed !UL strings of 16 blanks", repl_cnt));
+repl_cnt := replace_string ("            ", " ");
+MESSAGE (FAO ("Removed !UL strings of 12 blanks", repl_cnt));
+repl_cnt := replace_string ("        ", " ");
+MESSAGE (FAO ("Removed !UL strings of  8 blanks", repl_cnt));
+repl_cnt := replace_string ("      ", " ");
+MESSAGE (FAO ("Removed !UL strings of  6 blanks", repl_cnt));
+repl_cnt := replace_string ("    ", " ");
+MESSAGE (FAO ("Removed !UL strings of  4 blanks", repl_cnt));
+repl_cnt := replace_string ("  ", " ");
+MESSAGE (FAO ("Removed !UL strings of  2 blanks", repl_cnt));
+
+fix_crlf;
+
+repl_cnt := bring_up ("Allocated pages");
+MESSAGE (FAO ("Allocated pages !UL", repl_cnt));
+repl_cnt := bring_up ("Read hits");
+MESSAGE (FAO ("Read hits !UL", repl_cnt));
+repl_cnt := bring_up ("Virtual writes");
+MESSAGE (FAO ("Virtual writes !UL", repl_cnt));
+repl_cnt := bring_up ("Read aheads");
+MESSAGE (FAO ("Read aheads !UL", repl_cnt));
+repl_cnt := bring_up ("Write throughs");
+MESSAGE (FAO ("Write throughs !UL", repl_cnt));
+repl_cnt := bring_up ("Write arounds");
+MESSAGE (FAO ("Write arounds !UL", repl_cnt));
+
+repl_cnt := replace_string ("(open)", ",open,");
+MESSAGE (FAO ("Replaced !UL strings of (open)", repl_cnt));
+repl_cnt := replace_string ("(closed)", ",closed,");
+MESSAGE (FAO ("Replaced !UL strings of (closed)", repl_cnt));
+repl_cnt := replace_string ("Caching is ", "");
+MESSAGE (FAO ("Replaced !UL strings of Caching is ", repl_cnt));
+repl_cnt := replace_string ("active caching mode is ", "");
+MESSAGE (FAO ("Replaced !UL strings of active caching mode is", repl_cnt));
+repl_cnt := replace_string ("Allocated pages", ",");
+MESSAGE (FAO ("Replaced !UL strings of Allocated pages", repl_cnt));
+repl_cnt := replace_string ("Total QIOs ", ",");
+MESSAGE (FAO ("Replaced !UL strings of Total QIOs ", repl_cnt));
+repl_cnt := replace_string ("Read hits ", ",");
+MESSAGE (FAO ("Replaced !UL strings of Read hits ", repl_cnt));
+repl_cnt := replace_string ("Virtual reads ", ",");
+MESSAGE (FAO ("Replaced !UL strings of Virtual reads ", repl_cnt));
+repl_cnt := replace_string ("Virtual Writes ", ",");
+MESSAGE (FAO ("Replaced !UL strings of Virtual Writes ", repl_cnt));
+repl_cnt := replace_string ("Hit rate ", ",");
+MESSAGE (FAO ("Replaced !UL strings of Hit rate ", repl_cnt));
+repl_cnt := replace_string ("% Read aheads", ",");
+MESSAGE (FAO ("Replaced !UL strings of Read aheads", repl_cnt));
+repl_cnt := replace_string ("Read throughs ", ",");
+MESSAGE (FAO ("Replaced !UL strings of Read throughs ", repl_cnt));
+repl_cnt := replace_string ("Write throughs", ",");
+MESSAGE (FAO ("Replaced !UL strings of Write throughs", repl_cnt));
+repl_cnt := replace_string ("Read arounds", ",");
+MESSAGE (FAO ("Replaced !UL strings of Read arounds", repl_cnt));
+repl_cnt := replace_string ("Write arounds", ",");
+MESSAGE (FAO ("Replaced !UL strings of Write arounds", repl_cnt));
+repl_cnt := replace_string (" ,", ",");
+MESSAGE (FAO ("Replaced !UL strings of space before comma", repl_cnt));
+repl_cnt := replace_string (", ", ",");
+MESSAGE (FAO ("Replaced !UL strings of space after comma", repl_cnt));
+
+repl_cnt := replace_string ("    ", " ");
+MESSAGE (FAO ("Removed !UL strings of  4 blanks", repl_cnt));
+repl_cnt := replace_string ("  ", " ");
+MESSAGE (FAO ("Removed !UL strings of  2 blanks", repl_cnt));
+
+WRITE_FILE (main_buffer, input_file);
+
+QUIT;

@@ -1,0 +1,266 @@
+1 TRIM
+    Trim will process one or more files and do some or all of
+ the following:
+
+ Remove characters from the beginning or end of each line;
+ Remove (and optionally replace) characters from within each line;
+ Insert a prefix or suffix on each line;
+ Insert a line at the beginning or end of each file;
+ Trim trailing blanks and tabs from each line;
+ Remove blank lines.
+ Strip non-printing characters.
+
+    Format
+
+     TRIM file_spec
+
+2  Parameters
+
+file_spec
+
+    Specifies the name of one or more files to be processed.
+ Wildcard characters (* and %) are allowed in the directory
+ specification, file name, or file type fields of the file
+ specification.  When wildcard characters are used, all files
+ whose specifications satisfy the wildcard fields are processed.
+
+    The output file(s) produced will have the same name and
+ extension as the input file(s).  The output file will always
+ have the "Carriage return carriage control" attribute.
+
+2  Qualifiers
+
+/APPEND
+
+    /APPEND = string
+
+    If specified, the string is written as the last line of the
+ output file, after all other processing is performed.
+
+/CASE_SENSITIVE
+
+    /CASE_SENSITIVE   (default)
+    /NOCASE_SENSITIVE
+
+    The default is to do case sensitive comparisons (upper case 
+ characters are not the same as lower case characters) for 
+ /STARTING_CHAR, /FINAL_CHAR, and /REMOVE.  If /NOCASE_SENSITIVE is 
+ specified, then a case insensitive match is done ("a" will match 
+ "A").
+
+    Remember that strings which are not enclosed within quotes are 
+ automatically converted to upper case by DCL.  Therefore, if you do
+ not specify /NOCASE_SENSITIVE, and you input a string without
+ quotes (as in /REMOVE = and), it will match upper case only (i.e.,
+ it will match "AND" but not "and").  Enclosing the string in quotes
+ (/REMOVE = "and") will preserve the case (it will match "and" and
+ not "AND").
+
+    Strings specified by /PREFIX, /SUFFIX, and /REPLACE are not
+ converted to upper case by the program if enclosed in quotes,
+ regardless of the setting of the /CASE_SENSITIVE switch.  They will
+ be converted to upper case by DCL if not enclosed in quotes.
+
+/FINAL_CHAR
+
+    /FINAL_CHAR = c
+
+    Specifies the character on each line at which trimming is to
+ begin (i.e., the character preceding the specified character will
+ be the last character on the line to be included in the output
+ file).  If not specified, the line ends at the last character.  If
+ more than one character is present in the string, only the first is
+ used.
+
+    If the character isn't found on a line, no trimming is done.
+
+/FIRST_LINE
+
+     /FIRST_LINE = n
+
+    Specifies the first line in the input file to be included in the
+ output file: lines preceding this are removed.  If not specified,
+ the default value is 1 (start from the first line).
+
+/LAST_LINE
+
+    /LAST_LINE = n
+
+    Specifies the last line to be included in the output file,
+ counting from the beginning of the file.  If not specified, all
+ lines are included.
+
+/PREFIX
+
+    /PREFIX = string
+    /PREFIX = (first_prefix, subsequent_prefix)
+
+    If specified, the prefix is added to the beginning of each line.
+ This is done after any trimming is performed.
+
+    If if a list of two or more strings is specified, the first
+ string is prefixed to the first output line, and the second string
+ is prefixed to all other output lines.  If more than two strings
+ are specified, only the first two are used.
+!
+!3 FIRST
+!
+!    If specified in the list, places a different prefix on the first
+! output line than on subsequent output lines.
+
+/PREPEND
+
+    /PREPEND = string
+
+    If specified, the string is written as the first line of the
+ output file, before all other processing is performed.
+
+/REMOVE
+
+    /REMOVE = string
+
+    Removes the specified string from each line in the file where it
+ occurs.
+
+    On lines where the specified string does not occur, nothing is
+ changed.
+
+/REPLACE
+
+    /REPLACE = string
+
+    This can only be used if /REMOVE is specified, otherwise it is
+ ignored.  If both are present, then the string specified by
+ /REPLACE replaces the string specified by /REMOVE.
+
+    On lines where the /REMOVE string does not occur, nothing is
+ changed.
+
+    If the strings specified for /REMOVE and /REPLACE are exactly
+ the same, the entire operation is skipped.
+
+/SINGLE
+
+    /SINGLE
+    /NOSINGLE (default)
+
+    This can only be used if /REMOVE is specified, otherwise it is
+ ignored.  If present, then only the first string in a line which
+ matches the /REMOVE string is removed (or replaced if /REPLACE is
+ also specified).
+
+    The default is to remove (and replace) all instances of the
+ remove string.
+
+/STARTING_CHAR
+
+    /STARTING_CHAR = c
+
+    Specifies the first character on each line to be included in the
+ output file.  If not specified, the line starts at the first
+ character.  If more than one character is present in the string,
+ only the first is used.
+
+    If the character isn't found on a line, the entire line is
+ removed.
+
+/STATISTICS
+
+    If specified, the program will print the name of each file
+ processed; and when the program finishes it will print some
+ information about resources used, lines processed and included,
+ etc.
+
+/STRIP
+
+    If specified, all non-printing characters are removed except
+ Carriage Return, Line Feed, Tab, Vertical Tab and Form Feed.  Eight
+ bit characters are also removed.
+
+/SUFFIX
+
+    /SUFFIX = string
+    /SUFFIX = (first_suffix, subsequent_suffix)
+
+    If specified, the suffix is appended to the end of each line.
+ This is done after any trimming is performed.
+
+    If if a list of two or more strings is specified, the first
+ string is suffixed to the first output line, and the second
+ string is suffixed to all other output lines.  If more than two
+ strings are specified, only the first two are used.
+
+/TRAIL
+
+    /TRAIL (default)
+    /NOTRAIL
+
+    If specified, all trailing blank spaces and tabs are removed
+ from each line.  If this results in a blank line, it is written as
+ such to the output file unless /TRIM is also specified.
+
+    The default is to trim trailing blanks unless /NOTRAIL is
+ specified.
+
+/TRIM
+
+    If specified, blank lines are not included in the output file.
+ This eliminates both lines which were blank in the original file,
+ and lines which are blank after trimming (/STARTING_CHAR,
+ /FINAL_CHAR, /REMOVE, /REPLACE, and /TRAIL) is performed.
+
+2  Examples
+
+ $ DIRECTORY /COLUMN=1 /NOSIZE /NODATE /NOTRAIL /OUT=directory.lis
+ $ TRIM /FIRST=3 /FINAL="." directory.lis
+
+    The first command produces a directory listing with a header,
+ and a complete file specification (with extension and version
+ number).  The TRIM command removes the header (the first two lines
+ of the file), and trims each line so that only the file name (no
+ extension or version) remains.
+
+ $ DIRE /OUT = lib.com /NOHEAD /NOTRAIL /NOSIZE /NODATE -
+        /COLU = 1 *.cld;0
+ $ TRIM lib.com /PREFIX = ("$ lib/cre/log/text t.tlb ", -
+        "$ lib/ins/log/text t.tlb ") /STAR = "]" /REMO = "]"
+
+    The first command produces a directory listing of the most
+ recent version of each CLD file in the current directory, with no
+ header or trailer.  The second converts it to a command file where
+ the first line creates a text library and inserts one module, and
+ subsequent lines insert the remaining modules.  The /START and
+ /REMOVE qualifiers strip of the disk and directory information from
+ the file name.  /FINAL could also be used as in the previous
+ example to strip of the file type and/or version number.
+
+ $ TRIM lib.com /PREF = ("$ lib/cre/log/text t.tlb ", -
+        "$ lib/ins/log/text t.tlb ") /STAR = "]" /REMO = "]" -
+        /PREP = "$ set def user1:[work]" /APPE = "$ exit"
+
+    This is the same as the previous example, except that the
+ /PREPEND qualifier is used to put a DCL SET DEFAULT command at
+ the beginning of the resulting command file, and the /APPEND
+ qualifier is used to insure that the resulting command file ends
+ with a DCL EXIT command.
+
+2  Disclaimer
+
+    This help file is intended for use with the version of the TRIM
+ program written by Bart Z. Lederman.  It is an attempt to replace
+ the TRIM program which was once distributed with ALL-IN-1.  This
+ version has some qualifiers and actions not found in the original,
+ and may not exactly duplicate the functionality of the original.
+
+    No warranty of any kind is given as to the accuracy of the
+ information supplied, or the actions performed by the program.
+
+2  Problems
+
+    There may be a problem if multiple /PREFIX or /SUFFIX strings
+ are used along with the /PREPEND qualifier (the special prefix
+ or suffix for the 1st line may not be inserted, because the line
+ counter gets incremented too soon).  I hope to fix this at some
+ time in the future.
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  

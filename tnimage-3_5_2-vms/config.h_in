@@ -1,0 +1,82 @@
+/* This file is used by configure to create a config.h file. */
+/* configure will comment out the undef's if it finds it.    */
+/* Most of these variables are never actually used.          */
+
+#ifndef __CONFIG_H
+#define __CONFIG_H 
+
+/* Define if on AIX 3.
+   System headers sometimes define this.
+   We just want to avoid a redefinition error message.  */
+#ifndef _ALL_SOURCE
+#undef _ALL_SOURCE
+#endif
+
+/* Define if you have /proc/meminfo.  */
+#undef HAVE_MEMINFO 
+
+/* Define if you have motif version 1 or higher.  */
+#undef HAVE_MOTIF 
+
+/* Define if you have motif version 2 or higher.  */
+#undef MOTIF2 
+
+/* Define if you have Xbae.  */
+#undef HAVE_XBAE
+
+/* Define if you have libjpeg.  */
+#undef HAVE_JPEG
+
+/* Define if you have the Xpm library (-lXpm).  */
+#undef HAVE_XPM
+
+/* Define if you have fcvt.  */
+#undef HAVE_FCVT
+
+/* Define if you have gcvt.  */
+#undef HAVE_GCVT
+
+/* Define if you have lex.  */
+#undef HAVE_LEX
+
+/* Define if you have the cbrt function.  */
+#undef HAVE_CBRT
+
+/* Define if you have the acosh function.  */
+#undef HAVE_ACOSH
+
+/* Define if you have the asinh function.  */
+#undef HAVE_ASINH
+
+/* Define if you have the atanh function.  */
+#undef HAVE_ATANH
+
+/* Define if you have the isinf function.  */
+#undef HAVE_ISINF
+
+/* Define if you have the isnan function.  */
+#undef HAVE_ISNAN
+
+/* Define if you have the erf function.  */
+#undef HAVE_ERF
+
+/* Define your OS.  */
+#undef LINUX
+#undef SOLARIS
+#undef IRIX
+#undef CONVEX
+#undef MIPS
+#undef DIGITAL
+
+
+/* Define if you have bytesex.h  */
+#undef HAVE_BYTESEX_H
+
+/* Define if you have endian.h  */
+#undef HAVE_ENDIAN_H
+
+/* Define if you have Xft.h  */
+#undef HAVE_XFT
+
+
+#endif /* __CONFIG_H */

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <style type="text/css"><!--
+    @import url("/script/../style/magick.php");
+  //--></style>
+  <title>ImageMagick: History</title>
+  <meta http-equiv="Content-Language" content="en-US"/>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta http-equiv="Reply-to" content="magick-users@imagemagick.org"/>
+  <meta name="Generator" content="PHP"/>
+  <meta name="Keywords" content="history, ImageMagick, PerlMagick, Magick++, Image, Magick"/>
+  <meta name="Description" content="ImageMagick (TM) is a free software suite to create, edit and compose bitmap images. It can read, convert and write images in a large variety of formats. Images can be cropped, colors can be changed, various effects can be applied, images can be rotated and combined, and text, lines, polygons, ellipses and Bézier curves can be added to images and stretched and rotated.  ImageMagick is free software: it is delivered with full source code and can be freely used, copied, modified and distributed. Its license is compatible with the GPL. It runs on all major operating systems.  Most of the functionality of ImageMagick can be used interactively from the command line; more often, however, the features are used from programs written in the programming languages Perl, C, C++, Python, PHP, Ruby or Java, for which ready-made ImageMagick interfaces (PerlMagick, Magick++, PythonMagick, MagickWand for PHP, RubyMagick, and JMagick) are available. This makes it possible to modify or create images automatically and dynamically.  ImageMagick supports many image formats (over 90 major formats) including popular formats like TIFF, JPEG, PNG, PDF, PhotoCD, and GIF."/>
+  <meta name="Rating" content="GENERAL"/>
+  <meta name="Robots" content="INDEX, FOLLOW"/>
+  <meta name="Generator" content="ImageMagick Studio LLC"/>
+  <meta name="Author" content="ImageMagick Studio LLC"/>
+  <meta name="Revisit-after" content="2 DAYS"/>
+  <meta name="Resource-type" content="document"/>
+  <meta name="Copyright" content="Copyright (c) 1999-2006 ImageMagick Studio LLC"/>
+  <meta name="Distribution" content="Global"/>
+  <link rel="shortcut icon" href="/../image/wand.ico"  type="image/x-icon"/>
+</head>
+
+<body id="www-imagemagick-org">
+  <table id="titlebar" style="width: 100%;background-color: #f5f5f5" cellpadding="0" cellspacing="0" border="0" summary="ImageMagick">
+    <tbody>
+      <tr valign="top">
+        <td align="left"><a href="/script/../index.php"><img id="titlebar-west" src="/script/../image/script.png" alt="[ImageMagick]" width="350" height="60" border="0" vspace="28" name="titlebar-west" /></a></td>
+        <td width="35%"><br /></td>
+        <td align="left"><a href="http://www.imagemagick.org/" target="1701325893"><img id="titlebar-west" src="/script/../image/sponsor.jpg" alt="[sponsor]" border="0" vspace="28" name="titlebar-west" /></a></td>
+        <td width="65%"><br /></td>
+        <td style="background-color: white" align="right"><a href="/script/../index.php"><img src="/script/../image/sprite.jpg" alt="" width="114" height="118" border="0" name="titlebar-east" /></a></td>
+        <td style="background-color: white" align="right"><a href="/script/../index.php"><img id="titlebar-east" src="/script/../image/logo.jpg" alt="" width="114" height="118" border="0" name="titlebar-east" /></a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table style="width: 100%" border="0" cellpadding="0" cellspacing="0" summary="">
+  <tbody>
+
+    <tr valign="top" style="height: 100%;">
+      <td id="menu" width="1%" height="100%">
+      <p><a href="#main">Skip to page contents</a></p>
+      <span>[</span>
+      <a href="/script/../index.php">About ImageMagick</a>
+      <a href="/script/../script/command-line-tools.php">Command-line Tools</a>
+      <a href="/script/../script/command-line-processing.php" class="sub">Processing</a>
+      <a href="/script/../script/command-line-options.php" class="sub">Options</a>
+      <a href="/script/../script/api.php">Program Interfaces</a>
+      <a href="/script/../script/magick-wand.php" class="sub">MagickWand</a>
+      <a href="/script/../script/magick-core.php" class="sub">MagickCore</a>
+      <a href="/script/../script/perl-magick.php" class="sub">PerlMagick</a>
+      <a href="/script/../script/architecture.php">Architecture</a>
+  <span>]</span><br /><span>[</span>
+      <a href="/script/../script/install-source.php">Install from Source</a>
+      <a href="/script/../script/install-source.php#unix" class="sub">Unix</a>
+      <a href="/script/../script/install-source.php#windows" class="sub">Windows</a>
+      <a href="/script/../script/binary-releases.php">Binary Releases</a>
+      <a href="/script/../script/binary-releases.php#unix" class="sub">Unix</a>
+      <a href="/script/../script/binary-releases.php#windows" class="sub">Windows</a>
+      <a href="/script/../script/resources.php">Resources</a>
+  <span>]</span><br /><span>[</span>
+      <a href="/script/../script/download.php">Download</a>
+  <span>]</span><br /><span>[</span>
+      <a href="/script/../script/search.php">Search</a>
+  <span>]</span><br /><span>[</span>
+      <a href="/script/../script/links.php">Links</a>
+  <span>]</span><br /><br /><span>[</span>
+      <a href="/script/../script/sponsors.php">Sponsors</a>
+  <a href="http://larscapes.com/" class="sponsor" target="sponsor">Larscapes</a><!-- 2007080820 -->
+      <span>]</span>
+      </td>
+
+      <td id="main" valign="top">
+<p><em>
+I swear by my life and my love of it that I will never live for the sake of another man, nor ask another man to live for mine.</em><br />-- John Galt in "Atlas Shrugged", by Ayn Rand</p>
+
+<p>ImageMagick started with a request by my DuPont supervisor, Dr. David Pensak, to display computer-generated images on a monitor only capable of showing 256 unique colors simultaneously.  In 1987, monitors that could display 24-bit true color images were rare and quite expensive. There are a plethora of Chemists and Biologists at DuPont, but very were few Computer Scientists to confer with. Instead, I turned to Usenet for help, and posted a request for an algorithm to reduce 24-bit images to 256 colors.  Paul Raveling of the USC Information Sciences Institute responded, with not only a solution he wrote, but one that was already in source code and available from his FTP site. Over the course of the next few years, I had frequent opportunities to get help with other vexing computer science problems I encountered in the course of doing my job at DuPont.  Eventually, I felt compelled to give thanks for the help I received from the knowledgeable folks on Usenet. I decided to freely release the image processing tools I developed to the world so that others could benefit from my efforts.</p>
+
+<p>In 1990 there were few freely available image processing tools so I expected an enthusiastic reception.  Before a release was possible, Dr. Pensak had to convince upper management at DuPont to give away what they what they might perceive as valuable intellectual property. I suspect they agreed simply because ImageMagick was not chemically or biologically based, so they did not understand its value to the company. Either way, ImageMagick would not be available today without DuPont's permission to distribute it.  ImageMagick was posted to Usenet's comp.archives group on August 1st, 1990.</p>
+
+<p>After ImageMagick's release, I got the occasional request for an enhancement, a report of a bug, or a contribution to the source base. In the mid 90's, I released the culmination of these efforts, ImageMagick 4.2.9.  At the time I thought ImageMagick was complete.  It was being used by thousands of folks world-wide, and it was even showing up as part of a new operating system being distributed freely, called "Linux".</p>
+
+<p>The next generation of ImageMagick, version 5, started when Bob Friesenhahn contacted me and began suggesting ways to improve it. Bob had seemingly boundless energy, questions, and ideas.  He suggested I revamp ImageMagick 4.2.9, so in addition to the command line tools, it should have a usable application programming interface so users could leverage the image-processing algorithms from other languages or scripts.  Bob also wrote a C++ wrapper for ImageMagick called Magick++, and began contributing enhancements such as the module loader facility, automatic file identification, and test suites.  In the mean-time, the project picked up a few other notable contributors: Glenn Randers-Pehrson, William Radcliffe, and Leonard Rosenthol.  By now, ImageMagick was being utilized by tens of thousands of users, who reacted gruffly when a new release broke an existing API call or script.  The other members of the group wanted to freeze the API and command line but I was not quite ready, since ImageMagick was not quite what I had envisioned it could be. Bob and the others created a fork of ImageMagick called GraphicsMagick. I alone continued to develop ImageMagick.</p>
+
+<p>I did not work alone for long.  Anthony Thyssen contacted me about deficiencies in the ImageMagick command line programs.  He pointed out that the command line was confusing when dealing with more than one image. He suggested an orderly, well-defined method for dealing with the command line, and this became ImageMagick version 6 (the current release). His efforts are detailed at his web pages, <a href="http://www.cit.gu.edu.au/~anthony/graphics/imagick6" target="1776200502">Examples of ImageMagick Usage</a>.  I highly recommend that you peruse his site. He has illustrated the power of ImageMagick in ways that even I did not know were possible.</p>
+
+<p>It has been nearly 20 years since ImageMagick was first conceived, and it looks likely that it will be here for another 20 and beyond. The command line and the application programming interface are stable, but there is still work to do.  We're currently working on improving the conjure utility, Scalable Vector Graphics (SVG) support, and adding better support for video formats.</p>
+
+<p>Cristy<br />Principal ImageMagick Architect</p>
+      </td>
+      <td id="margin" width="1%" height="100%" valign="top" align="right">&nbsp;</td>
+    </tr>
+  </tbody>
+  </table>
+  <div id="linkbar">
+    <a href="http://redux.imagemagick.org/discussion-server" target="877793183">Discourse Server</a> |
+    <a href="/script/../script/mailing-list.php">Mailing Lists</a> |
+    <a href="http://redux.imagemagick.org/gallery" target="1383465495">Image Gallery</a> |
+    <a href="http://studio.webbyland.com/MagickStudio/scripts/MagickStudio.cgi" target="2072881072">ImageMagick Studio</a>
+  </div>
+  <div>
+    <span id="footer-west">&copy; 1999-2006 ImageMagick Studio LLC</span>
+    <span id="footer-east"> <a href="/script/../script/contact.php">Contact the Wizards</a></span>
+  </div>
+  <div style="clear: both; margin: 0; width: 100%; "></div>
+</body>
+</html>

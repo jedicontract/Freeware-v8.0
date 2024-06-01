@@ -1,0 +1,24 @@
+! Definition of PWAIT command syntax
+	module	PWAIT_cld
+	ident "V0.3"
+!
+! COPYRIGHT NOTICE
+!
+! This software is COPYRIGHT (c) 2006, Ian Miller. ALL RIGHTS RESERVED.
+!
+! Released under licence described in aaareadme.txt 
+!
+!	PWAIT processname
+! or
+!	PWAIT /ID=pid
+! or
+!
+!	PWAIT /ALL
+!
+	DEFINE VERB PWAIT
+	PARAMETER P1, LABEL=NAME
+	QUALIFIER ID, NONNEGATABLE,VALUE(REQUIRED)
+	QUALIFIER ALL, NONNEGATABLE
+	QUALIFIER FID_ONLY
+
+	DISALLOW ANY2(NAME,ID,ALL)

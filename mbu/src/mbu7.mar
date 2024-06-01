@@ -1,0 +1,131 @@
+	.TITLE MBU7	- parse protection specification
+	.IDENT /V01-003/
+;+
+; Define the TPARSE tables
+;
+; COPYRIGHT NOTICE
+;
+; This software is COPYRIGHT (c) 2004, Ian Miller. ALL RIGHTS RESERVED.
+; Permission is granted for not-for-profit redistribution, provided all source
+; and object code remain unchanged from the original distribution, and that all
+; copyright notices remain intact.
+;
+; DISCLAIMER
+;
+; This software is provided "AS IS". The author makes no representations or
+; warranties with respect to the software and specifically disclaim any implied
+; warranties of merchantability or fitness for any particular purpose.
+; HISTORY
+; =======
+; 20-Aug-2005	01-003	Use LIB$TABLE_PARSE if not on a VAX
+;-
+	$TPADEF
+
+	$INIT_STATE	PROT_TABLE,PROT_KEYWORD
+
+	$STATE	START
+	$TRAN	'(',,INITMASK
+
+	$STATE	MASK1
+	$TRAN	'SYSTEM',MASK2,SETPOSN,,,0
+	$TRAN	'OWNER'	,MASK2,SETPOSN,,,4
+	$TRAN	'GROUP' ,MASK2,SETPOSN,,,8
+	$TRAN	'WORLD' ,MASK2,SETPOSN,,,12
+	$TRAN	')',TPA$_EXIT
+
+	$STATE	MASK2
+	$TRAN	':',MASK3
+	$TRAN	<','>,MASK1
+	$TRAN	')',TPA$_EXIT
+
+	$STATE	MASK3
+	$TRAN	'R',MASK3,,1,MASK
+	$TRAN	'W',MASK3,,2,MASK
+	$TRAN	'P',MASK3,,4,MASK
+	$TRAN	'L',MASK3,,8,MASK
+	$TRAN	<','>,MASK1,MASKEND
+   	$TRAN	')',TPA$_EXIT,MASKEND
+
+	$END_STATE
+
+	.PSECT	_DATA,RD,WRT,NOEXE,BYTE
+; tparse argument block
+ARGBLK:	.BLKL	9
+; data used by action routines
+PROT:	.BLKL			; full protection mask
+MASK:	.BLKL			; protection mask for one class of accessor
+POSN:	.BLKL			; bit position for MASK
+
+	.PAGE
+	.PSECT	_CODE,RD,NOWRT,EXE,PIC
+;+
+;	PARSE_PROT	- parse protection mask
+;
+;	4(AP)	- address of string
+;	8(AP)	- length of string
+;	12(AP)	- current protection mask
+;	16(AP)	- address of long to hold protection mask
+;-
+.IF DF VAX
+	.ENTRY	PARSE_PROT,^M<>
+.IFF
+	.CALL_ENTRY label=PARSE_PROT, max_args=4, output=<r0>
+.ENDC
+; setup tparse parameter block
+	MOVAL	ARGBLK, R0
+	MOVL	#TPA$K_COUNT0, TPA$L_COUNT(R0)
+	MOVL	#TPA$M_ABBREV, TPA$L_OPTIONS(R0)
+	MOVL	8(AP), TPA$L_STRINGCNT(R0)
+	MOVL	4(AP), TPA$L_STRINGPTR(R0)
+	CLRL	TPA$L_TOKENPTR(R0)
+	CLRB	TPA$B_CHAR(R0)
+	CLRL	TPA$L_NUMBER(R0)
+	CLRL	TPA$L_PARAM(R0)
+	MOVL	12(AP), PROT	; initialse prot mask to be same as current
+; call tparse
+	PUSHAL	PROT_KEYWORD
+	PUSHAL	PROT_TABLE
+	PUSHL	R0
+.IF DF VAX
+	CALLS	#3, G^LIB$TPARSE
+.IFF
+	CALLS	#3, G^LIB$TABLE_PARSE
+.ENDC
+; save result
+	MOVL	PROT, @16(AP)	; store protection mask complemented
+;
+	RET
+;
+; action routines	
+;
+.IF DF VAX
+	.ENTRY INITMASK,^M<> 	
+.IFF
+	.CALL_ENTRY label=INITMASK, max_args=0, output=<r0>
+.ENDC
+	MOVL	#1, R0		; success
+	RET
+.IF DF VAX
+	.ENTRY SETPOSN, ^M<>
+	MOVL	AP, R1
+.IFF
+	.CALL_ENTRY label=SETPOSN, output=<r0>, preserve=<r1>
+	MOVL	4(AP), R1
+.ENDC
+	MOVL	TPA$L_PARAM(R1), POSN ; save start bit posn
+	CLRL	MASK		; initialise protection mask
+	ASHL	POSN,#^XF,R0
+	BISL2	R0,PROT
+	MOVL	#1, R0		; success
+	RET
+.IF DF VAX
+	.ENTRY MASKEND, ^M<>
+.IFF
+	.CALL_ENTRY label=MASKEND, output=<r0>, max_args=1
+.ENDC
+	ASHL	POSN,MASK,R0	; move mask to required posn
+	BICL2	R0,PROT		; set mask in protection
+	MOVL	#1, R0		; success
+	RET	
+
+	.END

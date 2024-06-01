@@ -1,0 +1,407 @@
+1 MBU
+  MBU is a utility for using mailboxes. MBU can create mailboxes,
+  delete mailboxes, read and write mailbox messages, and change the
+  characteristics of mailboxes.
+2 Author 
+  This program was written by Ian Miller.
+
+  Bug reports to
+
+	miller@encompasserve.org
+
+  COPYRIGHT NOTICE
+
+  This software is COPYRIGHT © 2004, Ian Miller. ALL RIGHTS RESERVED.
+  Permission is granted for not-for-profit redistribution, provided all 
+  source and object code remain unchanged from the original distribution, 
+  and that all copyright notices remain intact.
+
+  DISCLAIMER
+
+  This software is provided "AS IS". The author makes no representations 
+  or warranties with respect to the software and specifically disclaim any 
+  implied warranties of merchantability or fitness for any particular 
+  purpose.
+2 @
+  Reads and executes a file of MBU commands. Any error during command
+  execution will terminate processing of the file. On reaching the end
+  of the file control returns to the keyboard or invoking command file.
+  Command files may be nested to a depth of 4.
+
+  Format:
+         @filename
+3 Parameter
+  filename is specification of file containing MBU commands.
+  The default file type is .COM
+
+3 Example
+  ! create a mailbox
+  CREATE MYMBX/MAX=100/PERM
+  ! display details
+  SHOW MAILBOX MYMBX                      
+  ! write a messsage telling a server my mailbox name
+  ! note blank line to indicate end of message data
+  WRITE/FORMAT=TEXT/NOWAIT SERVERMBX
+  MYMBX
+  
+  ! pause for thought
+  WAIT 00:00:10                           
+  ! wait for a reply and display in hex
+  READ/FORMAT=HEX/NOWAIT MYMBX              
+  ! pause for one minute
+  WAIT 00:01:00                           
+  ! do it again
+  REWIND                                  
+
+2 CREATE
+  The create command creates a mailbox.
+  Format:
+         CREATE mailbox_name
+
+  Note: after the create command MBU has one read-write channel
+  assigned to the mailbox until MBU exits. This can show in 
+  displays of information about the mailbox.
+3 Parameter
+  mailbox_name is the logical name or device name of a mailbox.
+3 Command_qualifiers
+/BUFFER_QUOTA 
+  /BUFFER_QUOTA=n
+  Specifies the buffer quota for the mailbox.
+/MAXIMUM_MESSAGE_SIZE
+  /MAXIMUM_MESSAGE_SIZE=n
+  Specifies the maximum message size for the mailbox.
+/PERMANENT
+  /PERMANENT (default)
+  Specifies that the mailbox is permanent. 
+/PROTECTION
+  /PROTECTION=protection_mask
+  Specifies the protection of the mailbox. Specify protection in standard
+  format i.e. (SYSTEM:RWLP,OWNER:RWLP,GROUP:RWLP,WORLD:RWLP)
+/TEMPORARY
+  /TEMPORARY 
+  Specifies that the mailbox is temporary. A temporary mailbox will be
+  deleted when no channels are assigned to it.
+2 DELETE 
+  The delete command marks a permanent mailbox for deletion. The mailbox
+  will be deleted when no channels are assigned to it.
+
+  Format:
+         DELETE mailbox_name
+3 Parameter
+  mailbox_name is the logical name or device name of a mailbox.
+2 EXIT
+  Exits from MBU utility.
+2 HELP
+  The help command displays help for a particular MBU command 
+  and starts a interactive help session.
+
+  Format:
+         HELP [command]
+2 READ
+  Reads and displays any messages in the specifies mailbox.
+
+  Format:
+         READ mailbox_name
+3 Parameter
+  mailbox_name is the logical name or device name of a mailbox.
+3 Command_qualifiers
+/COUNT
+  /COUNT=n
+  Specifies a limit on the number of messages to be read.
+/DATA_SIZE
+  /DATA_SIZE=size
+  Specifies the size of each element in the message.
+  If no size is given then the current default is used.
+  If format is TEXT then DATA_SIZE is ignored.
+
+  Size is either BYTE, WORD, LONG, or QUADWORD.
+/FORMAT
+  /FORMAT=format
+  Defines the format that the message contents will be output.
+  If no format name is given then the current default is used.
+
+  Format is either HEX, DECIMAL, or TEXT.
+
+  For TEXT format non-printable characters are replaced by '.'
+/LENGTH
+  /LENGTH=n
+  Specifies a limit on the number of bytes of each message that are output.
+/OUTPUT
+  /OUTPUT=filename
+  Specifies the file to which the messages are to be output.
+  If this qualifier is not used then the messages are output to SYS$OUTPUT.
+  If this qualifier is used but no filename is given then the current 
+  default output filename is used.
+/WAIT
+  /WAIT
+  /NOWAIT (default)
+  Specifies that MBU will wait for a message to be written to the mailbox.
+/WIDTH
+  /WIDTH=n
+  Defines width in characters of message display.
+  Minimum value 20, maximum value 200.
+/TIMEOUT
+  /TIMEOUT=n
+  Requests that the read be aborted after n seconds. Use with /WAIT.
+2 REWIND
+  Used in command files to cause execution to resume at the 
+  begining of the file. Not valid except in command files.
+
+  Format:
+         REWIND
+2 SET
+  Changes the defaults for MBU commands, alters the characteristics of 
+  a mailbox, or redirects command output to a file.
+
+  Format:
+         SET option
+3 DEFAULTS
+  Changes the defaults for MBU commands.
+4 Command_qualifiers
+/BUFFER_QUOTA 
+  /BUFFER_QUOTA=n
+  Specifies the default buffer quota for mailboxes created by MBU.
+  Initial default is set by DEFMBXBUFQUO system paramter.
+/COUNT
+  /COUNT=n
+  Specifies a limit on the number of messages to be read.
+  Initial default is no limit.
+/DATA_SIZE
+  /DATA_SIZE=size
+  Specifies the size of each element in the message.
+  If no size is given then the current default is used.
+
+  Size is either BYTE, WORD, LONG, or QUADWORD.
+  Initial default is BYTE.
+/FORMAT
+  /FORMAT=format
+  Defines the format that the message contents will be output.
+  If no format name is given then the current default is used.
+
+  Format is either HEX, DECIMAL, or TEXT.
+
+  For TEXT format non-printable characters are replaced by '.'
+  Initial default is HEX.
+/INPUT
+  /INPUT=filename
+  Specifies a file from which the message contents are to be taken
+  when the INPUT qualifier is used without a filename on the WRITE command 
+/LENGTH
+  /LENGTH=n
+  Specifies a limit on the number of bytes of each message that are output.
+  Initial default is no limit.
+/OUTPUT
+  /OUTPUT=filename
+  /OUTPUT=SYS$OUTPUT (default)
+  Specifies the file to which the messages are to be output when the
+  OUTPUT qualifier is used without a filename on the READ or VIEW commands.
+/MAXIMUM_MESSAGE_SIZE
+  /MAXIMUM_MESSAGE_SIZE=n
+  Specifies the default maximum message size for mailboxes created by MBU.
+  Initial default is set by DEFMBXMXMSG system paramter.
+/PROTECTION
+  /PROTECTION=protection_mask
+  Specifies the protection of the mailbox. Specify protection in standard
+  format i.e. (SYSTEM:RWLP,OWNER:RWLP,GROUP:RWLP,WORLD:RWLP).
+  Initial default is (S:RWLP,O:RWLP,G:RWLP,W:RWLP).
+/WIDTH
+  /WIDTH=n
+  Defines width in characters of message display.
+  Minimum value 20, maximum value 200. 
+  Initial default is 80.
+3 MAILBOX
+  Changes the characteristics of a mailbox
+
+  Format:
+         SET MAILBOX mailbox_name
+4 Parameter
+  mailbox_name is the logical name or device name of a mailbox.
+4 Command_qualifiers
+/BUFFER_QUOTA 
+  /BUFFER_QUOTA=n
+  Specifies the buffer quota for the mailbox.
+/MAXIMUM_MESSAGE_SIZE
+  /MAXIMUM_MESSAGE_SIZE=n
+  Specifies the maximum message size for the mailbox.
+/PROTECTION
+  /PROTECTION=protection_mask
+  Specifies the protection of the mailbox. Specify protection in standard
+  format i.e. (SYSTEM:RWLP,OWNER:RWLP,GROUP:RWLP,WORLD:RWLP)
+
+3 OUTPUT
+  Specifies that all output from MBU commands is to be written
+  to a file instead of to SYS$OUTPUT. If no filename is given 
+  any existing output file is closed and output from MBU commands 
+  is written to SYS$OUTPUT.
+
+  Format:
+         SET OUTPUT [filename]
+4 Parameter
+  filename is the name of the file to which all output is to be written.
+  The default file type is .LOG
+
+3 VERIFY
+  SET VERIFY enables the display of each line read from a file 
+  of MBU commands. 
+
+3 NOVERIFY
+  SET NOVERIFY disables the display of each line read from a file 
+  of MBU commands. 
+
+2 SHOW
+  Displays the current MBU command defaults or the characteristics of a
+  mailbox. 
+
+  Format:
+         SHOW option
+
+3 DEFAULTS
+  Displays the current defaults for MBU commands.
+3 DEVICE
+  Same as SHOW MAILBOX. See help on SHOW MAILBOX for more information.
+3 MAILBOX
+  Displays the characteristics of a mailbox or mailboxes.
+  Mailboxes can be specified by name (with wildcards) and various
+  other criteria.
+
+  Format:
+         SHOW MAILBOX mailbox_name
+
+  Notes on information displayed.
+  1. the buffer quota is the maximum number of bytes that can be written
+     to the mailbox.
+  2. The mailbox reader count is the number of read-only or read-write
+     channels that have been assigned to the mailbox. 
+     Writer count is the number of write-only or read-write channels. 
+     A process with a default read-write channel to the mailbox adds one
+     to both counts. 
+
+4 Parameter
+  mailbox_name is the logical name or device name of a mailbox. 
+  Wildcards in the device name are supported.
+4 Command_qualifiers
+/PERMANENT
+  Only show permanent mailboxes.
+/TEMPORARY
+  Only show temporary mailboxes.
+/EMPTY
+  Only show mailboxes containing no messages
+/NOEMPTY
+  Only show mailboxes containing messages.
+/INUSE
+  Only show mailboxes with at least one channel assigned to them
+  (reference count is not zero).
+/NOINUSE
+  Only show mailboxes with no channels assigned 
+  (reference count is zero).
+4 Example
+  SHOW MAILBOX/PERMANENT/NOEMPTY/NOINUSE *
+
+  would show all permanent mailboxes which contain at
+  least one message and are not opened by any process.
+3 VERSION
+  Displays the version of the Mailbox Utility.
+2 VIEW
+  Reads and displays any messages in the specifies mailbox without removing
+  the messages from the mailbox.
+
+  Format:
+         READ mailbox_name
+
+3 Parameter
+  mailbox_name is the logical name or device name of a mailbox.
+3 Command_qualifiers
+/COUNT
+  /COUNT=n
+  Specifies a limit on the number of messages to be read.
+/DATA_SIZE
+  /DATA_SIZE=size
+  Specifies the size of each element in the message.
+  If no size is given then the current default is used.
+
+  Size is either BYTE, WORD, LONG, or QUADWORD.
+/FORMAT
+  /FORMAT=format
+  Defines the format that the message contents will be output.
+  If no format name is given then the current default is used.
+
+  Format is either HEX, DECIMAL, or TEXT.
+
+  For TEXT format non-printable characters are replaced by '.'
+/LENGTH
+  /LENGTH=n
+  Specifies a limit on the number of bytes of each message that are output.
+/OUTPUT
+  /OUTPUT=filename
+  Specifies the file to which the messages are to be output.
+  If this qualifier is not used then the messages are output to SYS$OUTPUT.
+  If this qualifier is used but no filename is given then the current 
+  default output filename is used.
+/WIDTH
+  /WIDTH=n
+  Defines width in characters of message display.
+  Minimum value 20, maximum value 200.
+2 WAIT
+  Used in command files to cause execution of the command file to pause
+  for the specified period of time.
+
+  Format:
+         WAIT delta-time
+3 Parameter
+  Specifies the time interval to wait. Format is standard delta-time
+  format i.e. D-HH:MM:SS.CC
+2 WRITE
+  Write a message to a mailbox. The message contents are read from the
+  input file specifed by the INPUT qualifier or SYS$INPUT if the INPUT
+  qualifier is not used.
+
+  Format:
+         WRITE mailbox_name
+
+  When the messages contents are read from SYS$INPUT reading is 
+  terminated when a empty line is read or end of file is detected.
+
+3 Parameter
+  mailbox_name is the logical name or device name of a mailbox.
+3 Command_qualifiers
+/DATA_SIZE
+  /DATA_SIZE=size
+  Specifies the size of each element in the message.
+  If no size is given then the current default is used.
+  If format is TEXT then DATA_SIZE is ignored.
+
+  Size is either BYTE, WORD, LONG, or QUADWORD.
+/FORMAT
+  /FORMAT=format
+  Defines the format that the message contents will be input.
+  If no format name is given then the current default is used.
+
+  Format is either HEX, DECIMAL, or TEXT.
+/INPUT
+  /INPUT=filename
+  Specifies a file from which the message contents are to be taken.
+  If this qualifier is not used then the message contents are prompted for
+  and read from SYS$INPUT. If this qualifier is used but no filename is 
+  given then the current default filename is used.
+/WAIT
+  /WAIT   (default)
+  /NOWAIT
+  Specifies that MBU is to wait until the message is read.
+/EOF
+  /EOF
+  Writes an end of file message to the mailbox. Only the /WAIT qualifier
+  may be used with /EOF.
+/TIMEOUT
+  /TIMEOUT=n
+  Requests that the write be aborted after n seconds. Use with /WAIT
+2 Privileges 
+  MBU requires read access to the mailbox for the READ and SHOW MAILBOX
+  commands, write access for the WRITE command. CMKRNL is required for the
+  SET MAILBOX command. The SHOW MAILBOX command does need to CMKRNL to get
+  some information. If CMKRNL is not availble then SHOW MAILBOX still works 
+  but some information will not be displayed or will be displayed as zero.
+  The VIEW command also requires CMKRNL.
+2 Futures
+  Future plans (which may or may not get implemented one day) include
+  better formatting of displayed messages (ideally some way of defining 
+  a record structure for messages), and who knows what else.

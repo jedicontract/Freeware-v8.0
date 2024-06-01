@@ -1,0 +1,6 @@
+XMTNIMAGE19.CXX:   if ((fp=fopen(ps->filename,"wt")) == NULL)
+XMTNIMAGE2.CXX:  if((fp=fopen(ps->filename,"wt")) == NULL)
+XMTNIMAGE4.CXX:  if ((fp=fopen(filename,"wt")) == NULL)
+XMTNIMAGE43.CXX:   if((fp=fopen(filename,"wt")) == NULL){ error_message(filename, errno); return; }
+XMTNIMAGE57.CXX:  if((fp=fopen(filename,"wt")) == NULL)
+XMTNIMAGE57.CXX:  if ((fp=fopen(filename,"wt")) == NULL)

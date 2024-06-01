@@ -1,0 +1,42 @@
+# Format descriptor for aaa image format
+# Created by tni 3.0.3a on May 31 1999
+identifier aaa
+headerfile 
+platform 21
+packing 1
+useheader 0
+useidentifier 1
+headerbytes 0
+skipbytes 0
+compressflag 0
+defaultbpp 8
+defaultcolortype 1
+defaultxsize 128
+defaultysize 128
+defaultrbpp 0
+defaultgbpp 0
+defaultbbpp 0
+defaultkbpp 0
+defaultframes 1
+# Offsets into the uncompressed file:
+identifieroff 0
+xoff 4
+yoff 8
+bppoff 12
+colortypeoff 16
+compressflagoff 20
+redbppoff 24
+greenbppoff 28
+bluebppoff 32
+blackbppoff 36
+xposoff 40
+yposoff 44
+framesoff 48
+fpsoff 52
+chromakeyoff 56
+chromakey_graymin_off 60
+chromakey_graymax_off 64
+chromakey_rgbmin_off 68
+chromakey_rgbmax_off 72
+paletteoff 76
+imageoff 1000

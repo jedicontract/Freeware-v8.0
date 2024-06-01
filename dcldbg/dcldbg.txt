@@ -1,0 +1,340 @@
+
+DCLDBG - ein Debugger für DCL
+=============================
+
+
+Aufruf
+------
+
+Aufgerufen wird der Debugger (selbst eine mehr als 650 Zeilen umfassende DCL-Prozedur) mit einem Parameter, der zu debuggenden Prozedur, und optional bis zu sieben weiteren Parametern, die der Prozedur als P1...P7 zur Verfügung gestellt werden. Beispiel:
+
+$ @DCLDBG MY_PROC MY_PARAMETER
+
+Hier wird die Prozedur MY_PROC.COM (im aktuellen Verzeichnis) debugged. Der Prozedur wird als Parameter P1 der String "MY_PARAMETER" mitgegeben.
+
+
+
+Initialisierung und Startup
+---------------------------
+
+Nach dem Aufruf übersetzt der Debugger zunächst den logischen Namen "DCLDBG$INIT". Existiert dieser Name und zeigt auf eine vorhandene DCL-Datei (Default: SYS$LOGIN:.COM), so wird diese durchgeführt. Auf diese Art können Symbole oder logische Namen vordefiniert oder mit DEFINE/KEY Funktionstasten mit häufig verwendeten Befehlen belegt werden (diese Belegung ist aber nur für die Dauer der Debug-Session wirksam).
+
+Danach "lädt" der Debugger zunächst die angegebene Prozedur, dh., er liest sie Zeile für Zeile ein und merkt sich u.a. Labels, die später angesprungen werden. Dieser Vorgang braucht je nach Länge und Komplexität der Prozedur Zeit; bei größeren Prozeduren empfehle ich das Kopieren der Prozedur und des Debuggers und das Laufenlassen auf einer Alpha. Auf den emulierten VAXen muss man pro 60-80 Zeilen ca. mit einer Sekunde Verarbeitungszeit rechnen (Kommentarzeilen nicht eingerechnet), auf Alphas geht es natürlich schneller.
+
+Alle Zeilen der Prozedur sowie diverse andere Daten werden in Symbolen abgelegt. Das heißt, der System Parameter CLISYMTBL sollte ausreichend groß gesetzt sein.
+
+Man gelangt dann in eine interaktive semi-graphische Umgebung (dh., die verwendete Terminalemulation sollte VT-100 kompatible Escape-Sequenzen interpretieren können; ich empfehle generell die Verwendung des Debuggers nur von einem DECTerm-Fenster aus). Wer den VMS-Debugger kennt, wird sich hier sofort heimisch fühlen; das Ding ist ihm sehr ähnlich. Aber auch wer ihn nicht kennt, wird sich schnell zurechtfinden; die Bedienung ist sehr intuitiv.
+
+Der Schirm ist unterteilt in einen List- und einen Kontrollbereich. Im Listbereich wird die zu debuggende Prozedur mit Zeilennummern angezeigt: die jeweils 7 vorhergehenden Zeilen, die NÄCHSTE auszuführende Zeile (ist mit der Marke "-->" gekennzeichnet) und die folgenden 9 Zeilen (so vorhanden). Bei Fortsetzungszeilen steht die Marke in der letzten Zeile. Im Kontrollbereich (5 Zeilen) befindet sich die Eingabeaufforderung "DCLDBG>". Hier wird die Ausgabe aller eingegebenen Befehle hingeschrieben und falls die Prozedur etwas auf SYS$OUTPUT ausgibt, landet das ebenfalls hier.
+
+Der Debugger kennt den Trace (Einzelschritt) Modus, in dem jeweils eine DCL-Zeile ausgeführt und danach wieder auf den nächsten Befehl gewartet wird, und den Run (Lauf) Modus, in dem mehrere Zeilen hintereinander ohne Unterbrechung abgearbeitet werden. Nach dem Starten befindet man sich im Trace-Modus; durch die Befehle "G" oder "J" wird in den Run-Modus gewechselt, aus dem man durch das Auflaufen auf einen Breakpoint oder durch die Eingabe von [CTRL][Y] wieder in den Trace-Modus gelangt.
+
+Wird das Ende der Prozedur erreicht, beendet sich auch der Debugger automatisch.
+
+
+
+Befehle
+-------
+
+Die Befehle (in alphabetischer Reihenfolge, Groß/Kleinschreibung spielt keine Rolle) sind:
+
+[RETURN]      (RETURN-Taste). Führt den nächsten Befehl aus und wartet dann wieder auf
+              eine Eingabe.
+
+              In durch CALL oder GOSUB aufgerufene Subroutinen wird hineingesprungen, dh.,
+              auch diese werden im Trace-Modus abgearbeitet. Soll die Subroutine im Run-
+              modus ablaufen (dh., innerhalb der Subroutine kein Tracing gemacht werden),
+              kann dies mit de, "J"-Befehl geschehen.
+
+
+<n>           Führt die nächsten <n> Befehle im Run-Modus durch und wartet danach wieder
+              auf eine Eingabe. <n> ist eine Zahl im Bereich 1...65535.
+
+
+$ <cmd>       Führt den DCL-Befehl <cmd> aus. Dieser Befehl wird im Context der Prozedur
+              ausgeführt, dh., es ist der Zugriff auf alle lokalen Symbole der Prozedur
+              möglich und auch das Verzweigen (GOTO) oder das Aufrufen von Subroutinen
+              (CALL, GOSUB) oder deren vorzeitiges Beenden mit RETURN oder EXIT. Kurz,
+              alle Befehle, die normalerweise nur innerhalb von Prozeduren vorkommen dürfen,
+              können hier interaktiv eingegeben werden! Natürlich können auch alle anderen
+              DCL-Befehle hier verwendet werden; es können Images gestartet, Unterprozeduren
+              aufgerufen (dieser laufen aber im Run-Modus ab; es gibt kein Tracing), es kann
+              das Defaultverzeichnis gewechselt werden u.v.a.m. All das passiert genauso, wie
+              wenn der betreffende Befehl an dieser Stelle in der Prozedur vorgekommen wäre.
+
+              Neben den mit CALL, GOSUB und GOTO verwendeten Labelnamen können mit der
+              Notation %<line> auch Zeilen direkt angesprungen werden (<line> ist die Nummer
+              der Zeile, die angesprungen werden soll, zB. "$ GOTO %65" -> springe zur Zeile
+              65 und warte dort auf weitere Eingaben).
+
+
+?             (Help). Gibt im Kontrollbereich in Kurzform eine Übersicht über alle Befehle
+              aus (dasselbe wie H).
+
+
+B <pos>       (Breakpoint). Setzt einen Breakpoint an der angegebenen Position. <pos> ist
+              entweder der Name eines Labels oder - mit vorangestelltem % - die Nummer einer
+              Zeile. Beispiele:
+
+              B UPDATE        Setzt den Breakpoint auf die Zeile, die nach dem Label UPDATE:
+                              folgt.
+              B %23           Setzt den Breakpoint auf die Zeile 23. 
+
+              Beachte, dass in dieser Version des Debuggers nur ein Breakpoint gesetzt werden
+              kann. Wird ein neuer gesetzt, so wird der alte überschrieben.
+
+              Auf Kommentarzeilen und auf Zeilen, die mit DECK, ELSE, ENDIF, ENDSUBROUTINE, EOD,
+              SUBROUTINE und THEN beginnen, kann kein Breakpoint gesetzt werden.
+
+              Bei Befehlen, die sich über zwei oder mehr Zeilen erstrecken, ist der Breakpoint
+              auf die erste Zeile (in der der Befehl beginnt) zu setzen.
+
+
+C             (Cancel breakpoint). Löscht den gesetzten Breakpoint wieder.
+
+
+D [<n>]       (Down). Springt in der Prozedur eine Zeile (oder <n> Zeilen) nach unten.
+              Die dazwischenliegenden Zeilen werden nicht ausgeführt. Auf diese Art kann man
+              in der Prozedur "blättern" bzw. Codesegmente in der Ausführung überspringen.
+
+
+E <name>      (Examine). Gibt den Wert von <name> aus. Ist <name> in einer der durch den
+              logischen Namen LNM$DCL_LOGICAL definierten logischen Nametables definiert,
+              so wird der logische Name ausgegeben. Andernfalls wird <name> als Name eines
+              DCL-Symbols interpretiert und der Wert dieses Symbols - so vorhanden - ausge-
+              geben.
+
+
+F <string>    (Find). Sucht in der Prozedur von der augenblicklichen Position abwärts nach
+              dem angegebenen String. Wird der String gefunden, wird zur betreffenden Zeile
+              gesprungen und dort auf eine weitere Eingabe gewartet. Die übersprungenen Zeilen
+              werden nicht abgearbeitet.
+
+              Der Suchstring darf keine Leerzeichen enthalten. Die Suche kann in Abhängigkeit
+              von der Größe der Prozedur einige Zeit in Anspruch nehmen.
+
+
+G             (Go). Startet die Verarbeitung, es wird in den Run-Modes gewechselt, bis ein
+              Breakpoint gefunden, [CTRL][Y] gedrückt oder die Prozedur beendet wird. Im
+              Run-Modus wird die Ausgabe im List-Bereich nicht aktualisiert, sondern erst,
+              wenn wieder in den Trace-Modus gewechselt wird. Dann wird wieder die als
+              nächste auszuführende Zeile (mit "-->" makiert), sowie die sieben vorigen und
+              neuen folgenden Zeilen ausgewiesen.
+
+              Ausgaben, die die Prozedur während des Laufes macht, werden in den Kontroll-
+              bereich geschrieben.
+
+ 
+H             (Help). Gibt im Kontrollbereich in Kurzform eine Übersicht über alle Befehle
+              aus (dasselbe wie ?).
+
+
+J             (Jump). Enthält die aktuelle Zeile eine CALL oder GOSUB Anweisung, so wird
+              die angegebene Subroutine im Run-Modus ausgeführt und anschließend wieder in
+              den Trace-Modus zurückgewechselt. Das kann hilfreich sein, wenn bereits bekannt
+              ist, dass die Subroutine einwandfrei arbeitet oder die Subroutine innerhalb
+              einer Schleife immer wieder aufgerufen wird und ein mehrfaches Tracen daher
+              nicht sinnvoll ist. "J" entspricht somit dem Setzen eines Breakpoints auf die
+              auf CALL oder GOSUB folgende Zeile, gefolgt von einem "G" (und ist intern auch
+              tatsächlich so implementiert).
+              
+
+L             (reLoad). Startet die Prozedur wieder mit der ersten auszuführenden Zeile.
+              Beachte, dass allfällige Symbole, die durch die Prozedur gesetzt wurden, durch
+              diesen Befehl nicht gelöscht werden. Wenn also in der Prozedur in Abhängigkeit
+              des Wertes eines oder mehrerer Symbole unterschiedliche Codeteile verarbeitet
+              werden, kann das u.U. zu einem falschen Ablauf führen. In diesem Fall ist es
+              sicherer, den Debugger zu beenden und neu zu starten.
+
+              Beim Reload wird auch - falls definiert - die Initialisierungsprozedur erneut
+              durchgeführt.
+
+
+P <pos>       Gibt die angegebene Zeile aus. Für <pos> gilt das unter dem "B"-Befehl Gesagte.
+
+
+Q             (Quit). Beendet den Debugger (dasselbe wie "X").
+
+
+R             (Refresh). Baut die Bildschirmausgabe neu auf. Das ist nützlich, wenn die Ausgabe
+              des Debuggers durch Programme (z.B. TYPE/PAGE) überschrieben wurde.
+
+
+S             (Skip). Überspringt die nächste Zeile (die Zeile wird nicht ausgeführt) und
+              wartet dann wieder auf eine Eingabe.
+
+
+U [<n>]       (Up). Springt in der Prozedur eine Zeile (oder <n> Zeilen) nach oben. Die
+              dazwischenliegenden Zeilen werden nicht ausgeführt. Auf diese Art kann man in
+              der Prozedur "blättern" bzw. Codesegmente in der Ausführung überspringen oder
+              neuerlich ausführen.
+
+
+V             (View). Gibt die Position des gesetzten Breakpoints aus. Ausgegeben wird immer
+              die Zeilennummer der betreffenden Zeile, auch wenn zum Setzen des Breakpoints
+              ein Labelname verwendet wurde.
+
+
+W [<symbol>]  (Watch). Gibt im Trace-Modus nach der Ausführung jeder Zeile den Wert des angegebenen
+              Symbols aus. Dazu wird der Kontrollbereich geteilt; das Symbol wird in einem eigenen
+              Watch-Bereich in der untersten Zeile ausgegeben; der Kontrollbereich wird auf drei
+              Zeilen reduziert. Die Eingabe von "W" ohne Symbolnamen schaltet das Watching wieder ab.
+
+              Im Run-Modus erfolgt die Aktualisierung des Symbolwertes erst nachdem wieder in den
+              Trace-Modus gewechselt wurde.
+
+              Es kann immer nur ein Symbol überwacht werden. Ein neuerliches Watch überschreibt
+              ein Vorheriges.
+
+              Achtung: um ein Symbol zu überwachen, muss es bereits definiert sein. Das kann
+              in der Prozedur oder schon vorher in der Initialisierungsdatei geschehen.
+
+
+X             (eXit). Beendet den Debugger (dasselbe wie "Q").
+
+
+
+
+Syntaktische Vorgaben
+---------------------
+
+Der Debugger besitzt einen recht schnellen, aber sehr einfachen Parser, der einige Befehle in einer ganz bestimmten Syntax  bzw. Reihenfolge vorfinden muss, um sie erkennen zu können. Bevor eine Prozedur daher debugged werden kann, muss sie ggf. an die folgenden Regeln angepasst werden:
+
+1) Ein Label muss das einzige Wort in einer Zeile (außer Kommentaren) sein, dh. statt
+
+   $ LABEL: SHOW TIME
+
+   nur
+
+   $ LABEL:
+   $ SHOW TIME
+
+   (Ausnahme: Labels, denen der SUBROUTINE Befehl folgt).
+
+
+2) In einem strukturierten IF-Befehl darf nach THEN und ELSE kein Befehl folgen, sondern diese beiden
+   Schlüsselworte müssen alleine in einer Zeile stehen. Daher statt
+
+   $ IF A .EQ. 3
+   $ THEN B = 4
+   $ ELSE B = 5
+   $ ENDIF
+
+   nur
+
+   $ IF A .EQ. 3
+   $ THEN
+   $ B = 4
+   $ ELSE
+   $ B = 5
+   $ ENDIF
+
+
+3) Die Befehlsworte CALL, GOTO und GOSUB dürfen nicht am Ende eines Symbolnamens, logischen Namens oder
+   einer Zeichenkette vorkommen. Daher statt
+
+   $ TEST_CALL = 1
+
+   zB.
+
+   $ TEST_CALL_X = 1
+
+
+4) Das Befehlswort RETURN darf generell nur am Anfang der Zeile als Befehl verwendet werden, es darf
+   sonst nirgendwo (auch nicht als Teil eines Namens oder Strings) in einer Zeile vorkommen. Sollte das
+   notwendig werden (zB. als Teil eine Ausgabe), kann man es "zusammensetzen". Daher statt:
+
+   $ WRITE SYS$OUTPUT "RETURN CODE: ",code
+
+   zB.
+
+
+   $ WRITE SYS$OUTPUT "RET","URN",code
+
+
+5 Häufig werden lange Befehle abgekürzt, zB. RET (RETURN), SUB (SUBROUTINE), ENDSUB (ENDSUBROUTINE).
+   Das ist mit dem Debugger nicht mehr erlaubt, weil der Parser diese Befehle dann nicht mehr erkennt.
+   Obige Befehle sowie CALL, ELSE, ENDIF, GOSUB, GOTO und THEN müssen immer ganz ausgeschrieben werden.
+
+   Häufig legt man Befehle oder Befehlsteile in Symbolen ab, um später weniger tippen zu müssen,
+   zB.:
+
+   $ SSY := SHOW SYMBOL
+   $ SSY
+
+   Obwohl dies bei den o.a. Befehlen eher unüblich ist, sei dennoch darauf hingeweisen, dass das
+   Ablegen dieser Befehle in Symbole und deren spätere Verwendung unter Angabe des Symbolnamens,
+   wie hier gezeigt, nicht erlaubt ist.
+
+
+6) Der Qualifier /END_OF_FILE des READ Befehls muss mit /END abgekürzt werden, zwischen ihm und dem
+   folgenden "=" Zeichen darf kein Leerzeichen stehen. Daher statt:
+
+   $ READ/END_OF_FILE = THE_END
+
+   nur
+
+   $ READ/END=THE_END
+
+
+7) Der Qualifier /ERROR der CLOSE, OPEN, READ und WRITE Befehle muss genauso geschrieben werden, er darf
+   nicht abgekürzt werden. Auch hier muss das "=" unmittelbar danach folgen. Daher statt:
+
+   $READ/ERR = READ_ERROR
+
+   nur
+
+   $READ/ERROR=READ_ERROR
+
+
+8) Bei einer durch CALL aufgerufenen Subroutine muss vor dem ENDSUBROUTINE Befehl ein EXIT Befehl (optional
+   mit einem Exitstatus) stehen, daher statt:
+
+    $ MY_SUB: SUBROUTINE
+    $ ...
+    $ ...
+    $ ENDSUBROUTINE
+
+    nur
+
+    $ MY_SUB: SUBROUTINE
+    $ ...
+    $ ...
+    $ EXIT [<status>]
+    $ ENDSUBROUTINE
+
+
+9)  Der Debugger verwendet intern Symbole, die alle mit "SS$_" beginnen. Daher sollte dieser Präfix für
+    Symbolnamen in der Prozedur nicht verwendet werden.
+
+
+
+
+Funktionelle Einschränkungen
+----------------------------
+
+Der Debugger und die zu debuggende Prozedur teilen sich ein Environment. Das führt dazu, das bestimmte
+Befehle, die das Environment beeinflussen, nicht mehr oder anders funktionieren.
+
+1) Zum Abfragen von Return Codes nur $STATUS verwenden. $SEVERITY wird nicht unterstützt. Man kann aber
+   mit dem Ausdruck ($STATUS .and. 7) den Wert von $SEVERITY emulieren.
+
+
+2) Da zwischen den einzelnen Zeilen der Prozedur mehrere Dutzend Zeilen Debugger-Code abgearbeitet
+   werden, ist auch der ON <severity> THEN ... Befehl nicht unterstützt. Falls notwendig, muss dieser
+   Code durch explizites Ausführen (GOTO <Label>) getestet werden.
+
+
+3) Der Debugger fängt [CTRL][Y] ab, um vom Run-Modus in den Trace-Modus zu wechseln. Daher wird ein solcher
+   Trap nicht an die Prozedur weitergegeben; falls gewünscht, muss der auszuführende Code explizit getestet
+   werden.
+
+4) Da der Debugger die Eingabe für seinen Prompt benötigt, können Tools, die eine interaktive Eingabe
+   erwarten (dh., die von SYS$COMMAND einlesen) nicht ausgeführt werden.
+
+   INQUIRE und READ/PROMPT sind erlaubt.
+
+
+5) Es wird empfohlen, kein Verify zu machen (SET NOVERIFY am Anfang der Prozedur), da sonst neben den Zeilen
+   der Prozedur auch der gesamte Debugger-Code ausgegeben wird, was zu einem ziemlich unübersichtlichen
+   Ablauf führt.

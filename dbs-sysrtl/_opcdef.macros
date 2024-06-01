@@ -1,0 +1,128 @@
+;+
+; Define new-format OPCOM messages and options.
+; Last update: VMS V5.2 fiche
+;-
+.macro	_opcdef gbl
+
+$defini	opc,gbl
+
+$def opc$b_rqstcode	.blkb 1		; request type
+$def opc$b_scope	.blkb 1		; request scope
+$def opc$l_options	.blkl 1		; request-independent opts.
+$def opc$l_rq_options	.blkl 1		; reqest-dependent opts.
+$def opc$l_attnmask1	.blkl 1		; operator mask (low part)
+$def opc$l_attnmask2	.blkl 1		; operator mask (high part)
+$def opc$l_rqstid	.blkl 1		; user request no.
+$def opc$l_uic		.blkl 1		; user UIC
+$def opc$k_hdr_size			; size of common header
+				__save = .
+
+				. = __save
+$def opc$w_request_length .blkw 1	; length of request text
+$def opc$t_request_text			; request text
+$def opc$k_request_min_size		; minimum size of message
+
+				. = __save
+$def opc$w_security_length .blkw 1	; length of security text
+$def opc$t_security_text		; security text
+$def opc$k_security_min_size		; minimum size of message
+
+				. = __save
+$def opc$t_reply_opr			; counted-string for oper.
+					; device, followed by reply text
+$def opc$k_reply_min_size		; minimum size of message
+
+				. = __save
+$def opc$t_oprenable_opr		; oper. device name
+$def opc$k_operenable_min_size		; minimum size of message
+
+				. = __save
+$def opc$t_logfile_opr			; (not used yet)
+					; (to be logfile-spec?)
+$def opc$k_logfile_min_size		; minimum size of message
+
+				. = __save
+$def opc$t_status_opr			; (not used)
+$def opc$k_status_min_size		; minimum size of message
+
+				. = __save
+					; (no special fields)
+$def opc$k_cancel_min_size		; minimum size of message
+
+				. = __save
+					; (no special fields)
+$def opc$k_timestamp_min_size		; minimum size of message
+
+				. = __save
+					; (no special fields)
+$def opc$k_shutdown_min_size		; minimum size of message
+
+$vield	opc,0,<-			; request-independent opts.
+		<nolog,,m>-		; do not log
+		<nobrd,,m>-		; do not broadcast
+		<nocluster,,m>-		; not clusterwide
+		>
+
+$vield	opc,0,<-			; ENABLE request options
+		<disable,,m>-		; disable specified opers.
+		<permoper,,m>-		; permanent operators
+		<noremind,,m>-		; don't remind
+		>
+
+$vield	opc,0,<-			; LOGFILE request opts.
+		<initlog,,m>-		; initialise new logfile
+		<closelog,,m>-		; close current logfile
+		<disablog,,m>-		; disable logfile
+		<enablog,,m>-		; enable logfile
+		>
+
+$vield	opc,0,<-			; CANCEL request opts.
+		<rqstdone,,m>-		; request completed
+		>
+
+$vield	opc,0,<-			; SHUTDOWN request opts.
+		<cluster,,m>-		; clusterwide
+		>
+
+$vield	opc,0,<-			; DEBUG options (offset 4)
+		<dbg_hex,,m>-		; full hex info
+		<dbg_memory,,m>-	; memory stats
+		<dbg_opers,,m>-		; operators
+		<dbg_nodes,,m>-
+		<dbg_requests,,m>-
+		<dbg_counters,,m>-	; message counters
+		<dbg_ocd,,m>-		; ocd blocks
+		>
+
+$equlst	opc$k_,gbl,,,<-			; SCOPE
+		<system,1>-
+		<group,2>-
+		<user,3>-
+		<unspec,4>-		; (scan from user to system)
+		>
+
+$equlst	opc$k_,gbl,,,<-			; misc parameters
+		<sw_version,9>-
+		<maxread,2560>-
+		<maxmessage,2048>-
+		<comhdrsiz,38>-
+		>
+
+$equlst	opc$_x_,gbl,,,<-		; new request codes
+		<oprenable,10>-
+		<logfile,11>-
+		<request,12>-
+		<reply,13>-
+		<cancel,14>-
+		<status,15>-
+		<shutdown,16>-
+		<timestamp,17>-
+		<security,18>-
+		<clusmsg,19>-
+		<debug,20>-
+		<cnxman,21>-
+		>
+
+$defend opc,gbl
+
+.endm _opcdef

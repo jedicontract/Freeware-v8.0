@@ -1,0 +1,1481 @@
+	.TITLE FILE_TEST    
+	.IDENT /V02-002/
+; Modifications
+; 001 	June 2000	PB	Creation		
+; 002 	April 2006	PB	Completed - added in read tests and made ready for Freeware		
+; � Paul Beaudoin - 2000
+; This file may be used, modified, mangled or ignored as the user sees fit
+; however, credit should be given as is normal good practice when stealing with permission.
+; To generate the executable:
+; $MAC FILE_TEST	
+;  You can ignore the iformational warnings
+; $LINK/SYSEXE FILE_TEST
+; 
+;++
+;1 FILE_TEST    
+; Program to test and time various disk operations.
+;2 Operations
+;	Sequential:
+;		User may select either read or write test. In either test
+;		number and size of records is selectable. Note that on
+;		read, if the file does not exist, it is created to user
+;		specification and that then sets the limits of the resulting
+;		test.
+;	Indexed:
+;		User may select either read or write test. In either, the user
+;		specifies the number of records. The record size and format
+;		is hard-coded here and fixed. The same restriction is placed on
+;		read test: The file is created to specification (no. of
+;		records) and that then is (upper)the limit of the test.
+;2 Options
+;		Two options during test are avaiable via the main menu:
+;		Time each message. Each operation (read or write) is timed
+;		and recorded. The recording takes place in a memory section
+;		to reduce overhead but be aware: it will skew results
+;		somewhat.
+;		Turn off Screen output. Again, outputting to the screen is
+;		overhead that skews results. Turn this off to diminish this
+;		effect. Results are still logged to the memory section, and
+;		at test end, written to the log file.
+;		The operations are toggles. That is, selecting an option that is 
+;		on, turns it off and vice versa
+;2 Programmer_notes 
+;	The existing program can be used as a framework for your own use. In
+;	particular, the indexed operations are fixed in terms of record size,
+;	number of keys etc. This can be changed either by adjusting the FAB/RAB
+;	specifications here or (better) adding to the user interace and 
+;	allowing the user to select more items.
+;2 Timing
+;	The program uses the Alpha instruction RSCC which counts the number
+;	of processor cycles. There are some consequences to this:
+;	It is very accurate, down to nanosecond in most cases. The routine
+;	that implements this divides this back to microseconds.
+;	The actual, calculated result is accurate down to a handful of ALPHA
+;	instructions. Calling the routine and collecting the current time
+;	is overhead. I don't know how big the handful is but expect something
+;	less that 100. The results can be considered precise for all but
+;	the most finicky.
+;	This will not work on VAX and has been only briefly tested on IPC. 
+;	On a multiple processor system, you will need to set process affinity
+;	to a specific CPU. If not and you switch processors during a test,
+;	your results are random.
+;	Best results will be gotten when the test process has all the CPU 
+;	and IO access it wants - lighty loaded systems are best.
+;	If you manage to find an Alpha that reports it's speed < 1Mhz, this
+;	program will fail. I am told Tadpoles can vary their speed but 
+;	report a constant - these machines are not suitable for testing on.
+;2 Support
+;	Occasional support can be found by mailing system@ccci4.demon.co.uk
+;	I am particlarly interested in:
+;	Amount of use - The more use this gets, the more I am encouraged to
+;	expand it. If you use it, let me know.
+;	Bugs. There aren't any. But if you find one anyway, let me know.
+;	Wish list. Ideas for further enhancements welcome.
+;	IPC Testing. If you atempt to compile and run this on IA64, I'd be 
+;	most interested in the result (if any).
+;--
+; and finally ... These comments are built to allow simple inclusion to 
+; a VMS help file. Simply extract all lines between ;++ and ;-- from the file,
+; strip the ; and the result can be added to a help library. Write to the above
+; address if you want a simple procedure that does this. 
+;--
+	.LIBRARY        /SYS$LIBRARY:LIB.MLB/
+        $IODEF                          ;Define I/O functions and modifiers
+	$SECDEF				; Global Section 
+	$PRTDEF				; Protection Codes
+	$SSDEF
+	$HWRPBDEF
+	$RMSDEF
+	$TRMDEF				; Terminal Modifiers
+	$DSCDEF				; Declare DSC sysmbols
+	$SMGDEF				; Declare SMG symbols
+;
+
+	.PSECT FILE_TEST_DATA,WRT,NOEXE,QUAD,pic
+TIME:	      		.QUAD
+TIME2:	      		.QUAD
+INADDR:	       		.QUAD
+FTSEC_A:       		.QUAD
+TPU_OUTFILE_DESC:	.QUAD
+GBLSIZ:	       		.LONG
+SPARE:			.LONG                   ;ALIGNMENT
+;	
+; File Structures
+;
+; Message01
+MSGFAB:	$FAB	FAC = <GET,PUT,UPD,DEL>,-	; Access
+		SHR = <GET,PUT,UPD,DEL,MSE>,-	; 
+		ORG = IDX,-			; Keyed file 
+		RAT = <CR>,-
+		RFM = FIX,-
+		DNM = <MESSAGE01.DAT>,-		; Default Filename 
+		FNM = <MESSAGE01>,-		; Filename 
+		ALQ = 1380,-
+		FOP = <CBT>-
+		BKS = 12,-
+		MRS = MSG_REC_SIZE,-
+		XAB = MSGXAB0   		; 
+
+MSGRAB:
+	$RAB	FAB = MSGFAB,-			; Record 
+		RAC = key,-			; KEYED access
+		KBF = MSG_KEY,-
+		KSZ = MSG_KEYSIZE,-
+		RBF = MSG_REC,-			; 
+		UBF = MSG_REC,-			; 
+		USZ = MSG_REC_SIZE,-		; 
+		RSZ = MSG_REC_SIZE
+
+MSGXAB0: 	$XABKEY REF=0,-
+			PROLOG=3,-
+			POS=0 ,-
+			SIZ=11,-
+			DTP=STG,- 		; PROC NAME
+			NXT=MSGXAB1
+MSGXAB1: 	$XABKEY REF=1,-
+			PROLOG=3,-
+			POS=<9,11>-
+			SIZ=<2,20>,-
+			FLG=<DUP,CHG>,-
+			DTP=STG
+
+MSG_REC:
+MSG_KEY:
+KEY1:		.BLKB	11
+KEY2A:		.BLKB	20
+KEY2B:		.BLKB	2
+
+	.align	long
+MSG_KEYSIZE = .- MSG_KEY
+MSGDATA:	.BLKB	5163
+MSG_REC_SIZE = .- MSG_REC
+
+	.align	long
+LOGFAB:	$FAB	FAC = <GET,PUT,UPD,DEL>,-	; Access
+		SHR = <GET,PUT,UPD,DEL,MSE>,-	; 
+		ORG = SEQ			; 
+
+LOGRAB:	$RAB	FAB = LOGFAB,-			; Record 
+		ROP = EOF,-
+		RAC = SEQ			; Sequential access
+
+PRCFAB:	$FAB	FAC = <GET,PUT,UPD,DEL>,-	; Access
+		SHR = <GET,PUT,UPD,DEL,MSE>,-	; 
+		ORG = SEQ,-
+		DNM = <FILE_TEST.DAT>,-; Default Filename 
+		FNM = <FILE_TEST>		; Filename 
+PRCRAB:	$RAB	FAB = PRCFAB,-			; Record 
+		RAC = SEQ,-			; Sequential access
+		RBF = DATA,-			; 
+		UBF = DATA
+
+PRCNAM:           .BLKB	16
+DELPRCFAB:	$FAB	FAC = <GET,PUT,UPD,DEL>,-	; Access
+		SHR = <GET,PUT,UPD,DEL,MSE>,-	; 
+		ORG = SEQ,-
+		DNM = <FILE_TEST.DAT;>,-; Default Filename 
+		FNM = <FILE_TEST.DAT;>		; Filename 
+; 
+DELMSGFAB:	$FAB	FAC = <GET,PUT,UPD,DEL>,-	; Access
+		SHR = <GET,PUT,UPD,DEL,MSE>,-	; 
+		ORG = IDX,-			; Keyed file 
+		RAT = <CR>,-
+		RFM = FIX,-
+		DNM = <MESSAGE01.DAT;>,-		; Default Filename 
+		FNM = <MESSAGE01.DAT;>,-		; Filename 
+		ALQ = 1380,-
+		FOP = <CBT>-
+		BKS = 12,-
+		MRS = MSG_REC_SIZE,-
+		XAB = MSGXAB0   		; 
+
+; TPU
+TPU_INFILE:		.BLKB	128
+TPU_FILE_DESC:		.LONG 	.-TPU_INFILE
+			.ADDRESS  TPU_INFILE
+; Virtual Display Parameters            		
+;
+VD_DISP:	.LONG		; Virtual Display ID
+VD_ROWS: 	.LONG 	30      ; 
+VD_COLS: 	.LONG 	60      ; width of display 1 (menu)
+VD_DISP2:	.LONG		; Display 2
+VD_ROW2:	.LONG 	3
+VD_COL2:	.LONG  	132      ; Width of display 2 (top)
+VD_DISP3:	.LONG		; Display 3
+VD_ROW3:	.LONG 	30
+VD_COL3:	.LONG	72      ; Width of display 3 (output)
+;
+;
+; Menu Items
+;
+M_LIST:		.ASCII	/Sequential Write /
+		.ASCII	/Indexed Write    /
+		.ASCII	/Indexed Read     /
+		.ASCII	/Sequential Read  /
+		.ASCII	/Set Options      /
+M_LIST_SIZE = .-M_LIST	
+
+OM_LIST0:	.ASCII	/Message Timer Off/
+		.ASCII	/Screen Output Off/
+OM_LIST0_SIZE = .-OM_LIST0	
+;
+OM_LIST1:	.ASCII	/Message Timer On /
+		.ASCII	/Screen Output Off/
+OM_LIST1_SIZE = .-OM_LIST1	
+;
+OM_LIST2:	.ASCII	/Message Timer Off/
+		.ASCII	/Screen Output On /
+OM_LIST2_SIZE = .-OM_LIST2	
+;
+OM_LIST3:	.ASCII	/Message Timer On /
+		.ASCII	/Screen Output On /
+OM_LIST3_SIZE = .-OM_LIST3	
+
+	.align long
+; 
+;Menu Display Characteristics
+;
+M_DCS:		.WORD	17                  ; size of element
+		.BYTE	DSC$K_DTYPE_T
+		.BYTE	DSC$K_CLASS_A
+MADDR:		.ADDRESS M_LIST             ; Pointer
+		.WORD	0		    ; DIGITS, SCALE
+		.BYTE	DSC$K_DTYPE_T	    ; AFLAGS
+		.BYTE	DSC$K_CLASS_S	    ; DIMCT
+;		.LONG	^X01E00000          ; DIMCT,AFLAGS,DIGITS,SCALE
+MSIZE:		.LONG   0		    ; Size of array
+		.LONG	20
+		.LONG 	1		    ; 
+		.LONG	20
+		.LONG 	1		    ; 
+;Dynamic Menu
+;
+BORDER:		.LONG	SMG$M_BORDER
+REVERSE:	.LONG	SMG$M_REVERSE
+HORIZONTAL:	.LONG	SMG$K_HORIZONTAL
+VERTICAL:	.LONG	SMG$K_VERTICAL
+BLOCK:		.LONG	SMG$K_BLOCK
+W2:		.LONG 2
+W3:    		.LONG 3
+BOLD:		.LONG	SMG$M_BOLD
+SPACING:	.LONG	SMG$M_DOUBLE_SPACE
+FORMAT:		.LONG	SMG$M_FIXED_FORMAT
+ERASE:		.LONG	SMG$M_ERASE_MENU
+CURSOR_FLAGS:	.LONG	<SMG$M_CURSOR_OFF!SMG$M_SCROLL_JUMP>
+SAVE_DISP:	.LONG	0		; Saved char
+SCR_WID:	.LONG	132
+SCR_HEIGHT:	.LONG	48
+UPCASE:		.LONG	TRM$M_TM_CVTLOW 	;Convert lower to upper case
+DELITM:		.LONG	SMG$M_REMOVE_ITEM       ; Remove selected item from menu
+SAVE_ID:	.LONG	0
+CHOICE:		.WORD
+ALIN_WORD:	.WORD			; Keep alignmnet
+;
+; Pasteboard Paramenters
+;
+PB_BOARD:	.LONG 		; Pasteboard ID
+PB_COL:		.LONG	1      
+PB_ROW:		.LONG 	5
+PB_COL2:	.LONG	1      ; Position for DISP2
+PB_ROW2:	.LONG 	1
+PB_COL3:	.LONG	60      ; Position for DISP3
+PB_ROW3:	.LONG 	5
+;
+; Virtual Keyboard Parameters
+;
+KB_BOARD:	.LONG           ; Virtual Keyboard ID
+KB_BUF:		.BLKB	80	; Input buffer
+KB_DES:		.LONG	.-KB_BUF
+		.ADDRESS KB_BUF
+;
+; Prompt strings and parameters
+; FAO
+STRINGOUT:	.BLKB	256
+STRINGOUT2:	.BLKB	256
+FAOBUF:		.BLKB	132
+FAODESC:
+FAOLEN: 	.LONG		.-FAOBUF
+        	.ADDRESS        FAOBUF
+
+;
+EXITMSG:	.ASCID	/Press Return/
+DELFILPMT:	.ASCID	/Delete all test files [Y]? /
+NEWFILEMSG:	.ASCID	/Creating new File .../
+CRTIME:		.ASCID	/Open file and connect !UL 탎ec./
+WRTIME:		.ASCID	/Wrote !UL !UL byte Records (Sequential),  !UL 탎ec./
+RDTIME:		.ASCID	/Read !UL !UL byte Records (Sequential),  !UL 탎ec./
+SRDTIME:	.ASCID	/Read !UL Records (Indexed),  !UL 탎ec./
+MSGWTIME:	.ASCID	/Wrote !UL Records to MESSAG01.DAT (Indexed),  !UL 탎ec./
+RRTIME:		.ASCID	/Read !Ul Records !UL 탎ec./
+RECCNTP:	.ASCID	/Number of records to write [1 - inf]? /
+RECCNTRP:	.ASCID	/Number of records to Read [1 - EOF]? /
+RECCNTWP:	.ASCID	/Number of records to create [1 - inf]? /
+RECSIZP:	.ASCID	/Size of records to write [1-32767]? /
+RECSIZRP:	.ASCID	/Size of records to Read [1-32767]? /
+LF1:		.ASCID	/This session will be logged to the file/
+LF2:		.ASCID	/specified in the following prompt. The file/
+LF3:		.ASCID	/will be opened in TPU to allow initial comments/
+LF4:		.ASCID	/to be recorded and then all program output will be/
+LF5:		.ASCID	/written to the file./
+CF1:		.ASCID	/The folowing dialog will create a file for read testing/
+CF2:		.ASCID	/For the sequential file select no. and size of records/
+CF3:		.ASCID	/For the indexed file, select no. of records/
+CF4:		.ASCID	/The sizes created limit the read test. (you can't read/
+CF5:		.ASCID	/more or bigger records than exist)./
+LFPROMPT:	.ASCID	/Log File Name: /
+FTEST:		.ASCID	/FTEST/
+OPTMSG:		.ASCID	/Menu shows Current State. Select to Reverse, ^z to exit/
+MSGTIME:	.ASCID	/Message !5<!UL,!> !UL 탎ec./
+;
+; Misc data areas
+	.ALIGN	LONG
+;
+DATA:		.BLKB	65536
+RECSIZ:		.LONG
+RECCNT:		.LONG	
+OPTIONS:	.LONG	2 	; Def - Screen on., Messages off
+BYTCNT:		.WORD
+
+;
+;	.End data definitions
+;
+	.PSECT FILE_TEST_CODE,EXE,pic
+	.CALL_ENTRY	MAX_ARGS=0, HOME_ARGS=TRUE, -
+			INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			LABEL=FILE_TEST
+ 
+;
+       	BSBW	CREATE_ENVIRONMENT
+
+;
+10$:
+	PUSHAL	VD_DISP
+	CALLS	#1,G^SMG$ERASE_DISPLAY
+; Set up initial dialog. Create and open file in TPU to record results. Allow user
+; to add initial input to the file and upon exit from TPU, continue.
+
+       	PUSHAL	LF1
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+       	PUSHAL	LF2
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+       	PUSHAL	LF3
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+       	PUSHAL	LF4
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+       	PUSHAL	LF5
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+
+	MOVAL	LFPROMPT,R1
+	BSBW	READ_PROMPT
+	BLBS	R0,20$
+; Exit on ^z (or other error)
+; Clean up displays
+	PUSHAL	VD_DISP                        
+	CALLS	#1,G^SMG$DELETE_VIRTUAL_DISPLAY
+	PUSHAL	VD_DISP2
+	CALLS	#1,G^SMG$DELETE_VIRTUAL_DISPLAY
+	PUSHAL	VD_DISP3
+	CALLS	#1,G^SMG$DELETE_VIRTUAL_DISPLAY
+	RET				; EXIT
+20$:
+	TSTW	BYTCNT
+	BEQL	10$
+; Make desc
+	MOVC3	BYTCNT,KB_BUF,TPU_INFILE
+	MOVZWL	BYTCNT,TPU_FILE_DESC
+
+        PUSHAL	SAVE_ID
+	PUSHAL	PB_BOARD
+	CALLS	#2,G^SMG$SAVE_PHYSICAL_SCREEN
+
+; Open TPU
+	PUSHAL	TPU_FILE_DESC 
+	PUSHAL	TPU_FILE_DESC
+	CALLS	#2,G^TPU$EDIT
+; TPU Closed - restore screen
+        PUSHAL	SAVE_ID
+	PUSHAL	PB_BOARD
+	CALLS	#2,G^SMG$RESTORE_PHYSICAL_SCREEN
+
+	PUSHAL	CURSOR_FLAGS                    	; Cursor off
+	PUSHAL	PB_BOARD
+	CALLS	#2, G^SMG$SET_CURSOR_MODE
+; Reopen TPU file to record results.
+	MOVAL	TPU_INFILE,LOGFAB+FAB$L_FNA
+	MOVL	TPU_FILE_DESC,LOGFAB+FAB$B_FNS
+	$OPEN	FAB = LOGFAB			; Open input file
+ 	$CONNECT RAB = LOGRAB		;Connect input stream
+;
+; Display Main Menu
+;
+
+START:
+	MOVAL	M_LIST,MADDR
+	MOVL	#M_LIST_SIZE,MSIZE
+	pushal	cursor_flags                    ; Turn cursor off
+	pushal	PB_BOARD
+	calls	#2, g^smg$set_cursor_mode
+	bsbw	error_chk
+ 	PUSHAL	REVERSE                 	; Create menu
+	PUSHAL	W3                              ; Menu options ...
+	CLRL	-(SP)
+	PUSHAL	SPACING
+	PUSHAL	VERTICAL
+	PUSHAL	M_DCS
+	PUSHAL	VD_DISP
+	CALLS	#7,G^SMG$CREATE_MENU            ; 
+	BSBW	ERROR_CHK
+	PUSHAL	CHOICE
+	PUSHAL	VD_DISP
+	PUSHAL	KB_BOARD
+	CALLS	#3,G^SMG$SELECT_FROM_MENU
+	BLBC	R0,30$			; Assume any error = eof
+	CASEW	CHOICE,#1,#4
+10$:
+	.WORD	11$-10$
+	.WORD	12$-10$
+	.WORD	13$-10$
+	.WORD	14$-10$
+	.WORD	15$-10$
+	
+	RET
+11$:
+	BRW	1000$		; Write SEQ
+12$:
+	BRW	5000$		; Write MESSAG01
+13$:
+	BRW	8000$		; Read IDX
+14$:
+	BRW	10000$		; Read seq
+15$:
+; Options ...
+;
+	PUSHAL	VD_DISP2
+	CALLS	#1,G^SMG$ERASE_DISPLAY
+       	PUSHAL	OPTMSG
+	PUSHAL	VD_DISP2
+	CALLS	#2,G^SMG$PUT_LINE
+	CASEW	OPTIONS,#0,#3
+20$:
+	.WORD	21$-20$
+	.WORD	22$-20$
+	.WORD	23$-20$
+	.WORD	24$-20$
+	RET
+21$:
+	MOVAL	OM_LIST0,MADDR
+	MOVL	#OM_LIST0_SIZE,MSIZE
+	BRW	25$
+22$:
+	MOVAL	OM_LIST1,MADDR
+	MOVL	#OM_LIST1_SIZE,MSIZE
+	BRW	25$
+23$:
+	MOVAL	OM_LIST2,MADDR
+	MOVL	#OM_LIST2_SIZE,MSIZE
+	BRW	25$
+24$:
+	MOVAL	OM_LIST3,MADDR
+	MOVL	#OM_LIST3_SIZE,MSIZE
+
+25$:
+	pushal	cursor_flags                    ; Turn cursor off
+	pushal	PB_BOARD
+	calls	#2, g^smg$set_cursor_mode
+	bsbw	error_chk
+ 	PUSHAL	REVERSE                 	; Create menu
+	PUSHAL	W3                              ; Menu options ...
+	CLRL	-(SP)
+	PUSHAL	SPACING
+	PUSHAL	VERTICAL
+	PUSHAL	M_DCS
+	PUSHAL	VD_DISP
+	CALLS	#7,G^SMG$CREATE_MENU            ; 
+	BSBW	ERROR_CHK
+	PUSHAL	CHOICE
+	PUSHAL	VD_DISP
+	PUSHAL	KB_BOARD
+	CALLS	#3,G^SMG$SELECT_FROM_MENU
+	BLBS	R0,27$
+; Assume any error = eof
+	PUSHAL	VD_DISP2
+	CALLS	#1,G^SMG$ERASE_DISPLAY
+	BRW 	START		       	
+27$:
+; Reverse option chosen
+	MOVZWL	CHOICE,R0
+	DECL	R0
+	BBCS	R0,OPTIONS,151$		; If clear, set and br
+	BBSC	R0,OPTIONS,151$         ; was set, clear and br
+151$:
+	BRW	15$
+
+30$:    
+; Here on ^z from main menu - exit program
+; User wants to delete test files? 
+	MOVAL	DELFILPMT,R1
+	BSBW	READ_PROMPT
+        BLBC	R0,100$                 ; Take defaut on ^z
+
+	TSTW	BYTCNT
+	BEQL	100$                    ; Take default on no entry
+	CMPB	#^A/N/,KB_BUF           ; Explicit No?
+	BEQLU 	110$			;
+	CMPB	#^A/n/,KB_BUF           ; Explicit no?
+	BEQLU 	110$			;
+100$:
+	$ERASE	FAB=DELMSGFAB           ; Delete test files
+	BLBS	R0,100$			; Get them all
+101$:
+	$ERASE	FAB=DELPRCFAB           ; Delete test files
+	BLBS	R0,101$			; Get them all
+110$:
+; Clean up displays
+	PUSHAL	VD_DISP                        
+	CALLS	#1,G^SMG$DELETE_VIRTUAL_DISPLAY
+	PUSHAL	VD_DISP2
+	CALLS	#1,G^SMG$DELETE_VIRTUAL_DISPLAY
+	PUSHAL	VD_DISP3
+	CALLS	#1,G^SMG$DELETE_VIRTUAL_DISPLAY
+	RET				; EXIT
+
+1000$:  		
+	PUSHAL	VD_DISP
+	CALLS	#1,G^SMG$ERASE_DISPLAY
+
+; Get params
+1030$:
+	MOVAL	RECCNTP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,1031$
+	BRW	START
+1031$:
+	TSTW	BYTCNT
+	BEQL	1030$
+	PUSHAL	RECCNT			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,1030$                ; Br if bad
+	TSTL	RECCNT
+	BEQL	1030$
+1035$:
+	MOVAL	RECSIZP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,1036$
+	BRW	START
+1036$:
+	TSTW	BYTCNT
+	BEQL	1035$
+	PUSHAL	RECSIZ			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,1035$                ; Br if bad
+	TSTL	RECSIZ
+	BEQL	1036$
+        CMPL	RECSIZ,#32767
+	BGTR	1036$
+
+
+2000$:
+	MOVW	RECSIZ,PRCRAB+RAB$W_RSZ
+	MOVW	RECSIZ,PRCRAB+RAB$W_USZ
+
+	CLRQ	TIME
+	PUSHAL	TIME
+	CALLS	#1,G^NTIMER
+	BLBS	R0,2010$
+	RET
+2010$:
+	$CREATE	FAB = PRCFAB			; Open output file
+	BLBS	R0,2020$
+	RET
+2020$:
+ 	$CONNECT RAB = PRCRAB		;Connect input stream
+	BLBS	R0,2030$
+	RET
+2030$:
+	PUSHAL	TIME
+	CALLS	#1,NTIMER
+	BLBS	R0,2040$
+	RET
+2040$:
+	MOVL	#132,FAODESC
+	PUSHL	TIME			; Lower .long
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	CRTIME
+	CALLS	#4,G^SYS$FAO
+	BLBS	R0,2050$
+	RET
+2050$:
+       	PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+2060$:
+; If option set, get suffucient mem for results
+	BLBC	OPTIONS,20610$
+        PUSHL	RECCNT
+	CALLS	#1,G^MAP_SECTION
+	BLBS	R0,20610$
+	RET
+
+20610$:
+	CLRL	R10
+	MOVL	FTSEC_A,R9
+	CLRQ	TIME
+	PUSHAL	TIME
+	CALLS	#1,G^NTIMER
+	BLBS	R0,2070$
+	RET
+	
+2070$:
+	MOVL	R10,PRCNAM 			; Make index
+	BLBC	OPTIONS,20710$
+
+	CLRQ	TIME2
+	PUSHAL	TIME2
+	CALLS	#1,G^NTIMER
+20710$:
+	$PUT	RAB=PRCRAB
+	BLBS	R0,2080$
+	RET
+2080$:
+	BLBC	OPTIONS,2090$
+	PUSHAL	TIME2
+	CALLS	#1,G^NTIMER
+	MOVL	TIME2,(R9)[R10]
+2090$:
+	AOBLSS	RECCNT,R10,2070$
+
+	PUSHAL	TIME
+	CALLS	#1,NTIMER
+	BLBS	R0,1090$
+	RET
+1090$:
+	MOVL	#132,FAODESC
+	PUSHL	TIME			; Lower .long
+	PUSHL	RECSIZ
+	PUSHL	R10			; Actual Record Count
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	WRTIME
+	CALLS	#6,G^SYS$FAO
+	BLBS	R0,1100$
+	RET
+1100$:
+        PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+1110$:	
+	$CLOSE	FAB = PRCFAB			; Open input file
+	BLBC	OPTIONS,1120$
+
+	MOVL	FTSEC_A,R9
+	CLRL	R10
+1115$:
+	PUSHL	(R9)[R10]
+	PUSHL	R10
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	MSGTIME
+	CALLS	#5,G^SYS$FAO
+        PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+	AOBLSS	RECCNT,R10,1115$	
+1120$:
+	MOVAL	EXITMSG,R1
+	BSBW	READ_PROMPT
+	BRW 	START
+5000$:
+; Write IDX test
+	PUSHAL	VD_DISP
+	CALLS	#1,G^SMG$ERASE_DISPLAY
+; Reset RAB
+	MOVW	#MSG_REC_SIZE,MSGRAB+RAB$W_RSZ
+; Get params
+5030$:
+	MOVAL	RECCNTP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,5031$
+	BRW	START
+5031$:
+	TSTW	BYTCNT
+	BEQL	5030$
+	PUSHAL	RECCNT			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,5030$                ; Br if bad
+	TSTL	RECCNT
+	BEQL	5030$
+6000$:
+	CLRQ	TIME
+	PUSHAL	TIME
+	CALLS	#1,G^NTIMER
+	BLBS	R0,6010$
+	RET
+6010$:
+	$CREATE	FAB = MSGFAB			; Open input file
+	BLBS	R0,6020$
+	RET
+6020$:
+ 	$CONNECT RAB = MSGRAB		;Connect input stream
+	BLBS	R0,6030$
+	RET
+6030$:
+	PUSHAL	TIME
+	CALLS	#1,NTIMER
+	BLBS	R0,6040$
+	RET
+6040$:
+	MOVL	#132,FAODESC
+	PUSHL	TIME			; Lower .long
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	CRTIME
+	CALLS	#4,G^SYS$FAO
+	BLBS	R0,6050$
+	RET
+6050$:
+       	PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+;
+	BLBC	OPTIONS,6060$
+        PUSHL	RECCNT
+	CALLS	#1,G^MAP_SECTION
+	BLBS	R0,6060$
+	RET
+
+6060$:
+	CLRL	R10
+	MOVL	FTSEC_A,R9
+	CLRQ	TIME
+	PUSHAL	TIME
+	CALLS	#1,G^NTIMER
+	BLBS	R0,6070$
+	RET
+6070$:
+	MOVL	R10,msg_key
+	BLBC	OPTIONS,6071$
+
+	CLRQ	TIME2
+	PUSHAL	TIME2
+	CALLS	#1,G^NTIMER
+6071$:
+	$PUT	RAB=MSGRAB
+	BLBS	R0,6080$
+	RET
+6080$:
+	BLBC	OPTIONS,6085$
+	PUSHAL	TIME2
+	CALLS	#1,G^NTIMER
+	MOVL	TIME2,(R9)[R10]
+6085$:
+	AOBLEQ	RECCNT,R10,6070$
+
+	PUSHAL	TIME
+	CALLS	#1,NTIMER
+	BLBS	R0,6090$
+	RET
+6090$:
+	MOVL	#132,FAODESC
+	PUSHL	TIME			; Lower .long
+	PUSHL	RECCNT
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	MSGWTIME
+	CALLS	#5,G^SYS$FAO
+	BLBS	R0,6100$
+	RET
+6100$:
+        PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+	BLBC	OPTIONS,6120$
+
+	MOVL	FTSEC_A,R9
+	CLRL	R10
+6110$:
+	PUSHL	(R9)[R10]
+	PUSHL	R10
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	MSGTIME
+	CALLS	#5,G^SYS$FAO
+        PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+	AOBLSS	RECCNT,R10,6110$	
+6120$:
+	$CLOSE	FAB = MSGFAB			; Open input file
+	MOVAL	EXITMSG,R1
+	BSBW	READ_PROMPT
+	BRW 	START
+8000$:
+; Read IDX test
+	PUSHAL	VD_DISP
+	CALLS	#1,G^SMG$ERASE_DISPLAY
+
+	CLRQ	TIME
+	PUSHAL	TIME
+	CALLS	#1,G^NTIMER
+	BLBS	R0,8010$
+	RET
+;
+8010$:
+	$OPEN	FAB = MSGFAB			; Open output file
+	BLBS	R0,8020$
+; Assume file does not exist - create it
+	PUSHL	#0			; Create IDX file
+	CALLS	#1,G^CREATE_FILE
+	BLBS	R0,8000$               ; Br no err
+	CMPL	R0,#SMG$_EOF            ; If user caused error ...
+	BEQLU 	START                   ; ... Try again
+	RET                             ; Else die
+
+8020$:
+ 	$CONNECT RAB = MSGRAB		;Connect input stream
+	BLBS	R0,8025$
+	RET
+8025$:
+	PUSHAL	TIME
+	CALLS	#1,NTIMER
+	BLBS	R0,9020$
+	RET
+9020$:
+	MOVL	#132,FAODESC
+	PUSHL	TIME			; Lower .long
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	CRTIME
+	CALLS	#4,G^SYS$FAO
+	BLBS	R0,9050$
+	RET
+9050$:
+	
+       	PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+
+; Get params
+9030$:
+	MOVAL	RECCNTRP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,9031$
+	BRW	START
+9031$:
+	TSTW	BYTCNT
+	BEQL	9030$
+	PUSHAL	RECCNT			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,11030$                ; Br if bad
+	TSTL	RECCNT
+	BEQL	9030$
+
+9100$:
+;
+9160$:
+; If option set, get suffucient mem for results
+	BLBC	OPTIONS,91610$
+        PUSHL	RECCNT
+	CALLS	#1,G^MAP_SECTION
+	BLBS	R0,91610$
+	RET
+
+91610$:
+	CLRL	R10
+	MOVL	FTSEC_A,R9
+; Set up timer for overall file read
+	CLRQ	TIME
+	PUSHAL	TIME
+	CALLS	#1,G^NTIMER
+	BLBS	R0,9170$
+	RET
+9170$:
+	MOVL	R10,PRCNAM 			; Make index
+	BLBC	OPTIONS,910710$
+9175$:
+	CLRQ	TIME2
+	PUSHAL	TIME2
+	CALLS	#1,G^NTIMER
+	BLBS	R0,910710$
+	RET
+910710$:
+	MOVL	R10,MSG_KEY
+	$GET	RAB=MSGRAB  			
+	BLBS	R0,91080$                       ; Trap RECORD NOT FOUND
+	CMPL	R0,#RMS$_RNF
+	BEQL	9090$
+	                			; Ignore all other read errs 
+91080$:
+	BLBC	OPTIONS,91090$
+	PUSHAL	TIME2
+	CALLS	#1,G^NTIMER
+	MOVL	TIME2,(R9)[R10]
+91090$:
+	AOBLSS	RECCNT,R10,9175$
+9090$:
+	PUSHAL	TIME
+	CALLS	#1,NTIMER
+	BLBS	R0,9091$
+	RET
+9091$:
+	MOVL	#132,FAODESC
+	PUSHL	TIME			; Lower .long
+	PUSHL	R10			; Actual read count
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	SRDTIME
+	CALLS	#5,G^SYS$FAO
+	BLBS	R0,9200$
+	RET
+9200$:
+        PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+9210$:	
+	$CLOSE	FAB = MSGFAB			; Close input file
+	BLBC	OPTIONS,9220$			; Br if option not set
+
+	MOVL	FTSEC_A,R9                      ; Print individual read times
+	MOVL	R10,RECCNT
+	CLRL	R10
+9215$:
+	PUSHL	(R9)[R10]
+	PUSHL	R10
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	MSGTIME
+	CALLS	#5,G^SYS$FAO
+        PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+	AOBLSS	RECCNT,R10,9215$	
+9220$:
+	MOVAL	EXITMSG,R1
+	BSBW	READ_PROMPT
+	BRW 	START
+
+10000$:
+; Read Seq
+	PUSHAL	VD_DISP
+	CALLS	#1,G^SMG$ERASE_DISPLAY
+;
+	CLRQ	TIME
+	PUSHAL	TIME
+	CALLS	#1,G^NTIMER
+	BLBS	R0,10010$
+	RET
+;
+10010$:
+	$OPEN	FAB = PRCFAB			; Open output file
+	BLBS	R0,10020$
+; Assume file does not exist - create it
+	PUSHL	#1			; Create SEQ file
+	CALLS	#1,G^CREATE_FILE
+	BLBS	R0,10000$               ; Br no err
+	CMPL	R0,#SMG$_EOF            ; If user caused error ...
+	BEQLU 	START                   ; ... Try again
+	RET                             ; Else die
+
+10020$:
+ 	$CONNECT RAB = PRCRAB		;Connect input stream
+	BLBS	R0,11025$
+	RET
+11025$:
+	PUSHAL	TIME
+	CALLS	#1,NTIMER
+	BLBS	R0,11020$
+	RET
+11020$:
+	MOVL	#132,FAODESC
+	PUSHL	TIME			; Lower .long
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	CRTIME
+	CALLS	#4,G^SYS$FAO
+	BLBS	R0,11050$
+	RET
+11050$:
+	
+       	PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+
+; Get params
+11030$:
+	MOVAL	RECCNTRP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,11031$
+	BRW	START
+11031$:
+	TSTW	BYTCNT
+	BEQL	11030$
+	PUSHAL	RECCNT			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,11030$                ; Br if bad
+	TSTL	RECCNT
+	BEQL	11030$
+11035$:
+	MOVAL	RECSIZRP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,11036$
+	BRW	START
+11036$:
+	TSTW	BYTCNT
+	BEQL	11035$
+	PUSHAL	RECSIZ			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,11035$                ; Br if bad
+	TSTL	RECSIZ
+	BEQL	11036$
+        CMPL	RECSIZ,#32767
+	BGTR	11036$
+
+
+12000$:
+	MOVW	RECSIZ,PRCRAB+RAB$W_RSZ
+	MOVW	RECSIZ,PRCRAB+RAB$W_USZ
+
+;
+12060$:
+; If option set, get suffucient mem for results
+	BLBC	OPTIONS,120610$
+        PUSHL	RECCNT
+	CALLS	#1,G^MAP_SECTION
+	BLBS	R0,120610$
+	RET
+
+120610$:
+	CLRL	R10
+	MOVL	FTSEC_A,R9
+; Set up timer for overall file read
+	CLRQ	TIME
+	PUSHAL	TIME
+	CALLS	#1,G^NTIMER
+	BLBS	R0,12070$
+	RET
+12070$:
+	MOVL	R10,PRCNAM 			; Make index
+	BLBC	OPTIONS,120710$
+
+	CLRQ	TIME2
+	PUSHAL	TIME2
+	CALLS	#1,G^NTIMER
+	BLBS	R0,120710$
+	RET
+120710$:
+	$GET	RAB=PRCRAB  			
+	BLBS	R0,12080$                       ; Trap EOF
+	CMPL	R0,#RMS$_EOF
+	BEQL	11090$
+	                			; Ignore all other read errs 
+12080$:
+	BLBC	OPTIONS,12090$
+	PUSHAL	TIME2
+	CALLS	#1,G^NTIMER
+	MOVL	TIME2,(R9)[R10]
+12090$:
+	AOBLSS	RECCNT,R10,12070$
+11090$:
+	PUSHAL	TIME
+	CALLS	#1,NTIMER
+	BLBS	R0,11091$
+	RET
+11091$:
+	MOVL	#132,FAODESC
+	PUSHL	TIME			; Lower .long
+	PUSHL	RECSIZ
+	PUSHL	R10			; Actual read count
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	RDTIME
+	CALLS	#6,G^SYS$FAO
+	BLBS	R0,11100$
+	RET
+11100$:
+        PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+11110$:	
+	$CLOSE	FAB = PRCFAB			; Close input file
+	BLBC	OPTIONS,11120$			; Br if option not set
+
+	MOVL	FTSEC_A,R9                      ; Print individual read times
+	MOVL	R10,RECCNT
+	CLRL	R10
+11115$:
+	PUSHL	(R9)[R10]
+	PUSHL	R10
+	PUSHAL	FAODESC
+	PUSHAL	FAODESC
+	PUSHAL	MSGTIME
+	CALLS	#5,G^SYS$FAO
+        PUSHAL	FAODESC
+	CALLS	#1,G^PRINT_LOG
+	AOBLSS	RECCNT,R10,11115$	
+11120$:
+	MOVAL	EXITMSG,R1
+	BSBW	READ_PROMPT
+	BRW 	START
+	
+; Subroutines
+;
+READ_PROMPT:
+	.JSB_ENTRY	INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, OUTPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>
+
+		PUSHAL	VD_DISP                 ; Output display
+		CLRL	-(SP)                   ; Blank 
+		PUSHAL	BYTCNT                  ; Bytes to display
+		CLRL	-(SP)                   ; Blank 
+		CLRL	-(SP)                   ; Blank 
+		PUSHAL	UPCASE                  ; Make input UPCASE 
+		CLRL	-(SP)                   ; Blank 
+		PUSHL	R1                      ; Output DSC
+		PUSHAL	KB_DES                  ; Input buf
+		PUSHAL	KB_BOARD                ; Input ID
+		CALLS	#10,G^SMG$READ_STRING
+		RSB
+
+;
+; Print subroutines
+;
+PRINT:
+	.JSB_ENTRY	INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			OUTPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>
+		PUSHAL	FAODESC
+		PUSHAL	VD_DISP
+		CALLS	#2,G^SMG$PUT_LINE
+		BSBW	ERROR_CHK
+		RSB
+PRINT2:
+	.JSB_ENTRY	INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 OUTPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>
+		PUSHL	R1
+		PUSHAL	VD_DISP2
+		CALLS	#2,G^SMG$PUT_LINE
+		BSBW	ERROR_CHK
+		RSB
+;
+CREATE_ENVIRONMENT:
+	.JSB_ENTRY	INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			OUTPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>
+
+;
+; Create Virtual Display
+;
+CR_DISP:
+	PUSHAL	BORDER
+	PUSHAL	VD_DISP
+	PUSHAL	VD_COLS
+        PUSHAL	VD_ROWS
+	CALLS	#4,G^SMG$CREATE_VIRTUAL_DISPLAY
+	BSBW	ERROR_CHK            		; Error Check
+	PUSHAL	BORDER
+	PUSHAL	VD_DISP2
+	PUSHAL	VD_COL2
+        PUSHAL	VD_ROW2
+	CALLS	#4,G^SMG$CREATE_VIRTUAL_DISPLAY
+	BSBW	ERROR_CHK
+	PUSHAL	BORDER
+	PUSHAL	VD_DISP3
+	PUSHAL	VD_COL3
+        PUSHAL	VD_ROW3
+	CALLS	#4,G^SMG$CREATE_VIRTUAL_DISPLAY
+	BSBW	ERROR_CHK
+;
+; Create Pasteboard
+;
+	PUSHAL	PB_BOARD
+	CALLS	#1,G^SMG$CREATE_PASTEBOARD
+	BSBW	ERROR_CHK
+; Save the current screen set up. Attempt to set it to 48x80. Restore
+; on exit
+	CLRL	-(SP)                         ; 1st row
+	CLRL	-(SP)                         ; Last row
+	PUSHAL	SAVE_DISP		      ; Saved screen ID
+	PUSHAL 	PB_BOARD		      ; Our id
+	CALLS	#4,G^SMG$SAVE_PHYSICAL_SCREEN
+	BSBW	ERROR_CHK
+; 
+	CLRL	-(SP)                         ; No colour change
+	CLRL	-(SP)                         ;      "
+	PUSHAL	VD_ROWS			      ; Actual height set
+	PUSHAL	SCR_HEIGHT		      ; Try for 48
+	PUSHAL	VD_COLS			      ; Actual wid
+	PUSHAL  SCR_WID			      ; Try 132
+	PUSHAL	PB_BOARD
+	CALLS	#7,G^SMG$CHANGE_PBD_CHARACTERISTICS
+;
+; Create Virtual Keyboard
+;
+	PUSHAL	KB_BOARD
+	CALLS	#1,G^SMG$CREATE_VIRTUAL_KEYBOARD
+	BSBW	ERROR_CHK
+;
+; Associate the pasteboard and Virtual Display
+;
+	PUSHAL	PB_COL		;Column
+	PUSHAL	PB_ROW		;Row
+	PUSHAL	PB_BOARD
+	PUSHAL	VD_DISP
+	CALLS	#4,G^SMG$PASTE_VIRTUAL_DISPLAY
+	BSBW	ERROR_CHK
+	PUSHAL	PB_COL2		;Column
+	PUSHAL	PB_ROW2		;Row
+	PUSHAL	PB_BOARD
+	PUSHAL	VD_DISP2
+	CALLS	#4,G^SMG$PASTE_VIRTUAL_DISPLAY
+	BSBW	ERROR_CHK
+	PUSHAL	PB_COL3		;Column
+	PUSHAL	PB_ROW3		;Row
+	PUSHAL	PB_BOARD
+	PUSHAL	VD_DISP3
+	CALLS	#4,G^SMG$PASTE_VIRTUAL_DISPLAY
+	BSBW	ERROR_CHK
+50$:	RSB
+ERROR_CHK:
+	.JSB_ENTRY	INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			OUTPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>
+
+		BLBC	R0,10$
+		RSB
+10$:
+	MOVL	R0,R6			; Save Error
+	PUSHAL	VD_DISP
+	CALLS	#1,G^SMG$DELETE_VIRTUAL_DISPLAY
+	PUSHAL	VD_DISP2
+	CALLS	#1,G^SMG$DELETE_VIRTUAL_DISPLAY
+	MOVL	R6,R0			; Restore
+		RET
+
+
+       .CALL_ENTRY     	 MAX_ARGS=2, -
+			 HOME_ARGS=TRUE, -
+			 INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 LABEL=CREATE_FILE
+; P1 = .long , File to create. 1= SEQ, 0 = IDX
+       	PUSHAL	CF1
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+       	PUSHAL	CF2
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+       	PUSHAL	CF3
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+       	PUSHAL	CF4
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+       	PUSHAL	CF5
+	PUSHAL	VD_DISP
+	CALLS	#2,G^SMG$PUT_LINE
+
+	BLBS	4(AP),100$		; Br if SEQ
+; Create IDX file
+	$CREATE	FAB = MSGFAB			; Open input file
+	BLBS	R0,10$
+	RET
+10$:
+ 	$CONNECT RAB = MSGRAB		;Connect input stream
+	BLBS	R0,20$
+	RET
+20$:
+; Get N0. recs to create
+	MOVAL	RECCNTWP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,30$
+	RET
+30$:
+	TSTW	BYTCNT
+	BEQL	20$
+	PUSHAL	RECCNT			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,20$                ; Br if bad
+	TSTL	RECCNT
+	BEQL	20$
+	
+	CLRL	R10
+50$:
+	MOVL	R10,MSG_KEY
+	$PUT	RAB=MSGRAB
+	BLBS	R0,60$
+	RET
+60$:
+	AOBLEQ	RECCNT,R10,50$
+	$CLOSE	FAB=MSGFAB
+	MOVL	#SS$_NORMAL,R0
+	RET
+100$:
+	MOVAL	RECCNTWP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,110$
+	RET
+110$:
+	TSTW	BYTCNT
+	BEQL	100$
+	PUSHAL	RECCNT			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,120$                ; Br if bad
+	TSTL	RECCNT
+	BEQL	100$
+120$:
+	MOVAL	RECSIZP,R1
+	BSBW	READ_PROMPT
+        BLBS	R0,130$
+	RET
+130$:
+	TSTW	BYTCNT
+	BEQL	120$
+	PUSHAL	RECSIZ			; Dec output
+       	PUSHAL	KB_BUF                  ; Character input
+       	CVTWL	BYTCNT,-(SP)		; No. of bytes
+       	CALLS	#3,G^LIB$CVT_DTB	; Convert to number
+       	BLBC	R0,120$                ; Br if bad
+	TSTL	RECSIZ
+	BEQL	120$
+        CMPL	RECSIZ,#32767
+	BGTR	120$
+; Make file
+	MOVW	RECSIZ,PRCRAB+RAB$W_RSZ
+	MOVW	RECSIZ,PRCRAB+RAB$W_USZ
+
+	CLRL	R10
+	$CREATE	FAB = PRCFAB			; Open output file
+	BLBS	R0,140$
+	RET
+140$:
+ 	$CONNECT RAB = PRCRAB		;Connect input stream
+	BLBS	R0,150$
+	RET
+150$:
+	$PUT	RAB=PRCRAB
+	BLBS	R0,160$
+	RET
+160$:
+	AOBLSS	RECCNT,R10,150$
+	$CLOSE	FAB = PRCFAB			; Open input file
+	MOVL	#SS$_NORMAL,R0
+	RET
+
+
+
+       .CALL_ENTRY     	 MAX_ARGS=2, -
+			 HOME_ARGS=TRUE, -
+			 INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 LABEL=MAP_SECTION
+; P1 = .long showing number of messages to keep measurement for. This number 
+; is multiplied by 4 to get bytes, converted to pages and section of 
+; this size, rounded up, is mapped.
+
+	MULL3	4(AP),#4,GBLSIZ   ; Size in bytes
+	DIVL	#512,GBLSIZ				     ; Pages
+	INCL	GBLSIZ					     ; Round up
+; Get Memory
+	CLRQ	-(SP)			; p0 space, access mode
+	PUSHAL	INADDR			; returned address
+	PUSHL	GBLSIZ          	; no. of pages
+	CALLS	#4, G^SYS$EXPREG	; Expand process space
+	BLBS	R0,10$
+	RET
+; map section	
+10$:
+	CLRQ	-(SP)			; pfc, protection
+	CLRL	-(SP)			; virtual block number
+	PUSHL	GBLSIZ			; no. of pages
+	CLRQ	-(SP)			; channel, rel page no.
+	CLRL	-(SP)			; version id
+	PUSHAL	FTEST			; section name
+	PUSHL	#<SEC$M_GBL!SEC$M_DZRO!SEC$M_WRT!SEC$M_PAGFIL!SEC$M_SYSGBL>
+	CLRL	-(SP)			; access mode
+	PUSHAL	FTSEC_A			; returned address
+	PUSHAL	INADDR			; in address
+	CALLS	#12, G^SYS$CRMPSC	; create section
+	RET
+
+
+
+
+
+
+       .CALL_ENTRY     	 MAX_ARGS=2, -
+			 HOME_ARGS=TRUE, -
+			 INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 LABEL=PRINT_LOG
+; P1 = .address of desc to print and log to file
+	BBC	#1,OPTIONS,10$
+        PUSHL	4(AP)
+	PUSHAL	VD_DISP3
+	CALLS	#2,G^SMG$PUT_LINE
+10$:
+        MOVQ	@4(AP),R6
+	MOVW	R6,LOGRAB+RAB$W_RSZ
+	MOVW	R6,LOGRAB+RAB$W_USZ
+	MOVL	R7,LOGRAB+RAB$L_RBF
+	MOVL	R7,LOGRAB+RAB$L_UBF
+	$PUT	RAB=LOGRAB
+
+	RET
+
+       .CALL_ENTRY     	 MAX_ARGS=2, -
+			 HOME_ARGS=TRUE, -
+			 INPUT=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 PRESERVE=<R2,R3,R4,R5,R6,R7,R8,R9,R10,R11>, -
+			 LABEL=NTIMER
+;++
+;1 NTIMER
+; Routine to return elapsed time between two calls to itself. The caller 
+; calls this routine twice, the first time with the argument = 0 and 
+; the second with the the argument = result from 1st call.
+; On the 1st call (when P1 = 0), RSCC is called and replaces P1. 
+; On 2nd call (P1 .ne. 0) RSCC is called and P1 is subtracted from it.
+; Using HWPRB structures, the routine determines how often RSCC is updated
+; and converts the difference (as a count) to microseconds. This is returned
+; on the 2nd call.
+; Inputs:
+;   	.address of .quad
+; Outputs:
+;   	If P1 = 0 then P1 is made equal to the result from RSCC
+;	If P1 .ne. 0 then call RSCC, subract P1 from it and convert to
+;	microseconds. This result is returned. 
+; Note: This routine will fail if you manage to find an alpha processor
+; running at < 1Mhz.
+; It will also fail to give good results if running on a multiple processor system and it is
+; scheduled to run on a different processor between calls. 
+;--
+; Get current time
+	EVAX_RSCC
+;
+	MOVL	4(AP),R6			; get param addr
+	TSTL	(R6)    		        ; if Not 0 ...
+	BNEQ	10$    			        ; br
+	TSTL	4(R6)  			        ; top long
+	BNEQ	10$          			; br
+; 1st call, return result
+	EVAX_STQ	R0,(R6) ; Write quad
+	MOVL	#SS$_NORMAL,R0
+	RET
+10$:
+; 2nd call, do calc               			
+	EVAX_LDQ	R7,(R6)                 	; Get 1st sample
+	EVAX_SUBQ	R0,R7,(R6)                      ; Curr - 1st
+	MOVL	EXE$GPQ_HWRPB,R10                    ; Base addr
+	MOVL	HWRPB$IQ_CYCLE_COUNT_FREQ(R10),R11      ; Get freq this prcesr
+	DIVL	#1000000,R11                            ; Make micro
+	EDIV	R11,(R6),(R6),R1                        ; real time
+	MOVL	#SS$_NORMAL,R0
+	RET
+
+	.END FILE_TEST

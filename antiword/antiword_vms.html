@@ -1,0 +1,165 @@
+<HTML>
+<HEAD>
+<TITLE>Antiword 0.37 for VMS</TITLE>
+<meta name="description" content="Antiword for VMS">
+<meta name="keywords" content=
+"Antiword,VMS,OpenVMS,VMS rocks,Public Domain Software">
+<meta name="robots" content="index,follow">
+<meta name="Author" content="Joseph Huber">
+</HEAD>
+<BODY>
+<H1>Antiword 0.37 for VMS</H1>
+Antiword is a MS Word document file reader.
+<br>Author: Adri van Os. Homepage:
+ <a href="http://www.winfield.demon.nl/"> www.winfield.demon.nl </a>
+<p>With a minimum of changes, I have made a version working 
+on VMS ( Alpha, Compaq C V6.+ , Vax should work as well).
+<hr>
+<h2>Build instructions for VMS</h2>
+Get the distribution from the programmers/Linux  version at
+<a href="http://www.winfield.demon.nl/linux/antiword-0.37.tar.gz">
+ linux/antiword-0.37.tar.gz </a>, or from <A href="../archive/antiword-0_37.tar-gz"> here </A><br>
+Decompress using gzip, then untar and set directory to [.antiword-0_37] .
+<br>
+<p>
+ Get VMS-specific build-files packed into <a href="antiword_vms_files.zip"> antiword_vms_files.zip</a>.
+ Fetch this archive, and unpack in [.antiword-0_37] .
+<br>
+ If You have GNU make (gmake) with DCL:
+  Execute <kbd>(g)make -f <a href="makefile.vms"> makefile.vms </a>"</kbd> .
+<BR>
+ With GNV bash: <kbd>make -f <a href="makefile.vms_bash"> makefile.vms_bash </a></kbd>.
+<br>
+ If You have MMS or MMK , simply type MMS ,using the 
+<a href="descrip.mms"> DESCRIP.MMS </a> descriptor file provided here.
+<p>
+ Without make or MMS/MMK, compile everything, except main_r, 
+ then link main_u (the common Unix- and VMS main program)
+ and all other object files.
+ (all commands are in <a href="vms_make.com;"> vms_make.com</a>).
+<h3>Older VMS versions</h3>
+Informed by Peter Weaver, who compiled on Vax VMS 7.1, DECC 5.7, it needs 
+an additional definition in <a href="misc_vms_prefix.c"> misc_vms_prefix.c </a>.
+I made the definition conditionalized on CRTL < 7 .
+This may or may not be correct; if somebody with a DECC version between 5.7 and
+6.4 can prove it, please inform me. Maybe one has to make the condition on the 
+DECC rather than the CRTL version.
+<br>I had the opportunity to compile and link with DEC C V5.6-003 on 
+OpenVMS VAX V7.1,
+and -surprise- it does not need any change. Test and see!
+<br>On Alpha VMS 7.1 with DECC 5.6: builds correctly using  @vms_make "" "" CC/STANDARD=VAXC 
+ or MMS /Macro=("CC=CC/STANDARD=VAXC") .
+<br>Until it is clear, what the right definitions are, I will not include 
+a changed misc.c in the distribution.
+<br>I definitely have no way to test, if it compiles with Vaxc or GCC !
+<hr>
+<h3>Optional changes for VMS</h3> 
+<h4>Global file directory and the /usr path</h4>
+ You may want to change the location of the global file directory 
+ ( macro GLOBAL_ANTIWORD_DIR in header-file antiword.h ) holding the files
+ from the [.resources] subdirectory:<br>
+ change /usr/share/antiword to a different location (in Unix syntax), unless You
+ define a VMS logical device "/usr" ( USR:[SHARE.ANTIWORD] ).
+<br>
+On my system the logical usr looks like this:
+<br>
+   "USR" [super] = "SYS$SYSDEVICE:[UTIL.]" [concealed] (LNM$SYSTEM_TABLE)
+<br>
+I will not change the source for this , since there is no convention in VMS 
+for user-shared files .
+<br>VMS 7.3-1 introduces a SYS$POSIX_ROOT logical: simply create the usr/ 
+directory tree under SYS$POSIX_ROOT.
+<br>
+V 0.34 adds an environment-variable ANTIWORDHOME to find the global
+setup directory if not /usr/share/antiword . 
+Define it as a VMS logical, directory-name in VMS-syntax ( dev:[directory] ).
+
+<h4>DEBUG option and the /tmp path</h4>
+To compile the sources with the DEBUG option, have a look into the *2eps.c 
+files: they write image files to a directory /tmp/pics/... <br>
+<br>
+Either define a concealed logical TMP (e.g. to point to sys$scratch), or change 
+the 3 source files to point to sys$scratch: instead of /tmp/pics/.
+<br>All newer VMS versions (since V7.?) contain a DECC RTL, with a specific 
+handling of "/tmp": it translates to sys$scratch, if no "tmp" logical is
+defined. So usually it is enough to create a directory [.pics] in your user
+root.
+<p>
+<h2>Installation:</h2>
+<br>
+   define a foreign command pointing to antiword.exe
+<br> or
+<br>   copy antiword.exe into dcl$path:
+<br>
+<br> Setup/font files:
+<br>
+<br> System-wide: copy the [.resources] files into the directory defined by 
+  /usr/share/antiword
+<br>
+ or leave the [.resources] subdirectory in place, and let the user
+(or sys$sylogin) execute this procedure: <a href="antiword_setup.com">antiword_setup.com</a>
+<br> Private: create directory [.ANTIWORD] in sys$login:
+<br>          copy the [.resources] files into the newly created directory.
+<h3> Usage </h3>
+<br>Produce a postscript file from a word-document:
+<br>
+<br>   <center><kbd>pipe antiword -p a4 file.doc >file.ps</kbd></center>
+<br>
+A DCL commandfile in our DCL$PATH directory does the postscript conversion 
+and X11 display with Ghostscript in one go:
+<center><a href="wordviewer.com;"> wordviewer.com </a></center>
+<br>Use it in a commandline like this: <kbd>wordviewer testdoc</kbd>
+ or <kbd>wordviewer testdoc PDF</kbd>
+<p>
+<center>
+Comment applying to all GNU/Unix style programs compiled with DECC:
+</center>
+<br>
+The interpretation of command-line switches and path-names can be influenced
+by several DECC$* logical names, most important ones are:
+<br>
+<pre>
+
+$ define DECC$ARGV_PARSE_STYLE "ENABLE"
+$ SET PROCESS/PARSE_STYLE=EXTENDED 
+
+ These 2 settings  preserve case of foreign command-lines
+ ( otherwise `antiword -L` has to be typed as `antiword -"L"` )
+
+$ define DECC$DISABLE_TO_VMS_LOGNAME_TRANSLATION "ENABLE"  
+ path foo/bar translates to [.foo]bar; if disabled, it translates to foo:[bar]
+ (but some programs will not work , java in particular !)
+</pre>
+<h3>How to define a global antiword directory /usr/share/antiword :</h3>
+<br>
+Let's assume the global directory in VMS is SYS$SYSDEVICE:[UTIL.SHARE.ANTIWORD]
+<br>
+<kbd> $ dir sys$sysdevice:[util.share.antiword]</kbd>
+<pre>
+ Directory SYS$SYSDEVICE:[UTIL.SHARE.ANTIWORD]
+ 8859-1.TXT;1        ...
+</pre>
+<kbd> $ define/trans=concealed usr sys$sysdevice:[util.]</kbd>
+<br>
+<kbd> $ ls /usr/share/antiword/</kbd>
+<pre>
+ 8859-1.txt   ...
+</pre>
+This way "/usr/share/antiword/" in the C program is equvalent to
+SYS$SYSDEVICE:[UTIL.SHARE.ANTIWORD]
+<p>
+<hr>
+Legal: Antiword is distributed under the <a href="copying"> GPL </a>
+<br>
+Please send VMS-specific questions to me: 
+<a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#104;&#117;&#98;&#101;&#114;&#64;&#109;&#112;&#112;&#109;&#117;&#46;&#109;&#112;&#103;&#46;&#100;&#101;">
+Joseph.Huber at mppmu.mpg.de</a>
+<hr>
+<address>
+Joseph Huber , <a href="http://wwwvms.mppmu.mpg.de/~huber/">
+http://wwwvms.mppmu.mpg.de/~huber/ </a>
+<br>
+2005-11-07
+</address>
+</BODY>
+</HTML>

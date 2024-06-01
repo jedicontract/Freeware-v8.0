@@ -1,0 +1,25 @@
+! 
+DECLARE EDIT_VALUE USAGE LONG.
+! 
+EDIT_VALUE = 0
+! 
+! embedded Line Feed                     V        V eight-bit character
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 0) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 1) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 2) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 4) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 8) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 16) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 32) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 64) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 128) | "<"
+PRINT FN$BAS_EDIT (" This string  [has]	stuff ïn it ", 256) | "<"
+! 
+PRINT SKIP
+! 
+WHILE EDIT_VALUE LE 512 BEGIN
+  PRINT EDIT_VALUE, SPACE 1,
+    FN$BAS_EDIT (" This string  [has]	stuff ïn it ", EDIT_VALUE) | "<"
+  EDIT_VALUE = EDIT_VALUE + 1
+END
+! 

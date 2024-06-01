@@ -1,0 +1,46 @@
+# Format descriptor for afm image format
+# Created by ./tnimage 3.0.8 on Jan 22 2000
+identifier afm
+headerfile 
+platform 20
+packing 1
+useheader 0
+useidentifier 0
+headerbytes 0
+skipbytes 0
+compressflag 0
+datatype 1
+defaultbpp 12
+defaultcolortype 0
+defaultxsize 512
+defaultysize 512
+defaultrbpp 0
+defaultgbpp 0
+defaultbbpp 0
+defaultkbpp 0
+defaultframes 1
+# Offsets into the uncompressed file:
+#   If the value is not 65535, a pointer to 
+#   the specified parameter must exist in the file 
+#   at an offset given by the location indicated
+identifieroff 65535
+xoff 65535
+yoff 65535
+bppoff 65535
+colortypeoff 65535
+compressflagoff 65535
+redbppoff 65535
+greenbppoff 65535
+bluebppoff 65535
+blackbppoff 65535
+xposoff 65535
+yposoff 65535
+framesoff 65535
+fpsoff 65535
+chromakeyoff 65535
+chromakey_graymin_off 65535
+chromakey_graymax_off 65535
+chromakey_rgbmin_off 65535
+chromakey_rgbmax_off 65535
+paletteoff 65535
+imageoff 65535
